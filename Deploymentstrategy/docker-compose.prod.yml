@@ -1,0 +1,58 @@
+services:
+  database:
+    image: ankane/pgvector
+    container_name: certaintyai-postgres
+    environment:
+      POSTGRES_DB: certaintyai
+      POSTGRES_USER: certainty_admin
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - certainty-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U certainty_admin -d certaintyai"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: certaintyai-backend
+    environment:
+      - DATABASE_URL=postgresql://certainty_admin:${POSTGRES_PASSWORD}@database:5432/certaintyai
+      - LLM_PROVIDER=openai
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - JWT_SECRET=${JWT_SECRET}
+      - PORT=8000
+    ports:
+      # Map to 8000 as the standard default port
+      - "8000:8000"
+    depends_on:
+      database:
+        condition: service_healthy
+    networks:
+      - certainty-net
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_BASE_URL=http://localhost:8000
+    container_name: certaintyai-frontend
+    ports:
+      - "80:8080"  # Mapped to 80 on the host, targeting Nginx's 8080 in the container
+    depends_on:
+      - backend
+    networks:
+      - certainty-net
+
+networks:
+  certainty-net:
+    driver: bridge
+
+volumes:
+  pgdata:

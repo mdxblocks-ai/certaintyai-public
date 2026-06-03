@@ -1,0 +1,32 @@
+[
+  {
+    "email": "demo@mdxblocks.com",
+    "password": "Certainty2026!",
+    "full_name": "MDxBlocks Demo Admin",
+    "role": "Demo Admin"
+  },
+  {
+    "email": "cto@acmehealth.com",
+    "password": "Certainty2026!",
+    "full_name": "Acme Health CTO",
+    "role": "Healthcare CTO"
+  },
+  {
+    "email": "dean@stateuniversity.edu",
+    "password": "Certainty2026!",
+    "full_name": "State University Dean",
+    "role": "Education Leader"
+  },
+  {
+    "email": "ciso@fintrust.com",
+    "password": "Certainty2026!",
+    "full_name": "FinTrust CISO",
+    "role": "Cybersecurity Leader"
+  },
+  {
+    "email": "pm@itconsult.io",
+    "password": "Certainty2026!",
+    "full_name": "ITConsult Project Manager",
+    "role": "IT Consulting PM"
+  }
+]

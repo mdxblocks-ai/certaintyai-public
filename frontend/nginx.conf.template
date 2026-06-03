@@ -1,0 +1,22 @@
+server {
+    listen       ${PORT};
+    server_name  _;
+
+    location / {
+        root /usr/share/nginx/html;
+        index index.html index.htm;
+        try_files $uri $uri/ /index.html;
+
+        # Force browser to re-verify index.html to avoid old Vite bundle caching
+        location ~* \.(?:html|htm)$ {
+            add_header Cache-Control "no-cache, no-store, must-revalidate";
+            add_header Pragma "no-cache";
+            expires 0;
+        }
+    }
+
+    error_page 500 502 503 504 /50x.html;
+    location = /50x.html {
+        root /usr/share/nginx/html;
+    }
+}

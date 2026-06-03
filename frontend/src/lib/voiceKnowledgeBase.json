@@ -1,0 +1,392 @@
+{
+  "copilotRules": [
+    {
+      "id": "pulsera_identity",
+      "keywords": [
+        "who are you",
+        "who you are",
+        "your name",
+        "what is your name",
+        "identify yourself"
+      ],
+      "response": "### 👩‍💼 Identity Verified: Pulsera\n\nI am **Pulsera**, your dedicated C-suite AI Super Model, created by **MDxBlocks**.\n\nAs your strategic boardroom co-pilot, I orchestrate multi-cloud telemetry, FinOps models, and compliance readiness mappings to govern and scale enterprise AI adoption."
+    },
+    {
+      "id": "cfo_roi_investment",
+      "keywords": [
+        "roi",
+        "payback",
+        "blended",
+        "rates",
+        "investment"
+      ],
+      "response": "### 📈 C-Suite AI Investment Health & ROI Verification\n\nCertaintyAI quantifies your technology investments directly against bottom-line outcomes, ensuring business-outcome-driven KPIs map to every model rollout.\n\n#### Core Investment Health Metrics:\n*   **AI Investment Health Score:** **{totalScore}/100** (reflecting mature foundational governance but opportunities to scale).\n*   **Blended Cooperative Labor Rates:** Structured under the pre-negotiated GSA white-label schedule **#GS-35F-COOP** (ranging from **$185/hr to $210/hr** across key specialist roles: AI Strategist, AI Architect, Data Scientist, ML Engineer, and CISO Security Specialist).\n*   **Payback Horizon:** Standardized workflows yield net payback in **4.2 Months**, generating **$90k+ in validated annual savings**.\n\n#### CFO Next Steps:\n1.  Establish a formal steering committee to manage departmental budgeting.\n2.  Connect BI analytics pipelines directly to the model gateway to track compute spend in real-time."
+    },
+    {
+      "id": "cfo_finops_optimization",
+      "keywords": [
+        "cost",
+        "efficiency",
+        "saving",
+        "finops",
+        "optimization"
+      ],
+      "response": "### 💸 CertaintyAI FinOps & Multi-Cloud Cost Optimization\n\nBased on the active telemetry and model mapping configurations inside your Cockpit, we have simulated the financial impact of shifting high-volume reasoning workflows to resource-optimized orchestrators:\n\n#### Annual Savings Simulation:\n*   **Anthropic Claude to Google Gemini 1.5 Flash:** Shifting 30% of structured JSON extractions and vector search evaluations reduces reasoning fees by **$680/month** (representing a **45% reduction** in compute overhead) with zero loss in schema accuracy.\n*   **Observation Alerts:** Standardizing off-peak execution times for heavy compliance sweeps (e.g., EHR HIPAA ingestion) and utilizing relational semantic caching reduces Snowflake Cortex roundtrips by **18%**.\n\n#### Recommendations for CFO:\n1.  **Deploy Cost-Optimization routing rules** through the multi-agent gateway.\n2.  **Activate token rate-limiting policies** to prevent sandbox usage spikes.\n3.  **Review Snowflake Cortex cache limits** to leverage local relational memory."
+    },
+    {
+      "id": "hipaa_compliance",
+      "keywords": [
+        "hipaa",
+        "hippa",
+        "hitech",
+        "health",
+        "healthcare",
+        "phi"
+      ],
+      "response": "### 🏥 HIPAA & Healthcare AI Compliance Assessment\n\nUnder the **Healthcare & Life Sciences** regulatory sector (HIPAA / HITECH / FDA AI/ML), CertaintyAI evaluates your enterprise AI pipelines against the **HIPAA Security & Privacy Rules**.\n\nYour current active report metrics indicate a **{totalScore}/100 Overall Readiness Score**, with critical gaps directly affecting HIPAA compliance:\n\n1. **Governance & Compliance ({auditScore}%):** A score of **{auditScore}%** indicates a critical gap in access controls and data tracking. Under HIPAA §164.312, you must produce detailed audit logs showing every vector transaction, query, and user access. The lack of standardized audit automation and secure gateway token brokers constitutes a high compliance risk.\n2. **Data Readiness & Security ({ragScore}%):** A score of **{ragScore}%** indicates that relational data warehouses remain siloed without dynamic PII masking or unified semantic layers. Protecting PHI (Protected Health Information) requires automated data guardrails to prevent accidental leaks to external LLM APIs.\n3. **Architecture & Oversight ({oversightScore}%):** A score of **{oversightScore}%** indicates ad-hoc risk reviews and a lack of a formal AI steering committee. HIPAA compliance requires establishing formal administrative safeguards and systematic risk assessments before deploying models into production.\n\n#### Recommended Healthcare Remediation:\n*   **Immediate (Weeks 1-2):** Mandate a secure API gateway enforcing token limits and automatic PII masking for all patient queries.\n*   **Short-Term (Weeks 3-5):** Transition from pure RAG to hybrid semantic **GraphRAG** with unified ontology to ensure deterministic, auditable context paths.\n*   **Audit Trail:** Deploy **Audit Automation & Compliance Reporting** to trace every AI-generated response back to standardized source rows."
+    },
+    {
+      "id": "assessment_report",
+      "keywords": [
+        "assessment report",
+        "assessment",
+        "ವರದಿ",
+        "reporte",
+        "报告",
+        "रिपोर्ट",
+        "レポート"
+      ],
+      "response": "### 📊 Enterprise AI Readiness Assessment Report\n**Prepared by:** CertaintyAI Copilot ({modelName})\n**Classification:** Board Confidential\n\n#### Executive Summary\nBased on the semantic ingestion of your organizational profile, your current AI Readiness Score is **{totalScore}/100 ({maturityTier})**. While tactical execution is strong in sandboxed environments, enterprise-wide adoption is bottlenecked by compliance gatekeeping and data sovereignty fragmentation.\n\n#### Pillars of Assessment\n| Pillar | Score | Status | Primary Bottleneck |\n| :--- | :---: | :---: | :--- |\n| **1. Strategic Alignment** | {semanticScore}% | High | Lack of unified ROI scorecard metrics. |\n| **2. Data Readiness** | {ragScore}% | Medium | Siloed relational warehouses without unified semantic graph layers. |\n| **3. Governance & Risk** | {auditScore}% | Critical | Lack of automated guardrails for public LLM APIs. |\n| **4. Tech Stack & Integration** | {oversightScore}% | High | Heavy reliance on direct API endpoints instead of orchestrator gateways. |\n| **5. Culture & Skills** | {dataScore}% | Medium | Dispersed training without a centralized AI Center of Excellence. |\n\n#### Recommended Action Items\n1. **Immediate:** Standardize all external AI queries through a unified gateway with automatic PII masking.\n2. **Short-Term (30 Days):** Construct an enterprise semantic layer (GraphRAG) mapping organizational ontology.\n3. **Medium-Term (90 Days):** Launch a formal AI Center of Excellence (CoE) to steer departmental cross-training."
+    },
+    {
+      "id": "score_breakdown",
+      "keywords": [
+        "score",
+        "explain",
+        "ಸ್ಕೋರ್",
+        "解释",
+        "scorecard",
+        "puntaje",
+        "评分",
+        "स्कोर",
+        "スコア",
+        "arrived",
+        "why",
+        "how",
+        "32/100",
+        "68/100",
+        "42/100",
+        "calculation",
+        "calculated",
+        "computed",
+        "result",
+        "tier",
+        "gaps"
+      ],
+      "response": "### 📉 Deconstructing Your AI Readiness Score ({totalScore}/100)\n\nYour score places you in the **{maturityTier} Stage** of the Gartner AI Maturity framework. Here is a breakdown of what this score represents and how it was calculated:\n\n```mermaid\ngraph TD\n    A[Enterprise AI Score: {totalScore}] --> B[Strategic Alignment: {semanticScore}%]\n    A --> C[Data Readiness: {ragScore}%]\n    A --> D[Governance & Compliance: {auditScore}%]\n    A --> E[Architecture & Security: {oversightScore}%]\n\n    style A fill:#A78BFA,stroke:#8B5CF6,stroke-width:2px,color:#000\n    style D fill:#F87171,stroke:#EF4444,stroke-width:2px,color:#000\n```\n\n#### Key Gaps Identified:\n1. **Compliance Shadow IT (Governance - {auditScore}%):** Departments are independently procuring minor SaaS tools running unauthorized external endpoints without a secure token broker. This risks exposing metadata.\n2. **Data Gravitational Silos (Data Readiness - {ragScore}%):** Lack of a centralized knowledge graph layer means agents struggle with cross-departmental context.\n3. **System Resilience (Architecture - {oversightScore}%):** While LLM Observatory monitors traffic, automated fallback routing is not fully standardized across all production pipelines.\n\n#### Pathway to Level 4 (Scale Stage):\nTo surpass the 80+ threshold, you must implement **automated guardrail gateways** and transition from pure RAG to **hybrid semantic GraphRAG** for enterprise search."
+    },
+    {
+      "id": "timeline_roadmap",
+      "keywords": [
+        "roadmap",
+        "adoption",
+        "ರೋಡ್‌ಮ್ಯಾಪ್",
+        "hoja de ruta",
+        "路线图",
+        "रोडमैप",
+        "ロードマップ"
+      ],
+      "response": "### 🗓️ 90-Day Enterprise AI Adoption & Scale Roadmap\n\nA structured timeline designed to move your organization from sandbox pilot to secure production scale.\n\n```\n[Days 1-30: Foundation]    ====> [Days 31-60: Integration]    ====> [Days 61-90: Scale]\n- Establish AI CoE Charter        - Launch Centralized Gateway       - Deploy Production Pilots\n- Standardize PII Masking        - Map Semantic Knowledge Graph     - Connect BI Analytics\n- Formulate Model Policy         - Implement Redundant Fallbacks    - Conduct Board Audit\n```\n\n#### Phase 1: Establish the Governance Foundation (Days 1–30)\n*   **Milestone 1:** Establish the cross-functional **AI Center of Excellence (CoE)**.\n*   **Milestone 2:** Mandate a secure API gateway that enforces token rate limits and logs prompts.\n*   **Milestone 3:** Draft the enterprise vendor model selection grid (categorizing models by security profile).\n\n#### Phase 2: Knowledge Ingestion & GraphRAG (Days 31–60)\n*   **Milestone 4:** Unify data ingestion pipelines, converting dark files into structured vector embeddings.\n*   **Milestone 5:** Connect your data stores to a secure semantic layer that translates natural queries into precise data fetches.\n\n#### Phase 3: Operational Scaling & Value Realization (Days 61–90)\n*   **Milestone 6:** Go live with top-priority use cases (e.g., secure internal search, automated compliance reports).\n*   **Milestone 7:** Establish executive scorecards measuring cost per query, latency, and business unit productivity (ROI)."
+    }
+  ],
+  "copilotDefault": "### 💡 Copilot Strategic Analysis: {modelName}\n\nThank you for your inquiry about **\"{text}\"**.\n\nAs your enterprise AI co-pilot, I recommend evaluating this query against your **CertaintyAI Ontology Layer**. Here is a tailored architectural analysis:\n\n1. **Strategic Context:** This request relates directly to your **AI Center of Excellence (CoE)** compliance guidelines.\n2. **Data Integration:** Under GraphRAG patterns, we map this context to your private relational databases.\n3. **Recommended Action:** Route this workflow through **Gemini 2.5 Pro** for comprehensive policy validation, or use **Gemini 2.5 Flash** to minimize latency and token overhead.\n\nWould you like to generate a board-ready transformation plan or define the security controls for this specific scenario?",
+  "voiceRules": [
+    {
+      "id": "pulsera_identity",
+      "keywords": [
+        "who are you",
+        "who you are",
+        "your name",
+        "what is your name",
+        "identify yourself"
+      ],
+      "response": "I am Pulsera, AI Super Model, Created by MDx.",
+      "followUps": [
+        {
+          "text": "What can you do?",
+          "action": "explain_capabilities"
+        },
+        {
+          "text": "Show CFO metrics",
+          "action": "go_to_dashboard"
+        }
+      ],
+      "voicePrompts": [
+        {
+          "label": "📈 Calculate ROI",
+          "query": "Calculate AI ROI & Payback"
+        },
+        {
+          "label": "💸 FinOps Optimization",
+          "query": "Analyze Cost Optimization Savings"
+        }
+      ]
+    },
+    {
+      "id": "hipaa_compliance",
+      "keywords": [
+        "hipaa",
+        "hippa",
+        "hitech",
+        "health",
+        "healthcare",
+        "phi"
+      ],
+      "response": "Your Healthcare AI assessment indicates a {totalScore}/100 score. Under HIPAA Privacy and Security rules, your low Governance ({auditScore}%) and Data Readiness ({ragScore}%) present critical vulnerabilities for PHI data exposure. MDx recommends establishing automated data guardrails and audit logging immediately.",
+      "followUps": [
+        {
+          "text": "Enable WatsonX strict guardrails",
+          "action": "enable_watsonx_guard"
+        },
+        {
+          "text": "View compliance matrix",
+          "action": "go_to_insights"
+        }
+      ],
+      "voicePrompts": [
+        {
+          "label": "🛡️ Show Governance Gaps",
+          "query": "Show my governance gaps"
+        },
+        {
+          "label": "🏥 Explain HIPAA rule",
+          "query": "Explain HIPAA regulatory compliance"
+        }
+      ]
+    },
+    {
+      "id": "cost_efficiency",
+      "keywords": [
+        "cost",
+        "efficiency",
+        "saving"
+      ],
+      "response": "Your unified Observatory detects high reasoning costs on Anthropic Claude. MDx recommends shifting 30% of your high-volume, structured JSON extractions over to Google Gemini 1.5 Flash. This will reduce your latency by 45% and generate a monthly cost saving of approximately $680 without compromising schema accuracy.",
+      "followUps": [
+        {
+          "text": "Deploy cost optimization rule",
+          "action": "deploy_cost_rule"
+        },
+        {
+          "text": "Compare Gemini vs Anthropic latency",
+          "action": "compare_latency"
+        },
+        {
+          "text": "Go to My AI Tools config",
+          "action": "go_to_tools"
+        }
+      ],
+      "voicePrompts": [
+        {
+          "label": "💰 Compare Latency",
+          "query": "Compare Gemini vs Anthropic latency"
+        },
+        {
+          "label": "🧬 Compare Models",
+          "query": "Compare Gemini 1.5 Pro and GPT-4o performance"
+        },
+        {
+          "label": "🚀 Optimize API Limits",
+          "query": "Optimize my API limits"
+        }
+      ]
+    },
+    {
+      "id": "forecast_anomalies",
+      "keywords": [
+        "forecast",
+        "anomalies",
+        "future"
+      ],
+      "response": "Observatory forecasts a 18% spike in token consumption starting next Tuesday. This is directly driven by your scheduled automated HIPAA Compliance and EHR Ingest Scans. MDx recommends scheduling these resource-heavy pipelines during off-peak hours (2:00 AM - 5:00 AM EST) and routing them through Snowflake Cortex's local relational semantic cache to limit cloud database roundtrips.",
+      "followUps": [
+        {
+          "text": "Schedule off-peak HIPAA scan",
+          "action": "schedule_scan"
+        },
+        {
+          "text": "Review Snowflake Cortex limits",
+          "action": "snowflake_limits"
+        },
+        {
+          "text": "Examine Tasks tab",
+          "action": "go_to_tasks"
+        }
+      ],
+      "voicePrompts": [
+        {
+          "label": "🛡️ HIPAA Compliance",
+          "query": "Explain HIPAA compliance status and security rules"
+        },
+        {
+          "label": "📊 How Score works",
+          "query": "How is the AI Readiness score calculated?"
+        },
+        {
+          "label": "💰 FinOps Simulation",
+          "query": "Simulate FinOps cost savings for multi-cloud"
+        }
+      ]
+    },
+    {
+      "id": "watsonx_compliance",
+      "keywords": [
+        "watsonx",
+        "compliance",
+        "sovereignty"
+      ],
+      "response": "For strict regulated sovereignty, IBM WatsonX guarantees full on-premise and single-tenant private cloud isolation. When dealing with highly sensitive patient healthcare data or BFSI transactions, MDx blocks generic open-endpoint API routing and maps models securely to your WatsonX dedicated cluster to prevent potential cross-border metadata leaks.",
+      "followUps": [
+        {
+          "text": "Enable WatsonX strict guardrails",
+          "action": "enable_watsonx_guard"
+        },
+        {
+          "text": "View Azure OpenAI security",
+          "action": "azure_security"
+        },
+        {
+          "text": "Read compliance matrix",
+          "action": "go_to_insights"
+        }
+      ],
+      "voicePrompts": [
+        {
+          "label": "🛡️ Show Governance Gaps",
+          "query": "Show my governance gaps"
+        },
+        {
+          "label": "⚠️ High-Risk Gaps",
+          "query": "Identify high-risk governance and operational gaps"
+        },
+        {
+          "label": "⚙️ WatsonX Compliance",
+          "query": "Explain WatsonX regulatory compliance vaults"
+        }
+      ]
+    },
+    {
+      "id": "rate_limits",
+      "keywords": [
+        "limit",
+        "tpm",
+        "rpm",
+        "optimize"
+      ],
+      "response": "Your primary OpenAI TPM is currently running at 84% capacity. To avoid rate limits (429 HTTP errors), MDx has automatically provisioned a smart, redundant fallback path. High-priority traffic will seamlessly route to your Azure OpenAI private endpoints which maintain an isolated, unshared quota pool.",
+      "followUps": [
+        {
+          "text": "Adjust fallback priority thresholds",
+          "action": "adjust_thresholds"
+        },
+        {
+          "text": "View Azure OpenAI token limits",
+          "action": "azure_limits"
+        },
+        {
+          "text": "Reset Observatory metrics",
+          "action": "reset_observatory"
+        }
+      ],
+      "voicePrompts": [
+        {
+          "label": "🚀 Explain Roadmap",
+          "query": "Explain the 90-Day C-Suite Roadmap"
+        },
+        {
+          "label": "💼 Show Blended Rates",
+          "query": "What are the blended labor rates for the strategic catalog?"
+        },
+        {
+          "label": "💰 FinOps Simulation",
+          "query": "Simulate FinOps cost savings for multi-cloud"
+        }
+      ]
+    },
+    {
+      "id": "ai_readiness_score",
+      "keywords": [
+        "readiness",
+        "score",
+        "arrived",
+        "why",
+        "how",
+        "32/100",
+        "68/100",
+        "42/100",
+        "calculation",
+        "calculated",
+        "computed",
+        "result",
+        "tier",
+        "gaps"
+      ],
+      "response": "Your AI Readiness Assessment places your enterprise in the {maturityTier} tier (Score: {totalScore}/100). MDx recommends prioritizing your governance gaps by establishing a steering committee, followed by a semantic silo audit. This will unlock NIST-compliant production-grade deployments.",
+      "followUps": [
+        {
+          "text": "View adoption risks",
+          "action": "risks"
+        },
+        {
+          "text": "Establish steering committee",
+          "action": "steering"
+        }
+      ],
+      "voicePrompts": [
+        {
+          "label": "📝 Generate Executive Summary",
+          "query": "Generate Executive Summary"
+        },
+        {
+          "label": "🛡️ Show Governance Gaps",
+          "query": "Show Governance Gaps"
+        },
+        {
+          "label": "🚀 Create 90-Day Roadmap",
+          "query": "Create 90-Day Roadmap"
+        },
+        {
+          "label": "📊 Benchmark Against Industry",
+          "query": "Benchmark Against Industry"
+        },
+        {
+          "label": "📥 Export Assessment",
+          "query": "Export Assessment"
+        }
+      ]
+    }
+  ],
+  "voiceDefault": {
+    "response": "Understood. Analyzing \"{text}\". The MDx multi-cloud orchestrator shows fully operational health status for OpenAI, Anthropic, Gemini, Azure OpenAI, WatsonX, and Snowflake Cortex. Average multi-agent response latency stands at a highly optimized 320ms.",
+    "followUps": [
+      {
+        "text": "Show all LLM Latencies",
+        "action": "latencies"
+      },
+      {
+        "text": "Optimizing recommendations",
+        "action": "cost"
+      }
+    ],
+    "voicePrompts": [
+      {
+        "label": "⚡ Show Latencies",
+        "query": "Show all LLM Latencies"
+      },
+      {
+        "label": "💰 Optimize Costs",
+        "query": "Analyze LLM cost efficiency and monthly spend"
+      }
+    ]
+  }
+}

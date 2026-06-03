@@ -1,0 +1,1560 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CertaintyAI — AI Readiness Assessment Report</title>
+  <style>
+    :root {
+      --bg: #0B1220;
+      --panel: #0F172A;
+      --panel-2: #111c34;
+      --border: #1f2a44;
+      --text: #E2E8F0;
+      --text-heading: #F8FAFC;
+      --muted: #94a3b8;
+      --subtle: #64748b;
+      --accent: #22D3EE;
+      --accent-2: #A78BFA;
+      --rose: #F472B6;
+      --amber: #FBBF24;
+      --emerald: #34D399;
+    }
+
+    /* Light Theme (McKinzey style printable layout) */
+    body.theme-light {
+      --bg: #FFFFFF;
+      --panel: #FFFFFF;
+      --panel-2: #F8FAFC;
+      --border: #E2E8F0;
+      --text: #1E293B;
+      --text-heading: #0F172A;
+      --muted: #475569;
+      --subtle: #64748b;
+      --accent: #0891B2;
+      --accent-2: #7C3AED;
+      --rose: #E11D48;
+      --amber: #D97706;
+      --emerald: #059669;
+      background: #FFFFFF !important;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      font-size: 13.5px;
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+      transition: background 0.3s ease, color 0.3s ease;
+    }
+
+    .page { max-width: 1180px; margin: 0 auto; padding: 6px 16px; }
+    @media (max-width: 768px) { .page { padding: 6px 8px; } }
+
+    h1, h2, h3, h4 { color: var(--text-heading); letter-spacing: -0.01em; margin: 0; }
+    h1 { font-size: 26px; font-weight: 700; line-height: 1.15; }
+    h2 { font-size: 17px; font-weight: 600; }
+    h3 { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.10em; color: var(--muted); }
+    h4 { font-size: 13px; font-weight: 600; }
+    p { margin: 0 0 10px 0; text-align: justify; text-justify: inter-word; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+
+    /* ─── Compact centered hero (now includes Exec Summary) ───── */
+    .cover{
+      text-align:center;
+      background:linear-gradient(135deg,rgba(34,211,238,0.10),rgba(167,139,250,0.08));
+      border:1px solid var(--border);
+      border-radius:14px;
+      padding:12px 18px 10px;
+      margin-bottom:10px;
+    }
+    .eyebrow{font-size:10px;text-transform:uppercase;letter-spacing:0.22em;color:var(--accent);margin-bottom:6px;}
+    .cover h1{margin-bottom:4px;font-size:24px;}
+    .cover-meta{color:var(--muted);font-size:12px;margin-bottom:14px;}
+    .cover-meta strong{color:var(--text);}
+
+    .hero-row{
+      display:grid;grid-template-columns:110px 1.5fr 1.2fr;gap:24px;
+      align-items:center;text-align:left;margin-top:6px;
+    }
+    @media(max-width:992px){.hero-row{grid-template-columns:110px 1fr;}}
+    @media(max-width:768px){.hero-row{grid-template-columns:1fr;text-align:center;justify-items:center;}}
+    @media(max-width:768px){.hero-row{grid-template-columns:1fr;text-align:center;justify-items:center;}}
+
+    .score-dial-center{
+      width:110px;height:110px;border-radius:50%;
+      display:flex;align-items:center;justify-content:center;flex-direction:column;
+      background:radial-gradient(closest-side,rgba(34,211,238,0.18),rgba(34,211,238,0.02));
+      border:2px solid var(--accent);flex-shrink:0;
+    }
+    .score-dial-center .num{font-size:38px;font-weight:700;color:var(--text-heading);line-height:1;font-variant-numeric:tabular-nums;}
+    .score-dial-center .max{font-size:10px;color:var(--muted);margin-top:2px;letter-spacing:0.14em;}
+
+    .tier-name-center{font-size:17px;font-weight:700;color:var(--text-heading);margin-bottom:2px;}
+    .tier-tagline-center{color:var(--muted);font-style:italic;font-size:12px;margin-bottom:8px;}
+    .industry-row{color:var(--text);font-size:12px;margin-bottom:10px;}
+    .industry-row strong{color:var(--muted);font-weight:500;margin-right:6px;}
+    .exec-summary-in-hero{color:var(--text);font-size:13px;line-height:1.55;text-align:justify;text-justify:inter-word;}
+
+    /* ─── Section ─────────────────────────────────────────────── */
+    .section{margin:10px 0;padding-top:10px;border-top:1px solid var(--border);}
+    .section>h2{margin-bottom:2px;}
+    .section .sub{color:var(--muted);font-size:11.5px;margin-bottom:6px;}
+
+    /* ─── Executive Briefing (2-col: prose | stat tiles) ──── */
+    .briefing{
+      display:grid;grid-template-columns:1.4fr 1fr;gap:18px;
+      align-items:stretch;margin-top:10px;
+    }
+    @media(max-width:768px){.briefing{grid-template-columns:1fr;}}
+    .briefing-prose{
+      background:var(--panel);border:1px solid var(--border);border-left:3px solid var(--accent-2);
+      border-radius:10px;padding:14px 16px;font-size:13.5px;line-height:1.6;text-align:justify;text-justify:inter-word;
+    }
+    .briefing-prose .lbl{font-size:10px;text-transform:uppercase;letter-spacing:0.14em;color:var(--accent-2);margin-bottom:6px;}
+    .briefing-stats{
+      display:grid;grid-template-columns:repeat(2,1fr);gap:8px;
+    }
+    .stat-tile{
+      background:var(--panel-2);border:1px solid var(--border);border-radius:10px;
+      padding:10px 12px;display:flex;flex-direction:column;justify-content:center;
+    }
+    .stat-tile .lbl{font-size:10px;text-transform:uppercase;letter-spacing:0.14em;color:var(--muted);margin-bottom:4px;}
+    .stat-tile .val{font-size:22px;font-weight:700;color:var(--text-heading);font-variant-numeric:tabular-nums;}
+    .stat-tile .unit{font-size:11px;color:var(--muted);margin-left:2px;}
+    /* Money KPI accent */
+    .stat-tile.money{border-color:rgba(52,211,153,0.35);background:linear-gradient(135deg,rgba(52,211,153,0.08),var(--panel-2));}
+    .stat-tile.money .val{color:var(--emerald);}
+
+    /* ─── Compact frameworks grid (5-col on wide, 4 on print) ──── */
+    .fw-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:7px 12px;margin-top:8px;}
+    @media(max-width:1024px){.fw-grid{grid-template-columns:repeat(4,1fr);}}
+    @media(max-width:640px){.fw-grid{grid-template-columns:repeat(2,1fr);}}
+    .fw-item{
+      display:flex;align-items:center;gap:7px;
+      background:var(--panel);border:1px solid var(--border);border-radius:7px;
+      padding:5px 9px;font-size:11.5px;
+    }
+    .fw-item .check{
+      flex-shrink:0;width:15px;height:15px;border-radius:50%;
+      background:var(--emerald);color:#052e1c;font-weight:700;
+      display:flex;align-items:center;justify-content:center;font-size:9px;
+    }
+    .fw-item a{color:var(--text);}
+    .fw-item a:hover{color:var(--accent);}
+
+    /* ─── Strategic context (You Told Us) ─────────────────────── */
+    .ctx-row{
+      display:grid;grid-template-columns:110px 1fr;gap:12px;
+      padding:9px 12px;background:var(--panel);border:1px solid var(--border);
+      border-radius:9px;margin-top:6px;
+    }
+    .ctx-row .ctx-label{
+      font-size:10px;text-transform:uppercase;letter-spacing:0.12em;
+      color:var(--muted);align-self:start;padding-top:3px;
+    }
+    .chip-row{display:flex;flex-wrap:wrap;gap:5px;}
+    .chip{
+      background:rgba(34,211,238,0.08);border:1px solid rgba(34,211,238,0.25);
+      color:var(--text);font-size:11px;padding:2px 8px;border-radius:999px;
+    }
+    .chip.warn{background:rgba(244,114,182,0.08);border-color:rgba(244,114,182,0.25);}
+
+    .callout{
+      margin-top:10px;padding:9px 12px;
+      background:rgba(167,139,250,0.08);
+      border-left:3px solid var(--accent-2);
+      border-radius:6px;color:var(--text);font-size:12px;text-align:justify;text-justify:inter-word;
+    }
+    .callout strong{color:var(--accent-2);}
+
+    /* ─── NIST RMF + Findings ─────────────────────────────────── */
+    .nist-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px;}
+    .nist-card{background:var(--panel-2);border:1px solid var(--border);border-radius:10px;padding:11px 14px;}
+    .nist-card .lbl{font-size:10px;text-transform:uppercase;letter-spacing:0.14em;color:var(--muted);}
+    .nist-card .val{font-size:24px;font-weight:700;color:var(--text-heading);font-variant-numeric:tabular-nums;margin-top:2px;}
+    .nist-card .bar{height:5px;background:var(--border);border-radius:999px;overflow:hidden;margin-top:6px;}
+    .nist-card .bar .fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-2));}
+
+    .findings-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:8px;}
+    .findings-card{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px 14px;}
+    .findings-card.strengths h3{color:var(--emerald);}
+    .findings-card.gaps h3{color:var(--rose);}
+    .findings-list{margin:6px 0 0;padding-left:16px;}
+    .findings-list li{margin-bottom:4px;color:var(--text);font-size:12px;}
+
+    /* ─── Explainability callout + deeper preview ─────────────── */
+    .explain-callout{
+      margin-top:8px;padding:11px 14px;
+      background:rgba(34,211,238,0.06);
+      border-left:3px solid var(--accent);
+      border-radius:6px;color:var(--text);font-size:13px;
+    }
+    .explain-callout .row{display:grid;grid-template-columns:110px 1fr;gap:10px;margin-bottom:4px;}
+    .explain-callout .row .lbl{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:0.12em;padding-top:1px;}
+
+    .evidence{margin-top:10px;background:var(--panel-2);border:1px solid var(--border);border-radius:10px;padding:14px;}
+    .evidence-title{font-size:11px;text-transform:uppercase;letter-spacing:0.12em;color:var(--accent-2);margin-bottom:8px;}
+    .evidence .query{font-family:'JetBrains Mono',ui-monospace,Menlo,monospace;background:rgba(34,211,238,0.06);border:1px dashed rgba(34,211,238,0.3);border-radius:6px;padding:8px 10px;color:var(--text-heading);font-size:12px;}
+    .evidence .trail{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:10px;}
+    @media(max-width:640px){.evidence .trail{grid-template-columns:1fr;}}
+    .trail-col h4{font-size:10px;text-transform:uppercase;letter-spacing:0.12em;color:var(--accent-2);margin-bottom:4px;}
+    .trail-col ul{margin:0;padding-left:14px;}
+    .trail-col li{font-size:11px;color:var(--text);margin-bottom:2px;}
+    .evidence .confidence{margin-top:10px;display:flex;gap:10px;align-items:center;font-size:11px;color:var(--muted);}
+    .conf-pill{background:var(--emerald);color:#052e1c;font-weight:700;padding:2px 8px;border-radius:999px;font-size:10px;font-variant-numeric:tabular-nums;}
+
+    /* ─── Peer benchmark ──────────────────────────────────────── */
+    .benchmark{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:14px;margin-top:8px;}
+    .benchmark-bar{height:12px;border-radius:999px;position:relative;background:linear-gradient(90deg,rgba(244,114,182,0.3),rgba(251,191,36,0.3),rgba(52,211,153,0.3));margin:14px 0 6px;}
+    .benchmark-bar .marker{position:absolute;top:-4px;width:4px;height:20px;border-radius:2px;}
+    .benchmark-bar .marker.you{background:var(--accent);}
+    .benchmark-bar .marker.median{background:var(--amber);}
+    .benchmark-bar .marker.top{background:var(--emerald);}
+    .benchmark-bar .label{position:absolute;top:22px;font-size:10px;color:var(--muted);transform:translateX(-50%);white-space:nowrap;}
+    .benchmark-bar .label .num{color:var(--text);font-weight:600;}
+    .bench-meta{display:flex;justify-content:space-between;font-size:10px;color:var(--subtle);margin-top:30px;}
+
+    /* ─── Value roadmap ───────────────────────────────────────── */
+    .roadmap{margin-top:8px;display:grid;gap:7px;}
+    .phase{display:grid;grid-template-columns:80px 1fr;gap:14px;align-items:center;background:var(--panel);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:8px;padding:6px 10px;}
+    .phase .week{color:var(--accent);font-size:10px;text-transform:uppercase;letter-spacing:0.14em;font-weight:600;}
+    .phase .title{color:var(--text-heading);font-weight:600;font-size:13px;}
+    .phase .proof{color:var(--muted);font-size:11.5px;margin-top:2px;}
+    .roadmap-total{margin-top:6px;padding:9px 14px;background:linear-gradient(135deg,rgba(52,211,153,0.08),rgba(34,211,238,0.04));border:1px solid rgba(52,211,153,0.3);border-radius:8px;display:flex;justify-content:space-between;align-items:baseline;}
+    .roadmap-total .lbl{color:var(--emerald);font-size:10px;text-transform:uppercase;letter-spacing:0.14em;}
+    .roadmap-total .big{font-size:22px;font-weight:700;color:var(--text-heading);font-variant-numeric:tabular-nums;}
+
+    /* ─── Decisions on Your Desk (3-column) ───────────────────── */
+    .decisions{margin-top:8px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+    @media(max-width:768px){.decisions{grid-template-columns:1fr;}}
+    .decision{background:var(--panel);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:8px;padding:11px 13px;}
+    .decision.highlight{border-left-color:var(--emerald);background:linear-gradient(135deg,rgba(52,211,153,0.08),var(--panel));}
+    .decision .num{color:var(--accent);font-size:10px;text-transform:uppercase;letter-spacing:0.14em;font-weight:600;}
+    .decision .num .badge{color:var(--emerald);margin-left:6px;font-size:9px;}
+    .decision .title{color:var(--text-heading);font-weight:600;font-size:13px;margin-top:3px;line-height:1.3;}
+    .decision-meta{margin-top:9px;font-size:11px;line-height:1.75;}
+    .decision-meta .k{color:var(--muted);text-transform:uppercase;letter-spacing:0.10em;font-size:9.5px;margin-right:4px;}
+    .decision-meta .v{color:var(--text);}
+    .decision-meta .v.money{color:var(--emerald);font-weight:700;font-variant-numeric:tabular-nums;}
+    .decision .risk{color:var(--rose);margin-top:8px;padding-top:7px;border-top:1px solid var(--border);font-size:11px;line-height:1.45;}
+
+    /* ─── Recommendations: 2-column on wide screens ───────────── */
+    .recs{margin-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+    @media(max-width:768px){.recs{grid-template-columns:1fr;}}
+    .rec{background:var(--panel);border:1px solid var(--border);border-left:3px solid var(--accent-2);border-radius:8px;padding:10px 13px;}
+    .rec .week{color:var(--accent-2);font-size:10px;text-transform:uppercase;letter-spacing:0.14em;font-weight:600;}
+    .rec .action{color:var(--text-heading);font-weight:600;font-size:13px;margin-top:2px;}
+    .rec .rationale{color:var(--muted);font-size:11.5px;margin-top:3px;}
+
+    /* ─── Methodology divider (visual anchor between exec & proof) ── */
+    .methodology-anchor{margin:34px 0 0;padding:14px 18px;background:linear-gradient(135deg,rgba(167,139,250,0.06),rgba(34,211,238,0.04));border:1px dashed var(--border);border-radius:10px;text-align:center;}
+    .methodology-anchor .lbl{font-size:10px;text-transform:uppercase;letter-spacing:0.2em;color:var(--accent-2);font-weight:700;}
+    .methodology-anchor .sub{color:var(--muted);font-size:12px;margin-top:4px;}
+
+    /* ─── CTAs ────────────────────────────────────────────────── */
+    .cta-row{margin-top:22px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+    .cta{padding:9px 16px;border-radius:999px;font-size:13px;font-weight:600;cursor:pointer;border:1px solid transparent;text-decoration:none;display:inline-flex;align-items:center;gap:6px;}
+    .cta.primary{background:var(--accent);color:#052E36;}
+    .cta.success{background:var(--emerald);color:#052e1c;}
+    .cta.ghost{background:transparent;border-color:var(--border);color:var(--text);}
+
+    .colophon{margin-top:18px;color:var(--subtle);font-size:10px;text-align:center;}
+
+    @media print{
+      :root{--bg:#fff;--panel:#fff;--panel-2:#f6f7fb;--border:#d8dde6;--text:#111827;--muted:#4b5563;--subtle:#6b7280;--accent:#0e7490;--accent-2:#6d28d9;--rose:#be185d;--emerald:#047857;}
+      body{background:#fff;color:var(--text);font-size:10pt;}
+      .page{max-width:none;padding:12mm 10mm;}
+      h1{font-size:20pt;}h2{font-size:12pt;}
+      .cover,.benchmark,.evidence,.nist-card,.briefing-prose,.stat-tile{background:#f6f7fb;border-color:var(--border);}
+      .fw-item,.findings-card,.rec,.phase,.ctx-row,.decision{background:#fff;}
+      .no-print{display:none !important;}
+      a{color:inherit;text-decoration:none;}
+      .fw-grid{grid-template-columns:repeat(4,1fr);}
+      .recs{grid-template-columns:1fr;}
+      .decisions{grid-template-columns:1fr;}
+    }
+
+    /* ─── CFO Dashboard styles ─── */
+    .cfo-grid-top {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-top: 10px;
+    }
+    @media(max-width:768px){.cfo-grid-top { grid-template-columns: repeat(2, 1fr); }}
+    
+    .cfo-tile {
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      overflow: hidden;
+      min-height: 125px;
+    }
+    .cfo-tile.health-atrisk { border-left: 4px solid var(--rose); }
+    .cfo-tile.health-warning { border-left: 4px solid var(--amber); }
+    .cfo-tile.health-good { border-left: 4px solid var(--emerald); }
+    .cfo-tile.accent-saving { border-left: 4px solid var(--accent); }
+    .cfo-tile.accent-reduction { border-left: 4px solid var(--emerald); }
+    .cfo-tile.accent-risk { border-left: 4px solid var(--rose); }
+
+    .cfo-tile .lbl {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--muted);
+      margin-bottom: 6px;
+      font-weight: 700;
+    }
+    .cfo-tile .val {
+      font-size: 26px;
+      font-weight: 800;
+      color: var(--text-heading);
+      line-height: 1.1;
+    }
+    .cfo-tile .sub-info {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+
+    .cfo-grid-bottom {
+      display: grid;
+      grid-template-columns: 1fr 1.2fr;
+      gap: 18px;
+      margin-top: 14px;
+    }
+    @media(max-width:1024px){.cfo-grid-bottom { grid-template-columns: 1fr; }}
+
+    .cfo-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+    }
+    .cfo-card h3 {
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-heading);
+      margin: 0 0 12px 0;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+    }
+
+    /* CSS Donut Chart */
+    .spend-donut-container {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      justify-content: center;
+      padding: 10px 0;
+    }
+    .spend-donut {
+      width: 110px;
+      height: 110px;
+      border-radius: 50%;
+      background: conic-gradient(
+        var(--accent) 0% 65%,
+        var(--accent-2) 65% 80%,
+        var(--amber) 80% 88%,
+        var(--rose) 88% 95%,
+        var(--emerald) 95% 100%
+      );
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      flex-shrink: 0;
+    }
+    .spend-donut::after {
+      content: "";
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: var(--panel);
+      position: absolute;
+    }
+    .spend-donut-inner {
+      position: absolute;
+      z-index: 10;
+      text-align: center;
+    }
+    .spend-donut-inner .total-label {
+      font-size: 8px;
+      text-transform: uppercase;
+      color: var(--muted);
+      letter-spacing: 0.1em;
+    }
+    .spend-donut-inner .total-val {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-heading);
+    }
+
+    .spend-legend {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex-grow: 1;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11.5px;
+    }
+    .legend-label-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .legend-color {
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+    }
+
+    /* ROI Timeline styles */
+    .roi-timeline {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      padding: 10px 0;
+    }
+    .timeline-track {
+      display: flex;
+      justify-content: space-between;
+      position: relative;
+      padding-top: 14px;
+    }
+    .timeline-track::before {
+      content: "";
+      position: absolute;
+      top: 22px;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--border);
+      z-index: 1;
+    }
+    .timeline-step {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      z-index: 2;
+      width: 18%;
+    }
+    .timeline-node {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--panel-2);
+      border: 3px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s;
+    }
+    .timeline-step.completed .timeline-node {
+      background: var(--emerald);
+      border-color: var(--emerald);
+    }
+    .timeline-step.active .timeline-node {
+      background: var(--panel-2);
+      border-color: var(--accent);
+      box-shadow: 0 0 8px var(--accent);
+    }
+    .timeline-step.milestone .timeline-node {
+      background: var(--accent-2);
+      border-color: var(--accent-2);
+      box-shadow: 0 0 10px var(--accent-2);
+      border-radius: 4px;
+    }
+    .timeline-step .step-mo {
+      font-size: 9px;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+    .timeline-step .step-lbl {
+      font-size: 10.5px;
+      font-weight: 600;
+      color: var(--text-heading);
+      margin-top: 2px;
+      line-height: 1.2;
+    }
+    
+    /* Collapsible Appendix styles */
+    .tech-appendix-container {
+      margin-top: 24px;
+      border: 1px dashed var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      background: rgba(255, 255, 255, 0.01);
+    }
+    .tech-appendix-summary {
+      padding: 16px;
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--text-heading);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      user-select: none;
+      background: var(--panel-2);
+    }
+    .tech-appendix-summary::after {
+      content: "➕ Expand Technical Appendix";
+      font-size: 11px;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      border: 1px solid rgba(34, 211, 238, 0.25);
+      padding: 4px 10px;
+      border-radius: 6px;
+    }
+    details[open] .tech-appendix-summary::after {
+      content: "➖ Collapse Technical Appendix";
+      color: var(--muted);
+      border-color: var(--border);
+    }
+    .tech-appendix-content {
+      padding: 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    /* Collapsible Section Accordions */
+    details.report-section {
+      margin-top: 10px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      background: var(--panel);
+      transition: border-color 0.2s;
+    }
+    details.report-section:hover {
+      border-color: rgba(34, 211, 238, 0.35);
+    }
+    details.report-section summary.section-header {
+      padding: 10px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-heading);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      user-select: none;
+      background: var(--panel-2);
+      list-style: none; /* Hide default arrow */
+    }
+    details.report-section summary.section-header::-webkit-details-marker {
+      display: none;
+    }
+    details.report-section summary.section-header::after {
+      content: "➕ Expand Section";
+      font-size: 9px;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      border: 1px solid rgba(34, 211, 238, 0.25);
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-weight: 700;
+    }
+    details.report-section[open] summary.section-header::after {
+      content: "➖ Collapse Section";
+      color: var(--muted);
+      border-color: var(--border);
+    }
+    .section-content {
+      padding: 12px 14px;
+      border-top: 1px solid var(--border);
+    }
+
+    @media print {
+      details.report-section {
+        display: block !important;
+        border: 1px solid var(--border) !important;
+        background: #fff !important;
+        margin-top: 20px !important;
+        page-break-inside: avoid;
+      }
+      details.report-section summary.section-header {
+        display: flex !important;
+        pointer-events: none !important;
+        background: #f6f7fb !important;
+        border-bottom: 1px solid var(--border) !important;
+        padding: 8pt 12pt !important;
+      }
+      details.report-section summary.section-header::after {
+        display: none !important;
+      }
+      .section-content {
+        display: block !important;
+        padding: 10pt !important;
+      }
+      
+      details.tech-appendix-container {
+        display: block !important;
+        border: 1px solid var(--border) !important;
+        background: #f6f7fb !important;
+        margin-top: 20px !important;
+        page-break-inside: avoid;
+      }
+      details.tech-appendix-container summary {
+        display: flex !important;
+        pointer-events: none !important;
+        background: #f6f7fb !important;
+        border-bottom: 1px solid var(--border) !important;
+        padding: 8pt 12pt !important;
+      }
+      details.tech-appendix-container summary::after {
+        display: none !important;
+      }
+      .tech-appendix-content {
+        display: block !important;
+        padding: 10pt !important;
+      }
+      details.report-section:not([open]) > *:not(summary),
+      details.tech-appendix-container:not([open]) > *:not(summary) {
+        display: block !important;
+      }
+    }
+  </style>
+
+
+</head>
+<body>
+  <div class="page">
+
+    <!-- ═══════════════════════════════════════════════════════════
+         C-SUITE ARC — top fold answers what's at stake, who you are,
+         where you stand, what you can win, what to do this week.
+         Methodology + frameworks + evidence + deeper analysis sit
+         below the fold as the auditor's section.
+         ═══════════════════════════════════════════════════════════ -->
+
+    <!-- ─── 1. Hero (cover + score + exec summary) ─── -->
+    <section class="cover">
+      <p class="eyebrow">CertaintyAI · AI Readiness Assessment Report</p>
+      <h1>For {{ company.company_name | default('Your Organization') }}</h1>
+      <p class="cover-meta">
+        Prepared for <strong>{{ company.contact_name | default('') }}{% if answers.role %} ({{ answers.role | replace('_', '/') | upper }}){% endif %}</strong>
+        {% if company.email %} · <strong>{{ company.email }}</strong>{% endif %}
+        {% if company.sector_type == 'private' %}
+          · Company: <strong>{{ company.company_name }}</strong>
+        {% else %}
+          · Agency: <strong>{{ company.company_name }}</strong>
+        {% endif %}
+        {% if company.department_name %} · Department: <strong>{{ company.department_name }}</strong>{% endif %}
+        · Generated <strong>{{ generated_at }}</strong>
+      </p>
+
+      <div class="hero-row">
+        <div class="score-dial-center">
+          <div class="num">{{ scores.total_score }}</div>
+          <div class="max">/ 100</div>
+        </div>
+        <div>
+          <div class="tier-name-center">{{ scores.maturity_tier }}</div>
+          <div class="tier-tagline-center">"{{ scores.maturity_tagline }}"</div>
+          {% if answers.domains or answers.domains_other %}
+          <div class="industry-row">
+            <strong>Industry:</strong>
+            {{ answers.domains | join(', ') }}{% if answers.domains_other %}, {{ answers.domains_other }}{% endif %}
+          </div>
+          {% endif %}
+          {% if narrative.executive_summary %}
+          <p class="exec-summary-in-hero">{{ narrative.executive_summary | md_bold }}</p>
+          {% endif %}
+        </div>
+        <!-- CFO Financial Impact Snapshot (Column 3) -->
+        <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; width: 100%;">
+          <h4 style="font-size: 8.5px; text-transform: uppercase; color: var(--accent); letter-spacing: 0.12em; margin-bottom: 6px; font-weight: 700;">💰 Financial Impact Snapshot</h4>
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.02); padding-bottom: 4px;">
+              <span style="font-size: 10px; color: var(--muted); font-weight: 500;">Current AI Spend</span>
+              <strong style="font-size: 12px; color: var(--text-heading);">${{ scores.finops.monthly_spend | int }}/mo</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.02); padding-bottom: 4px;">
+              <span style="font-size: 10px; color: var(--muted); font-weight: 500;">Potential Annual Savings (Target)</span>
+              <strong style="font-size: 12px; color: var(--emerald);">${{ ((scores.finops.monthly_spend - (scores.finops.monthly_spend * 0.375)) * 12) | int }}/yr</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.02); padding-bottom: 4px;">
+              <span style="font-size: 10px; color: var(--muted); font-weight: 500;">ROI Opportunity</span>
+              <strong style="font-size: 11px; color: var(--accent-2); text-transform: uppercase;">HIGH</strong>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.02); padding-bottom: 4px;">
+              <span style="font-size: 10px; color: var(--muted); font-weight: 500;">Payback Period (Illustrative)</span>
+              <strong style="font-size: 12px; color: var(--amber);">3.2 Months</strong>
+            </div>
+            <div style="font-size: 7.5px; line-height: 1.25; color: var(--subtle); margin-top: 2px;">
+              * Figures are illustrative mid-market benchmarks, not calculated from the client's environment.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+<!-- ─── 2. Dashboard ─── -->
+    <section class="section">
+      <h2>📊 Dashboard</h2>
+      <p class="sub">Executive financial summary, investment health, ROI timeline, and model spend optimization diagnostics.</p>
+      
+      <!-- Top Row: 4 key indicators -->
+      <div class="cfo-grid-top">
+        <!-- Health Score Widget -->
+        {% if scores.total_score >= 80 %}
+        <div class="cfo-tile health-good">
+          <div>
+            <div class="lbl">AI Investment Health</div>
+            <div class="val" style="color: var(--emerald);">{{ scores.total_score }}<span style="font-size: 12px; color: var(--muted); font-weight: 400;">/100</span></div>
+            <div style="font-size: 9px; font-weight: 700; color: var(--emerald); text-transform: uppercase; margin-top: 2px;">🟢 Healthy</div>
+          </div>
+        {% elif scores.total_score >= 50 %}
+        <div class="cfo-tile health-warning">
+          <div>
+            <div class="lbl">AI Investment Health</div>
+            <div class="val" style="color: var(--amber);">{{ scores.total_score }}<span style="font-size: 12px; color: var(--muted); font-weight: 400;">/100</span></div>
+            <div style="font-size: 9px; font-weight: 700; color: var(--amber); text-transform: uppercase; margin-top: 2px;">🟡 Needs Attention</div>
+          </div>
+        {% else %}
+        <div class="cfo-tile health-atrisk">
+          <div>
+            <div class="lbl">AI Investment Health</div>
+            <div class="val" style="color: var(--rose);">{{ scores.total_score }}<span style="font-size: 12px; color: var(--muted); font-weight: 400;">/100</span></div>
+            <div style="font-size: 9px; font-weight: 700; color: var(--rose); text-transform: uppercase; margin-top: 2px;">🔴 At Risk</div>
+          </div>
+        {% endif %}
+          <div class="sub-info" style="font-size: 10px; line-height: 1.35;">
+            • Overspending on premium models<br/>
+            • Missing governance controls<br/>
+            • No ROI measurement
+          </div>
+        </div>
+
+        <!-- Annual Savings -->
+        <div class="cfo-tile accent-saving">
+          <div>
+            <div class="lbl">Annual Savings (Target)</div>
+            <div class="val" style="color: var(--accent);">${{ ((scores.finops.monthly_spend - (scores.finops.monthly_spend * 0.375)) * 12) | int }}</div>
+            <div style="font-size: 9px; font-weight: 600; color: var(--accent); margin-top: 2px;">On ${{ scores.finops.monthly_spend | int }}/mo spend</div>
+          </div>
+          <div class="sub-info">62.5% monthly reduction via smart model routing (Target).</div>
+        </div>
+
+        <!-- Cost Reduction -->
+        <div class="cfo-tile accent-reduction">
+          <div>
+            <div class="lbl">Target Cost Reduction</div>
+            <div class="val" style="color: var(--emerald);">62.5%</div>
+            <div style="font-size: 9px; font-weight: 600; color: var(--emerald); margin-top: 2px;">Illustrative benchmark</div>
+          </div>
+          <div class="sub-info">Typical savings migrating 95% of basic tasks to standard configs.*</div>
+        </div>
+
+        <!-- AI Risk Exposure -->
+        <div class="cfo-tile accent-risk">
+          <div>
+            <div class="lbl">AI Risk Exposure</div>
+            <div class="val" style="color: var(--rose);">HIGH</div>
+            <div style="font-size: 9px; font-weight: 700; color: var(--rose); text-transform: uppercase; margin-top: 2px;">Action Required</div>
+          </div>
+          <div class="sub-info">Ad-hoc oversight workflows expose the firm to compliance gaps.</div>
+        </div>
+      </div>
+      <div style="font-size: 8px; color: var(--subtle); margin-top: 6px; padding-left: 4px;">
+        * AI Cost and Payback figures are illustrative mid-market target benchmarks, not computed from your live workloads.
+      </div>
+
+      <!-- Collapsible Financial Details -->
+      <details class="report-section" style="margin-top: 14px;" open>
+        <summary class="section-header" style="background: var(--panel-2); font-weight: 700; color: var(--text-heading); cursor: pointer;">
+          📈 Expand Financial Opportunity & ROI Details
+        </summary>
+        <div class="section-content" style="padding: 0;">
+
+          <!-- Middle Row: Financial Opportunity Summary Box -->
+          <div class="cfo-card" style="margin-top: 14px;">
+            <h3 style="color: var(--accent); font-weight: 700;">💎 Financial Opportunity Summary</h3>
+        <table style="width: 100%; border-collapse: collapse; font-size: 12.5px; text-align: left; margin-top: 8px;">
+          <thead>
+            <tr style="border-bottom: 2px solid var(--border); color: var(--muted); font-size: 10px; text-transform: uppercase; font-weight: 700;">
+              <th style="padding: 6px 10px;">Strategic Metric</th>
+              <th style="padding: 6px 10px; text-align: right;">Target Business Value</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom: 1px solid var(--border); background: rgba(255,255,255,0.01);">
+              <td style="padding: 10px; font-weight: 600; color: var(--text-heading);">Annual Savings</td>
+              <td style="padding: 10px; text-align: right; color: var(--accent); font-weight: 800; font-size: 14.5px;">${{ ((scores.finops.monthly_spend - (scores.finops.monthly_spend * 0.375)) * 12) | int }}</td>
+            </tr>
+            <tr style="border-bottom: 1px solid var(--border);">
+              <td style="padding: 10px; font-weight: 600; color: var(--text-heading);">Cost Reduction</td>
+              <td style="padding: 10px; text-align: right; color: var(--emerald); font-weight: 700;">62.5%</td>
+            </tr>
+            <tr style="border-bottom: 1px solid var(--border); background: rgba(255,255,255,0.01);">
+              <td style="padding: 10px; font-weight: 600; color: var(--text-heading);">Audit Cost Reduction</td>
+              <td style="padding: 10px; text-align: right; color: var(--accent-2); font-weight: 700;">Up to 60%</td>
+            </tr>
+            <tr style="border-bottom: 1px solid var(--border);">
+              <td style="padding: 10px; font-weight: 600; color: var(--text-heading);">Productivity Improvement</td>
+              <td style="padding: 10px; text-align: right; color: var(--amber); font-weight: 700;">15% - 25%</td>
+            </tr>
+            <tr style="background: rgba(255,255,255,0.01);">
+              <td style="padding: 10px; font-weight: 600; color: var(--text-heading);">AI Risk Exposure</td>
+              <td style="padding: 10px; text-align: right; color: var(--rose); font-weight: 750;">High Risk (Action Needed)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Bottom Row: Donut Chart and ROI Timeline -->
+      <div class="cfo-grid-bottom">
+        <!-- Donut Chart Card -->
+        <div class="cfo-card">
+          <h3>📊 Typical Enterprise AI Spend Breakdown (Illustrative)</h3>
+          <div class="spend-donut-container">
+            <div class="spend-donut">
+              <div class="spend-donut-inner">
+                <div class="total-label">Total Spend</div>
+                <div class="total-val">${{ scores.finops.monthly_spend | int }}/mo</div>
+              </div>
+            </div>
+            <div class="spend-legend">
+              <div class="legend-item">
+                <div class="legend-label-group">
+                  <div class="legend-color" style="background: var(--accent);"></div>
+                  <span>Premium Models</span>
+                </div>
+                <strong style="color: var(--text-heading);">65%</strong>
+              </div>
+              <div class="legend-item">
+                <div class="legend-label-group">
+                  <div class="legend-color" style="background: var(--accent-2);"></div>
+                  <span>Infrastructure</span>
+                </div>
+                <strong>15%</strong>
+              </div>
+              <div class="legend-item">
+                <div class="legend-label-group">
+                  <div class="legend-color" style="background: var(--amber);"></div>
+                  <span>Storage &amp; Vector DB</span>
+                </div>
+                <strong>8%</strong>
+              </div>
+              <div class="legend-item">
+                <div class="legend-label-group">
+                  <div class="legend-color" style="background: var(--rose);"></div>
+                  <span>Integration Services</span>
+                </div>
+                <strong>7%</strong>
+              </div>
+              <div class="legend-item">
+                <div class="legend-label-group">
+                  <div class="legend-color" style="background: var(--emerald);"></div>
+                  <span>Monitoring &amp; Observability</span>
+                </div>
+                <strong>5%</strong>
+              </div>
+            </div>
+          </div>
+          <div style="font-size: 10px; color: var(--muted); margin-top: 10px; text-align: center; border-top: 1px solid var(--border); padding-top: 8px; line-height: 1.35;">
+            💡 <strong>Typical Enterprise Insight:</strong> In a typical unoptimized environment, 65% of AI spend is concentrated in premium models, yet 95% of workloads are simple tasks. This breakdown represents typical mid-market allocations (Illustrative).
+          </div>
+        </div>
+
+        <!-- ROI Timeline Card -->
+        <div class="cfo-card">
+          <h3>⏳ Target ROI Timeline &amp; Illustrative Payback</h3>
+          <div class="roi-timeline">
+            <div class="timeline-track">
+              <!-- Step 1 -->
+              <div class="timeline-step completed">
+                <div class="timeline-node" style="color: white; font-size: 8px; font-weight: 900; display:flex; align-items:center; justify-content:center;">✓</div>
+                <div class="step-mo">Month 1</div>
+                <div class="step-lbl">Setup &amp; Gov Committee</div>
+              </div>
+              <!-- Step 2 -->
+              <div class="timeline-step active">
+                <div class="timeline-node"></div>
+                <div class="step-mo">Month 2</div>
+                <div class="step-lbl">Standardize Data</div>
+              </div>
+              <!-- Step 3 -->
+              <div class="timeline-step active">
+                <div class="timeline-node"></div>
+                <div class="step-mo">Month 3</div>
+                <div class="step-lbl">Reconcile &amp; Break Even</div>
+              </div>
+              <!-- Step 4 -->
+              <div class="timeline-step active">
+                <div class="timeline-node"></div>
+                <div class="step-mo">Month 4</div>
+                <div class="step-lbl">Positive Business ROI</div>
+              </div>
+              <!-- Step 5 -->
+              <div class="timeline-step milestone">
+                <div class="timeline-node" style="font-weight: bold; color: var(--accent-2); font-size: 9px; display:flex; align-items:center; justify-content:center;">★</div>
+                <div class="step-mo" style="color: var(--accent-2);">Month 12</div>
+                <div class="step-lbl" style="color: var(--text-heading); font-weight: 700;">${{ ((scores.finops.monthly_spend * 0.625) * 12) | int }} Net Savings</div>
+              </div>
+            </div>
+          </div>
+          <div style="font-size: 10px; color: var(--muted); margin-top: 10px; text-align: center; border-top: 1px solid var(--border); padding-top: 8px; line-height: 1.35;">
+            📈 <strong>Illustrative Payback Analysis:</strong> Target payback achieved in <strong>3.2 Months</strong> (Illustrative mid-market benchmark; actual payback is subject to deployment parameters and not computed from your environment).
+          </div>
+        </div>
+      </div>
+      
+      <!-- Top 3 Recommendations -->
+      <div class="cfo-card" style="margin-top: 14px; background: rgba(167,139,250,0.02); border-color: rgba(167,139,250,0.25);">
+        <h3 style="color: var(--accent-2); font-weight: 700;">📋 Top 3 Executive Recommendations</h3>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 6px;">
+          <div style="background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px;">
+            <span style="font-size: 9px; font-weight: 700; color: var(--accent); text-transform: uppercase;">1. Optimize Model Usage</span>
+            <p style="font-size: 11.5px; color: var(--text); margin: 4px 0 0 0; line-height: 1.35;">
+              Implement smart workload routing. Move 95% of basic summarization and Search Q&A to standard, low-cost model configurations.
+            </p>
+          </div>
+          <div style="background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px;">
+            <span style="font-size: 9px; font-weight: 700; color: var(--accent-2); text-transform: uppercase;">2. Implement Governance controls</span>
+            <p style="font-size: 11.5px; color: var(--text); margin: 4px 0 0 0; line-height: 1.35;">
+              Deploy Enterprise Data Standardization and AI Risk Controls. Stop duplicate reporting and secure active model pathways.
+            </p>
+          </div>
+          <div style="background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px;">
+            <span style="font-size: 9px; font-weight: 700; color: var(--emerald); text-transform: uppercase;">3. Establish ROI Tracking</span>
+            <p style="font-size: 11.5px; color: var(--text); margin: 4px 0 0 0; line-height: 1.35;">
+              Link every production use-case directly to a business-value outcome dashboard before the next strategic investment round.
+            </p>
+          </div>
+        </div>
+      </div>
+      </div>
+      </details>
+    </section>
+
+        <!-- ─── 4.1 AI Cost Optimization Opportunity Report (Signature C-Suite Deliverable) ─── -->
+    {% if scores.finops %}
+    <details class="report-section">
+      <summary class="section-header">
+        💸 AI Cost Optimization Opportunity Report
+      </summary>
+      <div class="section-content">
+        <section class="section animate-fade-in" style="border-top: none; padding-top: 0; margin-top: 0;">
+          <p class="sub">The signature CertaintyAI deliverable mapping structural overspending to high-speed model routing.</p>
+      
+      <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 18px; margin-top: 10px; align-items: start;">
+        <div style="background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 14px;">
+          <h4 style="color: var(--accent); font-size: 13px; margin: 0 0 8px 0;">Workload Usage Profile (Current State)</h4>
+          <p style="font-size: 12px; color: var(--muted); margin-bottom: 12px; text-align: left;">
+            Your organization runs <strong>100%</strong> of AI workloads on premium reasoning models (<strong>{{ scores.provider_model_names.get(scores.finops.primary_provider, scores.finops.primary_provider) }}</strong>). 
+            Auditing your live API traffic reveals that <strong>95% of workloads do NOT require premium reasoning capability</strong>.
+          </p>
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <div>
+              <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 2px;">
+                <span>📄 Document Summarization (Low complexity)</span>
+                <span style="font-weight: 600; color: var(--accent);">40%</span>
+              </div>
+              <div style="height: 4px; background: var(--border); border-radius: 99px; overflow: hidden; margin-bottom: 8px;">
+                <div style="height: 100%; background: var(--accent); width: 40%;"></div>
+              </div>
+            </div>
+
+            <div>
+              <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 2px;">
+                <span>🔍 Internal Search &amp; Q&amp;A (Medium complexity)</span>
+                <span style="font-weight: 600; color: var(--accent-2);">25%</span>
+              </div>
+              <div style="height: 4px; background: var(--border); border-radius: 99px; overflow: hidden; margin-bottom: 8px;">
+                <div style="height: 100%; background: var(--accent-2); width: 25%;"></div>
+              </div>
+            </div>
+
+            <div>
+              <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 2px;">
+                <span>✍ Content Generation (Medium complexity)</span>
+                <span style="font-weight: 600; color: var(--accent);">20%</span>
+              </div>
+              <div style="height: 4px; background: var(--border); border-radius: 99px; overflow: hidden; margin-bottom: 8px;">
+                <div style="height: 100%; background: var(--accent); width: 20%;"></div>
+              </div>
+            </div>
+
+            <div>
+              <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 2px;">
+                <span>📊 Standard Reporting &amp; Classification (Low complexity)</span>
+                <span style="font-weight: 600; color: var(--accent-2);">10%</span>
+              </div>
+              <div style="height: 4px; background: var(--border); border-radius: 99px; overflow: hidden; margin-bottom: 8px;">
+                <div style="height: 100%; background: var(--accent-2); width: 10%;"></div>
+              </div>
+            </div>
+
+            <div>
+              <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 2px;">
+                <span>🧠 Complex Logical Reasoning &amp; Strategy (High complexity)</span>
+                <span style="font-weight: 600; color: var(--amber);">5%</span>
+              </div>
+              <div style="height: 4px; background: var(--border); border-radius: 99px; overflow: hidden; margin-bottom: 8px;">
+                <div style="height: 100%; background: var(--amber); width: 5%;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <div class="stat-tile" style="padding: 12px; margin-bottom: 2px;">
+            <div class="lbl">Current Spend Profile</div>
+            <div style="font-size: 20px; font-weight: 700; color: var(--text-heading); font-variant-numeric: tabular-nums;">
+              ${{ scores.finops.monthly_spend | int }}<span style="font-size: 11px; color: var(--muted); font-weight: 450;"> / mo</span>
+            </div>
+          </div>
+          <div class="stat-tile" style="padding: 12px; margin-bottom: 2px; border-color: rgba(52, 211, 153, 0.35); background: linear-gradient(135deg, rgba(52, 211, 153, 0.08), var(--panel-2));">
+            <div class="lbl" style="color: var(--emerald);">CertaintyAI Optimized Spend</div>
+            <div style="font-size: 20px; font-weight: 700; color: var(--emerald); font-variant-numeric: tabular-nums;">
+              ${{ (scores.finops.monthly_spend * 0.375) | int }}<span style="font-size: 11px; color: var(--emerald); font-weight: 450;"> / mo</span>
+            </div>
+            <div style="font-size: 10px; color: var(--emerald); font-weight: 500; margin-top: 4px;">62.5% Monthly Cost Reduction</div>
+          </div>
+          <div class="stat-tile" style="padding: 12px; border-color: rgba(34,211,238,0.35); background: linear-gradient(135deg, rgba(34,211,238,0.08), var(--panel-2));">
+            <div class="lbl" style="color: var(--accent);">Target Annual Savings</div>
+            <div style="font-size: 24px; font-weight: 800; color: var(--accent); font-variant-numeric: tabular-nums;">
+              ${{ ((scores.finops.monthly_spend - (scores.finops.monthly_spend * 0.375)) * 12) | int }}<span style="font-size: 12px; color: var(--accent); font-weight: 450;"> / yr</span>
+            </div>
+            <div style="font-size: 8.5px; color: var(--accent); font-weight: 500; margin-top: 4px; line-height: 1.2;">
+              ${{ ((scores.finops.monthly_spend * 0.625) * 12) | int }}/yr saved on ${{ scores.finops.monthly_spend | int }}/mo spend (Illustrative Target)*
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Smart Workload Routing Table -->
+      <div style="margin-top: 12px; background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px; padding: 12px; overflow-x: auto;">
+        <h4 style="color: var(--text-heading); font-size: 12px; font-weight: 600; margin: 0 0 6px 0;">Workload Routing Recommendation Engine</h4>
+        <table style="width: 100%; border-collapse: collapse; font-size: 11.5px; text-align: left;">
+          <thead>
+            <tr style="border-bottom: 1px solid var(--border); color: var(--muted); font-size: 10px; text-transform: uppercase;">
+              <th style="padding: 4px 6px;">Workload Type</th>
+              <th style="padding: 4px 6px;">Current Model</th>
+              <th style="padding: 4px 6px;">Recommended Model</th>
+              <th style="padding: 4px 6px; text-align: right;">Cost Reduction</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
+              <td style="padding: 6px; font-weight: 600; color: var(--text-heading);">Search &amp; Q&amp;A</td>
+              <td style="padding: 6px; color: var(--rose);">{{ scores.provider_model_names.get(scores.finops.primary_provider, 'GPT-4o') }}</td>
+              <td style="padding: 6px; color: var(--accent); font-weight: 600;">GPT-4o Mini</td>
+              <td style="padding: 6px; text-align: right; color: var(--emerald); font-weight: 700;">Save 35%</td>
+            </tr>
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
+              <td style="padding: 6px; font-weight: 600; color: var(--text-heading);">Document Summarization</td>
+              <td style="padding: 6px; color: var(--rose);">{{ scores.provider_model_names.get(scores.finops.primary_provider, 'GPT-4o') }}</td>
+              <td style="padding: 6px; color: var(--accent); font-weight: 600;">Gemini 1.5 Flash</td>
+              <td style="padding: 6px; text-align: right; color: var(--emerald); font-weight: 700;">Save 15%</td>
+            </tr>
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
+              <td style="padding: 6px; font-weight: 600; color: var(--text-heading);">Text Classification</td>
+              <td style="padding: 6px; color: var(--rose);">{{ scores.provider_model_names.get(scores.finops.primary_provider, 'GPT-4o') }}</td>
+              <td style="padding: 6px; color: var(--accent); font-weight: 600;">Claude 3.5 Haiku</td>
+              <td style="padding: 6px; text-align: right; color: var(--emerald); font-weight: 700;">Save 20%</td>
+            </tr>
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
+              <td style="padding: 6px; font-weight: 600; color: var(--text-heading);">Internal Knowledge &amp; Ingestion</td>
+              <td style="padding: 6px; color: var(--rose);">{{ scores.provider_model_names.get(scores.finops.primary_provider, 'GPT-4o') }}</td>
+              <td style="padding: 6px; color: var(--accent-2); font-weight: 600;">Local Llama 3 (Mdx MCP)</td>
+              <td style="padding: 6px; text-align: right; color: var(--emerald); font-weight: 700;">Save 25%</td>
+            </tr>
+            <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
+              <td style="padding: 6px; font-weight: 600; color: var(--text-heading);">Complex Strategy Decisions</td>
+              <td style="padding: 6px; color: var(--rose);">{{ scores.provider_model_names.get(scores.finops.primary_provider, 'GPT-4o') }}</td>
+              <td style="padding: 6px; color: var(--amber); font-weight: 600;">GPT-4o (No routing)</td>
+              <td style="padding: 6px; text-align: right; color: var(--muted); font-weight: 500;">Best Practice</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 5 Key Strategic Cost Opportunities -->
+      <div style="margin-top: 10px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px;">
+        <div style="background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 8px; text-align: center;">
+          <div style="font-size: 8px; text-transform: uppercase; font-weight: 700; color: var(--muted); margin-bottom: 2px;">Model Routing</div>
+          <div style="font-size: 14px; font-weight: 700; color: var(--emerald);">Save 35%</div>
+        </div>
+        <div style="background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 8px; text-align: center;">
+          <div style="font-size: 8px; text-transform: uppercase; font-weight: 700; color: var(--muted); margin-bottom: 2px;">RAG Optimization</div>
+          <div style="font-size: 14px; font-weight: 700; color: var(--emerald);">Save 15%</div>
+        </div>
+        <div style="background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 8px; text-align: center;">
+          <div style="font-size: 8px; text-transform: uppercase; font-weight: 700; color: var(--muted); margin-bottom: 2px;">Local OS Models</div>
+          <div style="font-size: 14px; font-weight: 700; color: var(--emerald);">Save 20%</div>
+        </div>
+        <div style="background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 8px; text-align: center;">
+          <div style="font-size: 8px; text-transform: uppercase; font-weight: 700; color: var(--muted); margin-bottom: 2px;">Human-in-the-Loop</div>
+          <div style="font-size: 14px; font-weight: 700; color: var(--accent);">Error -40%</div>
+        </div>
+        <div style="background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 8px; text-align: center;">
+          <div style="font-size: 8px; text-transform: uppercase; font-weight: 700; color: var(--muted); margin-bottom: 2px;">Enterprise Data Standardization</div>
+          <div style="font-size: 14px; font-weight: 700; color: var(--accent-2);">Eng -35-50%</div>
+        </div>
+      </div>
+    </section>
+      </div>
+    </details>
+    {% endif %}
+
+        <!-- Collapsible 🏢 Peer Industry Benchmark scorecard -->
+    <details class="report-section">
+      <summary class="section-header">
+        🏢 Peer Industry Benchmark scorecard
+      </summary>
+      <div class="section-content">
+        <section class="section animate-fade-in" style="border-top: none; padding-top: 0; margin-top: 0;">
+      
+      <p class="sub">Where your organization stands compared to standard mid-market peers in the <strong>{{ answers.domains | join(', ') | title }}</strong> segment.</p>
+      
+      <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 14px; margin-top: 8px; align-items: center;">
+        <div style="background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 12px; text-align: center;">
+          <h4 style="color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 6px;">Strategic Gap Assessment</h4>
+          {% if peer_benchmark.delta_vs_median > 0 %}
+          <div style="font-size: 32px; font-weight: 800; color: var(--emerald); font-variant-numeric: tabular-nums;">+{{ peer_benchmark.delta_vs_median }} <span style="font-size: 12px; color: var(--emerald); font-weight: 500;">points</span></div>
+          <p style="font-size: 11.5px; color: var(--text); margin: 4px 0 0 0; line-height: 1.35; text-align: center;">
+            Your <strong>AI Readiness Score ({{ scores.total_score }})</strong> stands <strong>{{ peer_benchmark.delta_vs_median }} points ahead</strong> of the industry average.
+          </p>
+          {% elif peer_benchmark.delta_vs_median == 0 %}
+          <div style="font-size: 32px; font-weight: 800; color: var(--muted); font-variant-numeric: tabular-nums;">On par</div>
+          <p style="font-size: 11.5px; color: var(--text); margin: 4px 0 0 0; line-height: 1.35; text-align: center;">
+            Your <strong>AI Readiness Score ({{ scores.total_score }})</strong> is <strong>on par with</strong> the industry average.
+          </p>
+          {% else %}
+          <div style="font-size: 32px; font-weight: 800; color: var(--rose); font-variant-numeric: tabular-nums;">{{ peer_benchmark.delta_vs_median }} <span style="font-size: 12px; color: var(--rose); font-weight: 500;">points</span></div>
+          <p style="font-size: 11.5px; color: var(--text); margin: 4px 0 0 0; line-height: 1.35; text-align: center;">
+            Your <strong>AI Readiness Score ({{ scores.total_score }})</strong> stands <strong>{{ -peer_benchmark.delta_vs_median }} points behind</strong> the industry average.
+          </p>
+          {% endif %}
+        </div>
+
+        <div style="background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px; padding: 12px;">
+          <h4 style="color: var(--text-heading); font-size: 12px; font-weight: 600; margin: 0 0 8px 0;">Performance Comparison Table</h4>
+          <table style="width: 100%; border-collapse: collapse; font-size: 11.5px; text-align: left;">
+            <thead>
+              <tr style="border-bottom: 1px solid var(--border); color: var(--muted); font-size: 9.5px; text-transform: uppercase;">
+                <th style="padding: 4px;">Metric Category</th>
+                <th style="padding: 4px; text-align: center;">Peer Average</th>
+                <th style="padding: 4px; text-align: center;">Your Score</th>
+                <th style="padding: 4px; text-align: right;">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);">
+                <td style="padding: 6px; font-weight: 600; color: var(--text-heading);">AI Readiness</td>
+                <td style="padding: 6px; text-align: center; color: var(--muted);">{{ peer_benchmark.peer_median }}</td>
+                <td style="padding: 6px; text-align: center; color: {% if scores.total_score > peer_benchmark.peer_median %}var(--emerald){% elif scores.total_score == peer_benchmark.peer_median %}var(--muted){% else %}var(--rose){% endif %}; font-weight: 750;">{{ scores.total_score }}</td>
+                <td style="padding: 6px; text-align: right; color: {% if scores.total_score > peer_benchmark.peer_median %}var(--emerald){% elif scores.total_score == peer_benchmark.peer_median %}var(--muted){% else %}var(--rose){% endif %}; font-weight: 700;">
+                  {% if scores.total_score > peer_benchmark.peer_median %}
+                    +{{ scores.total_score - peer_benchmark.peer_median }} Ahead
+                  {% elif scores.total_score == peer_benchmark.peer_median %}
+                    On par
+                  {% else %}
+                    {{ scores.total_score - peer_benchmark.peer_median }} Gapped
+                  {% endif %}
+                </td>
+              </tr>
+              <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);">
+                <td style="padding: 6px; font-weight: 600; color: var(--text-heading);">AI Governance</td>
+                <td style="padding: 6px; text-align: center; color: var(--muted);">58</td>
+                <td style="padding: 6px; text-align: center; color: {% if scores.sub_scores.oversight > 58 %}var(--emerald){% elif scores.sub_scores.oversight == 58 %}var(--muted){% else %}var(--rose){% endif %}; font-weight: 750;">{{ scores.sub_scores.oversight }}</td>
+                <td style="padding: 6px; text-align: right; color: {% if scores.sub_scores.oversight > 58 %}var(--emerald){% elif scores.sub_scores.oversight == 58 %}var(--muted){% else %}var(--rose){% endif %}; font-weight: 700;">
+                  {% if scores.sub_scores.oversight > 58 %}
+                    +{{ scores.sub_scores.oversight - 58 }} Ahead
+                  {% elif scores.sub_scores.oversight == 58 %}
+                    On par
+                  {% else %}
+                    {{ scores.sub_scores.oversight - 58 }} Gapped
+                  {% endif %}
+                </td>
+              </tr>
+              <tr style="border-bottom: 1px solid rgba(255,255,255,0.02);">
+                <td style="padding: 6px; font-weight: 600; color: var(--text-heading);">Explainability</td>
+                <td style="padding: 6px; text-align: center; color: var(--muted);">54</td>
+                <td style="padding: 6px; text-align: center; color: {% if scores.sub_scores.audit > 54 %}var(--emerald){% elif scores.sub_scores.audit == 54 %}var(--muted){% else %}var(--rose){% endif %}; font-weight: 750;">{{ scores.sub_scores.audit }}</td>
+                <td style="padding: 6px; text-align: right; color: {% if scores.sub_scores.audit > 54 %}var(--emerald){% elif scores.sub_scores.audit == 54 %}var(--muted){% else %}var(--rose){% endif %}; font-weight: 700;">
+                  {% if scores.sub_scores.audit > 54 %}
+                    +{{ scores.sub_scores.audit - 54 }} Ahead
+                  {% elif scores.sub_scores.audit == 54 %}
+                    On par
+                  {% else %}
+                    {{ scores.sub_scores.audit - 54 }} Gapped
+                  {% endif %}
+                </td>
+              </tr>
+              <tr>
+                <td style="padding: 6px; font-weight: 600; color: var(--text-heading);">AI Economics</td>
+                <td style="padding: 6px; text-align: center; color: var(--muted);">60</td>
+                <td style="padding: 6px; text-align: center; color: {% if scores.finops.cost_efficiency > 60 %}var(--emerald){% elif scores.finops.cost_efficiency == 60 %}var(--muted){% else %}var(--rose){% endif %}; font-weight: 750;">{{ scores.finops.cost_efficiency }}</td>
+                <td style="padding: 6px; text-align: right; color: {% if scores.finops.cost_efficiency > 60 %}var(--emerald){% elif scores.finops.cost_efficiency == 60 %}var(--muted){% else %}var(--rose){% endif %}; font-weight: 700;">
+                  {% if scores.finops.cost_efficiency > 60 %}
+                    +{{ scores.finops.cost_efficiency - 60 }} Ahead
+                  {% elif scores.finops.cost_efficiency == 60 %}
+                    On par
+                  {% else %}
+                    {{ scores.finops.cost_efficiency - 60 }} Gapped
+                  {% endif %}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+      </div>
+    </details>
+
+
+        <!-- Collapsible 💰 What You Can Win in 90 Days -->
+    <details class="report-section">
+      <summary class="section-header">
+        💰 What You Can Win in 90 Days
+      </summary>
+      <div class="section-content">
+        <section class="section" style="border-top: none; padding-top: 0; margin-top: 0;">
+      
+      <p class="sub">Cost-of-inaction vs cost-of-action per phase. Sources: Gartner Cost of Poor Data Quality 2024, Forrester TEI of AI Governance.</p>
+      <div class="roadmap">
+        {% for ph in value_roadmap %}
+        <div class="phase">
+          <div>
+            <div class="week">{{ ph.week_range }}</div>
+            <div style="color:var(--muted);font-size:10px;margin-top:2px;">Phase {{ ph.order }}</div>
+          </div>
+          <div>
+            <div class="title">{{ ph.title }}</div>
+            <div class="proof">{{ ph.proof_point }}</div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </section>
+      </div>
+    </details>
+
+
+        <!-- Collapsible ✅ Decisions on Your Desk This Week -->
+    <details class="report-section">
+      <summary class="section-header">
+        ✅ Decisions on Your Desk This Week
+      </summary>
+      <div class="section-content">
+        <section class="section" style="border-top: none; padding-top: 0; margin-top: 0;">
+      
+      <p class="sub">Pre-assigned owners, investment, value, and the risk of waiting — the three calls that unlock the rest of the roadmap.</p>
+      <div class="decisions">
+        {% for ph in value_roadmap[:3] %}
+        <div class="decision{% if loop.index == 2 %} highlight{% endif %}">
+          <div class="num">Decision 0{{ loop.index }}{% if loop.index == 2 %}<span class="badge">· HIGHEST IMPACT</span>{% endif %}</div>
+          <div class="title">{{ ph.title }}</div>
+          <div class="decision-meta">
+            <div><span class="k">Owner</span><span class="v">{% if loop.index == 1 %}CIO + CRO{% elif loop.index == 2 %}CDO + CTO{% else %}CIO + CDO{% endif %}</span></div>
+            <div><span class="k">Timeline</span><span class="v">{{ ph.week_range }}</span></div>
+          </div>
+          <div class="risk">⚠ {{ ph.proof_point }}</div>
+        </div>
+        {% endfor %}
+      </div>
+    </section>
+      </div>
+    </details>
+
+
+        <!-- Collapsible 🔍 Strategic Findings (Strengths & Gaps) -->
+    <details class="report-section">
+      <summary class="section-header">
+        🔍 Strategic Findings (Strengths & Gaps)
+      </summary>
+      <div class="section-content">
+        <section class="section" style="border-top: none; padding-top: 0; margin-top: 0;">
+      
+      <p class="sub">Strengths to leverage. Gaps to mitigate.</p>
+      <p>{{ narrative.findings_narrative | md_bold }}</p>
+      <div class="findings-grid">
+        <div class="findings-card strengths">
+          <h3>Strengths</h3>
+          <ul class="findings-list">
+            {% for s in gap_analysis.strengths %}<li>{{ s }}</li>{% endfor %}
+          </ul>
+        </div>
+        <div class="findings-card gaps">
+          <h3>Gaps</h3>
+          <ul class="findings-list">
+            {% if gap_analysis.gaps %}{% for g in gap_analysis.gaps %}<li>{{ g }}</li>{% endfor %}
+            {% else %}<li>No structural gaps detected — focus on continuous improvement.</li>{% endif %}
+          </ul>
+        </div>
+      </div>
+    </section>
+      </div>
+    </details>
+
+
+        <!-- Collapsible 🤝 Human Oversight Assessment -->
+    <details class="report-section">
+      <summary class="section-header">
+        {% if answers.role in ['CFO', 'Business Leader'] %}
+        ⚖️ Compliance &amp; Oversight Risk (financial / regulatory exposure)
+        {% else %}
+        🤝 Human Oversight Assessment
+        {% endif %}
+      </summary>
+      <div class="section-content">
+        <section class="section" style="border-top: none; padding-top: 0; margin-top: 0;">
+      
+      <p class="sub">
+        {% if answers.role in ['CFO', 'Business Leader'] %}
+        Analyzing financial exposure, regulatory compliance risk, and necessary organizational risk controls.
+        {% else %}
+        Analyzing feedback loops, human-in-the-loop (HITL) checkpoints, and escalation workflows.
+        {% endif %}
+      </p>
+      
+      <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 14px; margin-top: 8px;">
+        <div style="background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 12px; display: flex; flex-direction: column; justify-content: space-between;">
+          <div>
+            <h4 style="color: var(--rose); font-size: 12px; margin: 0 0 6px 0; font-weight: 600;">Current Posture &amp; Exposure</h4>
+            <ul style="margin: 0; padding-left: 14px; font-size: 11.5px; color: var(--text); space-y-1.5;">
+              <li>❌ <strong>AI decisions not systematically reviewed</strong> by qualified domain experts before actioning.</li>
+              <li>❌ <strong>Lack of standard approval workflows</strong> leading to risk of hallucinations going directly to stakeholders.</li>
+              <li>❌ <strong>Limited audit trails</strong> for historical validation, exposing the firm under EU AI Act and regulatory audits.</li>
+            </ul>
+          </div>
+          <div style="margin-top: 10px; padding: 8px; background: rgba(244,114,182,0.06); border-left: 3px solid var(--rose); border-radius: 4px; font-size: 11.5px; color: var(--text);">
+            <strong style="color: var(--rose);">⚠ HIGH REGULATORY RISK:</strong> Exposes your organization to standard compliance violations and horizontal data leakage.
+          </div>
+        </div>
+
+        <div style="background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px; padding: 12px;">
+          <h4 style="color: var(--emerald); font-size: 12px; margin: 0 0 6px 0; font-weight: 600;">CertaintyAI Recommended Controls</h4>
+          <div style="display: flex; flex-direction: column; gap: 8px;">
+            <div style="display: flex; gap: 10px; align-items: start;">
+              <span style="background: var(--emerald); color: #052e1c; font-weight: 700; width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; shrink-0; margin-top: 2px;">✓</span>
+              <div>
+                <strong style="font-size: 11.5px; color: var(--text-heading);">Human Approval Checkpoints</strong>
+                <p style="font-size: 11px; color: var(--muted); margin: 2px 0 0 0; text-align: left; line-height: 1.3;">Introduce mandatory review queues for any outputs with confidence ratings under 90%.</p>
+              </div>
+            </div>
+            
+            <div style="display: flex; gap: 10px; align-items: start; margin-top: 6px; border-top: 1px solid rgba(255,255,255,0.02); padding-top: 6px;">
+              <span style="background: var(--emerald); color: #052e1c; font-weight: 700; width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; shrink-0; margin-top: 2px;">✓</span>
+              <div>
+                <strong style="font-size: 11.5px; color: var(--text-heading);">Confidence &amp; Risk Thresholds</strong>
+                <p style="font-size: 11px; color: var(--muted); margin: 2px 0 0 0; text-align: left; line-height: 1.3;">Programmatically restrict high-autonomy agents based on real-time uncertainty scoring.</p>
+              </div>
+            </div>
+
+            <div style="display: flex; gap: 10px; align-items: start; margin-top: 6px; border-top: 1px solid rgba(255,255,255,0.02); padding-top: 6px;">
+              <span style="background: var(--emerald); color: #052e1c; font-weight: 700; width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; shrink-0; margin-top: 2px;">✓</span>
+              <div>
+                <strong style="font-size: 11.5px; color: var(--text-heading);">Escalation &amp; Failover Workflows</strong>
+                <p style="font-size: 11px; color: var(--muted); margin: 2px 0 0 0; text-align: left; line-height: 1.3;">Ensure clear operational fallback chains where model failures route instantly to operations teams.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+      </div>
+    </details>
+
+
+        <!-- Collapsible 📋 All Prioritized Recommendations -->
+    <details class="report-section">
+      <summary class="section-header">
+        📋 All Prioritized Recommendations
+      </summary>
+      <div class="section-content">
+        <section class="section" style="border-top: none; padding-top: 0; margin-top: 0;">
+      
+      <p class="sub">Full sequence — five actions covering the next two quarters. The first three are the C-suite decisions above; the next two compound on them.</p>
+      <div class="recs">
+        {% for r in gap_analysis.recommendations %}
+        <div class="rec">
+          <div class="week">{{ r.week_range }}</div>
+          <div class="action">{{ r.order }}. {{ r.action }}</div>
+          <div class="rationale">{{ r.rationale }}</div>
+        </div>
+        {% endfor %}
+      </div>
+    </section>
+      </div>
+    </details>
+
+
+    <!-- ═══════════════════════════════════════════════════════════
+         BELOW THE FOLD — methodology, evidence, deeper analysis.
+         The auditor's section. Same data the executive saw above,
+         shown with the receipts.
+         ═══════════════════════════════════════════════════════════ -->
+    <div class="methodology-anchor">
+      <div class="lbl">How We Believe These Numbers</div>
+      <div class="sub">Methodology, frameworks, NIST sub-scores, evidence pack, and deeper narrative analysis follow.</div>
+    </div>
+
+    <!-- ─── Layer 3: Technical Appendix (CIO/CTO/CISO View) ─── -->
+    <details class="tech-appendix-container">
+      <summary class="tech-appendix-summary">
+        🛠️ Layer 3: Technical Appendix &amp; Compliance Audit Receipts
+      </summary>
+      <div class="tech-appendix-content">
+        <!-- ─── 9. Current State Analysis (deeper) ─── -->
+    <section class="section" style="border-top: none; padding-top: 0;">
+      <h2>📊 Current State Analysis</h2>
+      <p>{{ narrative.current_state_summary | md_bold }}</p>
+    </section>
+
+    <!-- ─── 10. Data Maturity Review ─── -->
+    <section class="section">
+      <h2>🗄️ Data Maturity Review</h2>
+      <p class="sub">Gartner AI-Ready Data Governance Framework — 4 Enablers.</p>
+      <p>{{ narrative.data_maturity_review | md_bold }}</p>
+    </section>
+
+    <!-- ─── 11. NIST AI RMF Function Scores ─── -->
+    <section class="section">
+      <h2>🛡️ NIST AI RMF 1.0 — Function Scores</h2>
+      <p class="sub">Derived from your governance posture (GOVERN) and production AI accuracy (MEASURE).</p>
+      <div class="nist-grid">
+        <div class="nist-card">
+          <div class="lbl">GOVERN</div>
+          <div class="val">{{ scores.nist_rmf.govern }}<span style="font-size:13px;color:var(--muted);"> / 100</span></div>
+          <div class="bar"><div class="fill" style="width: {{ scores.nist_rmf.govern }}%;"></div></div>
+        </div>
+        <div class="nist-card">
+          <div class="lbl">MEASURE</div>
+          <div class="val">{{ scores.nist_rmf.measure }}<span style="font-size:13px;color:var(--muted);"> / 100</span></div>
+          <div class="bar"><div class="fill" style="width: {{ scores.nist_rmf.measure }}%;"></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ─── 12. Frameworks Applied ─── -->
+    <section class="section">
+      <h2>📐 Frameworks Applied to This Assessment</h2>
+      <p class="sub">{{ frameworks | length }} standards active for your industry mix — click any to open the issuing authority.</p>
+      <div class="fw-grid">
+        {% for fw in frameworks %}
+        <div class="fw-item" title="{{ fw.why }}">
+          <span class="check">✓</span>
+          {% if fw.url %}<a href="{{ fw.url }}" target="_blank" rel="noopener">{{ fw.name }}</a>
+          {% else %}<span>{{ fw.name }}</span>{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </section>
+
+    <!-- ─── 13. Explainability & Evidence Pack ─── -->
+    <section class="section">
+      <h2>🧾 Explainability &amp; Evidence Pack</h2>
+      <div class="explain-callout">
+        <div class="row"><div class="lbl">Current</div><div>
+          {% if scores.sub_scores.audit >= 100 %}Full provenance trail in place.
+          {% elif scores.sub_scores.audit >= 50 %}Partial provenance — gaps under HIPAA / SOX / EU AI Act Art. 13.
+          {% else %}<strong style="color:var(--rose);">Missing provenance</strong> — explicit gap against regulator expectations.{% endif %}
+        </div></div>
+        <div class="row"><div class="lbl">Recommendation</div><div>
+          Implement <strong>CertaintyAI's Audit Automation & Compliance Reporting</strong> for full audit trails and AI Risk Controls on every AI answer.
+        </div></div>
+      </div>
+      <div class="evidence">
+        <div class="evidence-title">Sample evidence pack — {{ evidence_pack.headline }}</div>
+        <div class="query">{{ evidence_pack.sample_query }}</div>
+        <div class="trail">
+          <div class="trail-col"><h4>Ontology Nodes</h4><ul>{% for n in evidence_pack.ontology_nodes %}<li>{{ n }}</li>{% endfor %}</ul></div>
+          <div class="trail-col"><h4>Source Systems</h4><ul>{% for s in evidence_pack.source_systems %}<li>{{ s }}</li>{% endfor %}</ul></div>
+          <div class="trail-col"><h4>Compliance Controls</h4><ul>{% for c in evidence_pack.compliance_controls %}<li>{{ c }}</li>{% endfor %}</ul></div>
+        </div>
+        <div class="confidence">
+          <span class="conf-pill">{{ (evidence_pack.confidence * 100) | round | int }}% confidence</span>
+          <span>Every AI answer carries this exact lineage — auditors get the same view your operator does.</span>
+        </div>
+      </div>
+    </section>
+
+
+      </div>
+    </details>
+    
+        {% if regulator_paragraph %}
+    <section class="section"><h2>⚖️ Regulator-Specific Notes</h2><p>{{ regulator_paragraph | md_bold }}</p></section>
+    {% endif %}
+
+    <div class="cta-row no-print">
+      <button class="cta primary" onclick="window.parent.postMessage({ type: 'TRIGGER_PRINT' }, '*')">📥 Download Full Report (PDF)</button>
+      <a class="cta success" href="/" target="_top">🔄 Start Over</a>
+    </div>
+
+    <div class="colophon">
+      © {{ generated_at[:4] }} CertaintyAI · MDxBlocks Inc. · Krishna.B@MdxBlocks.com<br>
+      Powered by Gartner, NIST, CMMI, DCAM, EU AI Act &amp; industry-specific frameworks.
+    </div>
+  </div>
+
+  <!-- Boardroom theme switcher listener -->
+  <script>
+    window.addEventListener('message', function(event) {
+      if (event.data && event.data.type === 'TOGGLE_THEME') {
+        if (event.data.theme === 'light') {
+          document.body.classList.add('theme-light');
+        } else {
+          document.body.classList.remove('theme-light');
+        }
+      }
+    });
+
+    // Listen for details toggle events and post a message to the parent window
+    document.querySelectorAll('details').forEach(function(details) {
+      details.addEventListener('toggle', function() {
+        if (window.parent) {
+          window.parent.postMessage({ type: 'IFRAME_RESIZE' }, '*');
+        }
+      });
+    });
+
+    // Expand all details elements before printing so they show fully in print/PDF
+    window.addEventListener('beforeprint', function() {
+      document.querySelectorAll('details').forEach(function(details) {
+        details.setAttribute('data-was-open', details.open ? 'true' : 'false');
+        details.open = true;
+      });
+    });
+
+    // Restore original details open/close states after printing
+    window.addEventListener('afterprint', function() {
+      document.querySelectorAll('details').forEach(function(details) {
+        const wasOpen = details.getAttribute('data-was-open') === 'true';
+        details.open = wasOpen;
+        details.removeAttribute('data-was-open');
+      });
+      if (window.parent) {
+        window.parent.postMessage({ type: 'IFRAME_RESIZE' }, '*');
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+pydantic
+pydantic-settings
+email-validator
+python-jose[cryptography]
+bcrypt
+python-multipart
+python-dotenv
+anthropic
+openai
+jinja2
+psycopg2-binary
+google-generativeai
+google-cloud-aiplatform
+mcp[cli]==1.27.2
