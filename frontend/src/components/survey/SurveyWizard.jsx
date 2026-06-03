@@ -4,13 +4,13 @@ import api from '../../lib/api'
 
 const CANONICAL_ROLES = [
   'CFO',
-  'CIO',
-  'CTO',
-  'CDO',
-  'Compliance Officer',
-  'Head of AI',
-  'Business Leader',
-  'Security Director'
+  // 'CIO',
+  // 'CTO',
+  // 'CDO',
+  // 'Compliance Officer',
+  // 'Head of AI',
+  // 'Business Leader',
+  'Security Director / CISO'
 ]
 
 const PUBLIC_AGENCIES = [

@@ -35,3 +35,6 @@ Thumbs.db
 .vscode/
 *.swp
 *.swo
+
+backend/test_output.txt
+test_output.txt

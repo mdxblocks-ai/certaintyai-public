@@ -102,6 +102,140 @@ DEFAULT_TEMPLATE_QUESTIONS = [
     }
 ]
 
+CISO_TEMPLATE_QUESTIONS = [
+    {
+        "id": "maturity",
+        "dimension": "maturity",
+        "text": "Where is {org} with role-specific AI security incident response, red-teaming, and automated alerting today?",
+        "sub": "Incident response plans must evolve to cover prompt injection, data poisoning, and model evasion.",
+        "multi": False,
+        "options": [
+            {"value": "exploring", "label": "Exploring - researching security incident response & red-teaming options", "score": 25, "frag": 0},
+            {"value": "pilots", "label": "Pilots running - testing security alerting and initial red-teaming", "score": 50, "frag": 0},
+            {"value": "production", "label": "In production - active security monitoring and automated incident response", "score": 75, "frag": 0},
+            {"value": "scaling", "label": "Scaling - fully integrated security monitoring, regular red-teaming, and automated alerting across systems", "score": 90, "frag": 0}
+        ]
+    },
+    {
+        "id": "semantic",
+        "dimension": "semantic",
+        "text": "How does {org} handle sensitive data classification, encryption, and tagging in the ontology/knowledge graph before model exposure to prevent data leakage?",
+        "sub": "Standardizing access control is critical when models query data sources directly.",
+        "multi": False,
+        "options": [
+            {"value": "low", "label": "1-2 systems, consistent data classification, encryption, and tagging to prevent data leakage", "score": 85, "frag": 15},
+            {"value": "mod", "label": "3-5 systems, mostly aligned sensitive data classification and encryption", "score": 60, "frag": 40},
+            {"value": "high", "label": "6-10 systems, significant variation in data tagging and leakage risks", "score": 35, "frag": 70},
+            {"value": "sev", "label": "10+ systems, no standard classification, encryption, or tagging to prevent leakage", "score": 15, "frag": 90}
+        ]
+    },
+    {
+        "id": "rag",
+        "dimension": "rag",
+        "text": "On complex queries, how does {org} secure retrieval databases against prompt injection, adversarial inputs, and data leakage via retrieval?",
+        "sub": "Retrieval-Augmented Generation requires rigorous boundary defenses and content filtering.",
+        "multi": False,
+        "options": [
+            {"value": "unk", "label": "We haven't measured prompt injection or data leakage vulnerabilities", "score": 30, "frag": 0},
+            {"value": "u50", "label": "Below 50% accuracy; vulnerable to prompt injection and adversarial inputs", "score": 25, "frag": 0},
+            {"value": "5070", "label": "50-70% accuracy; basic prompt filters but no graph-based retrieval controls", "score": 45, "frag": 0},
+            {"value": "7085", "label": "70-85% accuracy; partial mitigation of prompt injection and leakage via retrieval", "score": 70, "frag": 0},
+            {"value": "o85", "label": "Above 85% accuracy; fully secured database, prompt injection validation, and adversarial input scanning", "score": 88, "frag": 0}
+        ]
+    },
+    {
+        "id": "oversight",
+        "dimension": "oversight",
+        "text": "Does {org} have formal oversight for shadow-AI governance, access control (least privilege), and human-in-the-loop validation?",
+        "sub": "Securing AI requires visibility into all third-party models used across departments.",
+        "multi": False,
+        "options": [
+            {"value": "none", "label": "No formal oversight or shadow-AI governance", "score": 20, "frag": 0},
+            {"value": "partial", "label": "Partial - basic access control and ad-hoc shadow-AI scanning", "score": 50, "frag": 0},
+            {"value": "formal", "label": "Yes - formal committee managing least privilege, shadow-AI governance, and human-in-the-loop validation", "score": 85, "frag": 0}
+        ]
+    },
+    {
+        "id": "audit",
+        "dimension": "audit",
+        "text": "Can {org} produce a full audit logging of AI decisions, metadata logs, and explainability records for any AI-generated answer?",
+        "sub": "Proving model provenance is critical for post-incident investigation.",
+        "multi": False,
+        "options": [
+            {"value": "full", "label": "Yes, full audit logging of AI decisions, metadata logs, and explainability for security reviews", "score": 100, "frag": 0},
+            {"value": "part", "label": "Partially, audit logging for some systems", "score": 50, "frag": 0},
+            {"value": "no", "label": "No audit logging or explainability records today", "score": 0, "frag": 0}
+        ]
+    }
+]
+
+CFO_TEMPLATE_QUESTIONS = [
+    {
+        "id": "maturity",
+        "dimension": "maturity",
+        "text": "Where is {org} with token throttling policies, measured payback tracking, and FinOps optimization maturity today?",
+        "sub": "Controlling API costs is essential for sustaining AI initiatives.",
+        "multi": False,
+        "options": [
+            {"value": "exploring", "label": "Exploring - researching token throttling and measured payback models", "score": 25, "frag": 0},
+            {"value": "pilots", "label": "Pilots running - testing FinOps optimization and basic payback tracking", "score": 50, "frag": 0},
+            {"value": "production", "label": "In production - active token throttling and measured payback tracking", "score": 75, "frag": 0},
+            {"value": "scaling", "label": "Scaling - fully automated FinOps optimization, token throttling, and payback tracking", "score": 90, "frag": 0}
+        ]
+    },
+    {
+        "id": "semantic",
+        "dimension": "semantic",
+        "text": "How does {org} standardize structured financial ledger consistency and spend records for cost center analysis?",
+        "sub": "Consistent data mapping ensures AI generates defensible numbers.",
+        "multi": False,
+        "options": [
+            {"value": "low", "label": "1-2 systems, unified structured financial ledger and spend records for cost center analysis", "score": 85, "frag": 15},
+            {"value": "mod", "label": "3-5 systems, mostly aligned financial ledger formatting", "score": 60, "frag": 40},
+            {"value": "high", "label": "6-10 systems, significant variation in spend records across departments", "score": 35, "frag": 70},
+            {"value": "sev", "label": "10+ systems, completely fragmented financial data and spend records", "score": 15, "frag": 90}
+        ]
+    },
+    {
+        "id": "rag",
+        "dimension": "rag",
+        "text": "On complex financial questions, how does {org} ground AI forecast outputs in transactional data to prevent hallucinated budget metrics?",
+        "sub": "Inaccurate financial forecasts introduce significant organizational risk.",
+        "multi": False,
+        "options": [
+            {"value": "unk", "label": "We haven't measured accuracy or groundings for budget metrics", "score": 30, "frag": 0},
+            {"value": "u50", "label": "Below 50% accuracy; frequent hallucinated budget metrics", "score": 25, "frag": 0},
+            {"value": "5070", "label": "50-70% accuracy; partially grounded AI forecasts", "score": 45, "frag": 0},
+            {"value": "7085", "label": "70-85% accuracy; mostly grounded in transactional data", "score": 70, "frag": 0},
+            {"value": "o85", "label": "Above 85% accuracy; fully grounded AI forecasts, no hallucinated budget metrics", "score": 88, "frag": 0}
+        ]
+    },
+    {
+        "id": "oversight",
+        "dimension": "oversight",
+        "text": "Does {org} enforce formal spend approvals, budget limits, cost allocation, and ROI accountability for AI projects?",
+        "sub": "Financial governance controls prevent run-away pilot costs.",
+        "multi": False,
+        "options": [
+            {"value": "none", "label": "No formal budget limits or cost allocation", "score": 20, "frag": 0},
+            {"value": "partial", "label": "Partial - basic spend approvals and ad-hoc ROI tracking", "score": 50, "frag": 0},
+            {"value": "formal", "label": "Yes - formal oversight governing spend approvals, budget limits, cost allocation, and ROI accountability", "score": 85, "frag": 0}
+        ]
+    },
+    {
+        "id": "audit",
+        "dimension": "audit",
+        "text": "Can {org} produce a traceability trail of automated financial decisions and defensible logs for board/auditor reviews?",
+        "sub": "Regulatory and board reporting requires transparent, verifiable computation paths.",
+        "multi": False,
+        "options": [
+            {"value": "full", "label": "Yes, full traceability of automated financial decisions and defensible logs", "score": 100, "frag": 0},
+            {"value": "part", "label": "Partially, traceability logs for some departments", "score": 50, "frag": 0},
+            {"value": "no", "label": "No traceability or defensible logs for auditor reviews", "score": 0, "frag": 0}
+        ]
+    }
+]
+
 
 def _replace_org_token(questions: list[dict[str, Any]], org: str) -> list[dict[str, Any]]:
     import copy
@@ -237,7 +371,14 @@ def generate_questions(payload: GenerateAssessmentRequest) -> dict:
         
     except Exception as exc:
         logger.warning("Assessment questions generation failed, falling back to templates: %s", exc)
-        fallback_qs = _replace_org_token(DEFAULT_TEMPLATE_QUESTIONS, org)
+        if "security" in role.lower() or "ciso" in role.lower():
+            selected_templates = CISO_TEMPLATE_QUESTIONS
+        elif "cfo" in role.lower():
+            selected_templates = CFO_TEMPLATE_QUESTIONS
+        else:
+            selected_templates = DEFAULT_TEMPLATE_QUESTIONS
+            
+        fallback_qs = _replace_org_token(selected_templates, org)
         fallback_qs = _customize_fallback_wording(fallback_qs, domain, role)
         return {"questions": fallback_qs}
 
