@@ -2,6 +2,55 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --dash-bg: #070A13;
+  --dash-sidebar-bg: rgba(15, 23, 42, 0.8);
+  --dash-card-bg: rgba(15, 23, 42, 0.4);
+  --dash-border: rgba(30, 41, 59, 0.8);
+  --dash-text-primary: #F8FAFC;
+  --dash-text-secondary: #94A3B8;
+  --dash-accent: #22D3EE;
+  --dash-accent-hover: #06B6D4;
+  --dash-user-msg: rgba(34, 211, 238, 0.1);
+  --dash-assistant-msg: rgba(15, 23, 42, 0.6);
+  --dash-user-msg-border: rgba(34, 211, 238, 0.3);
+  --dash-user-msg-text: #E2E8F0;
+  --dash-assistant-msg-border: rgba(30, 41, 59, 0.8);
+  --dash-assistant-msg-text: #cbd5e1;
+  --dash-chat-bg-from: rgba(2, 6, 23, 0.2);
+  --dash-chat-bg-to: rgba(2, 6, 23, 0.6);
+  
+  --dash-active-bg: rgba(34, 211, 238, 0.1);
+  --dash-active-text: #22D3EE;
+  --dash-active-border: rgba(34, 211, 238, 0.2);
+  --dash-active-shadow: 0 0 15px rgba(34, 211, 238, 0.1);
+  --dash-hover-bg: rgba(30, 41, 59, 0.4);
+  --dash-hover-text: #FFFFFF;
+
+  --dash-newchat-bg: #8B1D1D;
+  --dash-newchat-hover-bg: #A32A2A;
+  --dash-newchat-text: #FFFFFF;
+  --dash-newchat-hover-text: #FFFFFF;
+  --dash-newchat-shadow: 0 0 12px rgba(139, 29, 29, 0.3);
+
+  --accent: #22D3EE;
+  --accent-2: #818CF8;
+  --amber: #F59E0B;
+  --rose: #F43F5E;
+  --emerald: #10B981;
+
+  --trend-chart-stroke: #22D3EE;
+  --trend-chart-circle-1: #A78BFA;
+  --trend-chart-circle-2: #22D3EE;
+  --trend-chart-shadow: drop-shadow(0 0 8px rgba(34, 211, 238, 0.5));
+  --dash-gridline-color: rgba(255,255,255,0.03);
+
+  --voice-toggle-bg: linear-gradient(135deg, #22D3EE, #2563EB, #6366F1);
+  --voice-toggle-border: 2px solid rgba(34, 211, 238, 0.3);
+  --voice-toggle-shadow: 0 0 20px rgba(34, 211, 238, 0.45);
+  --voice-pulse-color: rgba(34, 211, 238, 0.4);
+}
+
 body {
   background-color: #0B1220;
   color: #E2E8F0;
@@ -38,6 +87,53 @@ body {
 
 /* Parchment Brand Theme */
 .theme-parchment {
+  --dash-bg: #F4F0E6;
+  --dash-sidebar-bg: #ECE5D6;
+  --dash-card-bg: #FBF8F0;
+  --dash-border: rgba(20, 22, 26, 0.12);
+  --dash-text-primary: #14161A;
+  --dash-text-secondary: #3B3D42;
+  --dash-accent: #A87C3C;
+  --dash-accent-hover: #1E3A36;
+  --dash-user-msg: rgba(168, 124, 60, 0.1);
+  --dash-user-msg-border: rgba(168, 124, 60, 0.35);
+  --dash-user-msg-text: #14161A;
+  --dash-assistant-msg: #FBF8F0;
+  --dash-assistant-msg-border: rgba(20, 22, 26, 0.18);
+  --dash-assistant-msg-text: #3B3D42;
+  --dash-chat-bg-from: #F4F0E6;
+  --dash-chat-bg-to: #F4F0E6;
+  
+  --dash-active-bg: rgba(168, 124, 60, 0.15);
+  --dash-active-text: #A87C3C;
+  --dash-active-border: rgba(168, 124, 60, 0.3);
+  --dash-active-shadow: none;
+  --dash-hover-bg: rgba(30, 58, 54, 0.1);
+  --dash-hover-text: #1E3A36;
+
+  --dash-newchat-bg: var(--dash-accent);
+  --dash-newchat-hover-bg: var(--dash-accent-hover);
+  --dash-newchat-text: #14161A;
+  --dash-newchat-hover-text: #FBF8F0;
+  --dash-newchat-shadow: none;
+
+  --accent: #A87C3C;
+  --accent-2: #1E3A36;
+  --amber: #7C5723;
+  --rose: #9A3412;
+  --emerald: #365314;
+
+  --trend-chart-stroke: var(--dash-accent);
+  --trend-chart-circle-1: var(--dash-accent-hover);
+  --trend-chart-circle-2: var(--dash-accent);
+  --trend-chart-shadow: none;
+  --dash-gridline-color: rgba(20, 22, 26, 0.08);
+
+  --voice-toggle-bg: var(--dash-accent);
+  --voice-toggle-border: 2px solid var(--dash-accent);
+  --voice-toggle-shadow: 0 4px 12px rgba(20, 22, 26, 0.15);
+  --voice-pulse-color: rgba(168, 124, 60, 0.4);
+
   --paper: #F4F0E6;
   --paper-2: #ECE5D6;
   --paper-3: #E4DCC9;
@@ -55,10 +151,71 @@ body {
   --serif: 'Fraunces', Georgia, serif;
   --sans: 'Hanken Grotesk', -apple-system, sans-serif;
 
-  background-color: var(--paper);
-  color: var(--ink);
+  background-color: var(--dash-bg) !important;
+  color: var(--dash-text-primary) !important;
   font-family: var(--sans);
   position: relative;
+}
+
+/* Scrollbar theme overrides inside parchment */
+.theme-parchment ::-webkit-scrollbar-thumb {
+  background: rgba(168, 124, 60, 0.2) !important;
+}
+.theme-parchment ::-webkit-scrollbar-thumb:hover {
+  background: rgba(168, 124, 60, 0.45) !important;
+}
+
+/* Code block / snippet readability inside parchment */
+.theme-parchment code,
+.theme-parchment pre {
+  background-color: rgba(20, 22, 26, 0.05) !important;
+  color: #1E3A36 !important; /* teal */
+  border: 1px solid rgba(20, 22, 26, 0.08) !important;
+  border-radius: 6px !important;
+}
+
+/* Option menus inside parchment select elements */
+.theme-parchment select,
+.theme-parchment select option {
+  background-color: var(--dash-card-bg) !important;
+  color: var(--dash-text-primary) !important;
+  border-color: var(--dash-border) !important;
+}
+
+/* Map utility text colors inside parchment mode to prevent dark-theme text color leaks */
+.theme-parchment .text-white,
+.theme-parchment .text-slate-100,
+.theme-parchment .text-slate-200 {
+  color: var(--dash-text-primary) !important;
+}
+
+.theme-parchment .text-slate-300,
+.theme-parchment .text-slate-350,
+.theme-parchment .text-slate-400,
+.theme-parchment .text-slate-500 {
+  color: var(--dash-text-secondary) !important;
+}
+
+/* Ensure contrast for status colors on parchment */
+.theme-parchment .text-emerald-400 {
+  color: #3C5A2E !important;
+}
+.theme-parchment .bg-emerald-400 {
+  background-color: #3C5A2E !important;
+}
+.theme-parchment .bg-emerald-950\/20 {
+  background-color: rgba(60, 90, 46, 0.1) !important;
+  border-color: rgba(60, 90, 46, 0.2) !important;
+}
+.theme-parchment .text-rose-400 {
+  color: #9A3412 !important;
+}
+.theme-parchment .bg-rose-400 {
+  background-color: #9A3412 !important;
+}
+.theme-parchment .bg-rose-950\/20 {
+  background-color: rgba(154, 52, 18, 0.1) !important;
+  border-color: rgba(154, 52, 18, 0.2) !important;
 }
 
 .theme-parchment::before {

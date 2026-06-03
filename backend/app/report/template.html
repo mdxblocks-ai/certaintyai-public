@@ -4,6 +4,9 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CertaintyAI — AI Readiness Assessment Report</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..700&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
       --bg: #0B1220;
@@ -39,6 +42,38 @@
       background: #FFFFFF !important;
     }
 
+    /* Parchment Theme (Dynamic Screen Style) */
+    body.theme-parchment, html.theme-parchment {
+      --bg: #F4F0E6;              /* Cream paper bg */
+      --panel: #FBF8F0;           /* Cream cards */
+      --panel-2: #ECE5D6;         /* Slightly darker cream */
+      --border: rgba(20, 22, 26, 0.12); /* Ink borders */
+      --text: #3B3D42;            /* Soft ink text */
+      --text-heading: #14161A;    /* Dark ink text */
+      --muted: #595652;           /* Soft dark captions (AA contrast compliant) */
+      --subtle: #73706A;          /* Softest captions (AA contrast compliant) */
+      --accent: #A87C3C;          /* Brass/Gold */
+      --accent-2: #1E3A36;        /* Dark Teal */
+      --rose: #9A3412;            /* Dark rose for contrast on light */
+      --amber: #7C5723;           /* Dark amber */
+      --emerald: #3C5A2E;         /* Dark green */
+      
+      --cover-bg-from: rgba(168, 124, 60, 0.12);
+      --cover-bg-to: rgba(30, 58, 54, 0.08);
+      --dial-bg-from: rgba(168, 124, 60, 0.15);
+      --dial-bg-to: rgba(168, 124, 60, 0.02);
+      --dial-shadow: none;
+      --cta-primary-text: #FBF8F0;
+      --cta-success-text: #FBF8F0;
+    }
+
+    body.theme-parchment h1,
+    body.theme-parchment h2,
+    body.theme-parchment h3,
+    body.theme-parchment h4 {
+      font-family: 'Fraunces', Georgia, serif;
+    }
+
     *, *::before, *::after { box-sizing: border-box; }
     html, body { margin: 0; padding: 0; }
     body {
@@ -67,7 +102,7 @@
     /* ─── Compact centered hero (now includes Exec Summary) ───── */
     .cover{
       text-align:center;
-      background:linear-gradient(135deg,rgba(34,211,238,0.10),rgba(167,139,250,0.08));
+      background:linear-gradient(135deg,var(--cover-bg-from, rgba(34,211,238,0.10)),var(--cover-bg-to, rgba(167,139,250,0.08)));
       border:1px solid var(--border);
       border-radius:14px;
       padding:12px 18px 10px;
@@ -89,8 +124,9 @@
     .score-dial-center{
       width:110px;height:110px;border-radius:50%;
       display:flex;align-items:center;justify-content:center;flex-direction:column;
-      background:radial-gradient(closest-side,rgba(34,211,238,0.18),rgba(34,211,238,0.02));
+      background:radial-gradient(closest-side,var(--dial-bg-from, rgba(34,211,238,0.18)),var(--dial-bg-to, rgba(34,211,238,0.02)));
       border:2px solid var(--accent);flex-shrink:0;
+      box-shadow:var(--dial-shadow, 0 0 10px rgba(34,211,238,0.2));
     }
     .score-dial-center .num{font-size:38px;font-weight:700;color:var(--text-heading);line-height:1;font-variant-numeric:tabular-nums;}
     .score-dial-center .max{font-size:10px;color:var(--muted);margin-top:2px;letter-spacing:0.14em;}
@@ -260,9 +296,24 @@
     /* ─── CTAs ────────────────────────────────────────────────── */
     .cta-row{margin-top:22px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
     .cta{padding:9px 16px;border-radius:999px;font-size:13px;font-weight:600;cursor:pointer;border:1px solid transparent;text-decoration:none;display:inline-flex;align-items:center;gap:6px;}
-    .cta.primary{background:var(--accent);color:#052E36;}
-    .cta.success{background:var(--emerald);color:#052e1c;}
+    .cta.primary{background:var(--accent);color:var(--cta-primary-text, #052E36);}
+    .cta.success{background:var(--emerald);color:var(--cta-success-text, #052e1c);}
     .cta.ghost{background:transparent;border-color:var(--border);color:var(--text);}
+
+    .financial-snapshot-card {
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      width: 100%;
+    }
+    .financial-snapshot-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 4px;
+    }
 
     .colophon{margin-top:18px;color:var(--subtle);font-size:10px;text-align:center;}
 
@@ -684,22 +735,22 @@
           {% endif %}
         </div>
         <!-- CFO Financial Impact Snapshot (Column 3) -->
-        <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; width: 100%;">
+        <div class="financial-snapshot-card">
           <h4 style="font-size: 8.5px; text-transform: uppercase; color: var(--accent); letter-spacing: 0.12em; margin-bottom: 6px; font-weight: 700;">💰 Financial Impact Snapshot</h4>
           <div style="display: flex; flex-direction: column; gap: 6px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.02); padding-bottom: 4px;">
+            <div class="financial-snapshot-row">
               <span style="font-size: 10px; color: var(--muted); font-weight: 500;">Current AI Spend</span>
               <strong style="font-size: 12px; color: var(--text-heading);">${{ scores.finops.monthly_spend | int }}/mo</strong>
             </div>
-            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.02); padding-bottom: 4px;">
+            <div class="financial-snapshot-row">
               <span style="font-size: 10px; color: var(--muted); font-weight: 500;">Potential Annual Savings (Target)</span>
               <strong style="font-size: 12px; color: var(--emerald);">${{ ((scores.finops.monthly_spend - (scores.finops.monthly_spend * 0.375)) * 12) | int }}/yr</strong>
             </div>
-            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.02); padding-bottom: 4px;">
+            <div class="financial-snapshot-row">
               <span style="font-size: 10px; color: var(--muted); font-weight: 500;">ROI Opportunity</span>
               <strong style="font-size: 11px; color: var(--accent-2); text-transform: uppercase;">HIGH</strong>
             </div>
-            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.02); padding-bottom: 4px;">
+            <div class="financial-snapshot-row">
               <span style="font-size: 10px; color: var(--muted); font-weight: 500;">Payback Period (Illustrative)</span>
               <strong style="font-size: 12px; color: var(--amber);">3.2 Months</strong>
             </div>
@@ -1524,6 +1575,30 @@
         } else {
           document.body.classList.remove('theme-light');
         }
+      } else if (event.data && event.data.type === 'SET_THEME') {
+        if (event.data.theme === 'parchment') {
+          document.body.classList.add('theme-parchment');
+          document.documentElement.classList.add('theme-parchment');
+        } else {
+          document.body.classList.remove('theme-parchment');
+          document.documentElement.classList.remove('theme-parchment');
+        }
+      }
+    });
+
+    document.addEventListener("DOMContentLoaded", function() {
+      try {
+        const theme = localStorage.getItem("dashboard_theme");
+        const isParchment = theme === null || theme === "parchment";
+        if (isParchment) {
+          document.body.classList.add("theme-parchment");
+          document.documentElement.classList.add("theme-parchment");
+        } else {
+          document.body.classList.remove("theme-parchment");
+          document.documentElement.classList.remove("theme-parchment");
+        }
+      } catch (e) {
+        console.warn("Storage access restricted in iframe:", e);
       }
     });
 

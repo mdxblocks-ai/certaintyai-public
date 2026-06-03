@@ -3,6 +3,8 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import api from '../lib/api'
 import { useAuth } from '../context/AuthContext'
 
+const SHOW_AI_READINESS_NAV = false;
+
 // Lucide-like custom inline SVGs for premium look & feel
 const Icons = {
   Home: () => (
@@ -61,6 +63,25 @@ export default function Report() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [isCollapsed, setIsCollapsed] = useState(false)
+
+  const isParchment = !user || (() => {
+    const theme = localStorage.getItem('dashboard_theme')
+    return theme === null ? true : theme === 'parchment'
+  })()
+
+  const handleIframeLoad = () => {
+    const win = iframeRef.current?.contentWindow;
+    if (win) {
+      win.postMessage({ type: 'SET_THEME', theme: isParchment ? 'parchment' : 'dark' }, '*');
+    }
+  };
+
+  useEffect(() => {
+    const win = iframeRef.current?.contentWindow;
+    if (win && html) {
+      win.postMessage({ type: 'SET_THEME', theme: isParchment ? 'parchment' : 'dark' }, '*');
+    }
+  }, [isParchment, html]);
 
   useEffect(() => {
     let cancelled = false
@@ -152,12 +173,13 @@ export default function Report() {
 
   // Report content shared between both layouts
   const reportBody = (
-    <div className="w-full flex-grow flex flex-col items-center bg-slate-950">
+    <div className="w-full flex-grow flex flex-col items-center bg-[var(--dash-bg)]">
       <iframe
         ref={iframeRef}
         title="AI Readiness Report"
         srcDoc={html}
-        className="w-full flex-1 border-none bg-slate-950"
+        onLoad={handleIframeLoad}
+        className="w-full flex-1 border-none bg-[var(--dash-bg)]"
         style={{ width: '100%', minHeight: '1200px', border: 'none', overflow: 'hidden' }}
         sandbox="allow-same-origin allow-scripts allow-top-navigation allow-modals allow-popups"
       />
@@ -165,54 +187,54 @@ export default function Report() {
   )
 
   const guestHeader = (
-    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-800/40 pb-3 mb-4 no-print">
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-[var(--dash-border)] pb-3 mb-4 no-print">
       <div>
-        <span className="text-xs uppercase tracking-widest text-cyan-400 font-bold bg-cyan-950/40 border border-cyan-800/30 px-3 py-1 rounded-full">
+        <span className="text-xs uppercase tracking-widest text-[var(--dash-active-text)] font-bold bg-[var(--dash-active-bg)] border border-[var(--dash-active-border)] px-3 py-1 rounded-full">
           🛡️ Readiness &amp; Governance
         </span>
-        <h2 className="text-3xl font-extrabold text-white mt-2">
+        <h2 className="text-3xl font-extrabold text-[var(--dash-text-primary)] mt-2">
           AI Readiness Assessment Report
         </h2>
       </div>
       <div className="flex flex-wrap items-center gap-3">
         <Link
           to={`/signup?claim=${token}`}
-          className="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-cyan-400 text-slate-950 text-sm font-bold hover:from-cyan-400 hover:to-cyan-300 transition duration-200 shadow-[0_0_15px_rgba(34,211,238,0.25)] flex items-center gap-2"
+          className="px-4 py-2 rounded-xl bg-[var(--dash-accent)] text-[var(--dash-newchat-text)] hover:bg-[var(--dash-accent-hover)] hover:text-[var(--dash-newchat-hover-text)] text-sm font-bold transition duration-200 flex items-center gap-2"
         >
           💾 Save Report (Free)
         </Link>
         <button
           type="button"
           onClick={handlePrint}
-          className="px-4 py-2 rounded-xl border border-slate-700 hover:border-slate-500 bg-slate-900/40 text-sm text-slate-200 hover:text-white transition duration-200 font-semibold flex items-center gap-2"
+          className="px-4 py-2 rounded-xl border border-[var(--dash-border)] hover:border-[var(--dash-accent)] bg-[var(--dash-card-bg)] text-sm text-[var(--dash-text-primary)] hover:text-[var(--dash-hover-text)] hover:bg-[var(--dash-hover-bg)] transition duration-200 font-semibold flex items-center gap-2"
         >
           🖨 Print
         </button>
         <button
           type="button"
           onClick={() => navigate('/survey')}
-          className="px-4 py-2 rounded-xl border border-slate-700 hover:border-slate-500 bg-slate-900/40 text-sm text-slate-200 hover:text-white transition duration-200 font-semibold flex items-center gap-2"
+          className="px-4 py-2 rounded-xl border border-[var(--dash-border)] hover:border-[var(--dash-accent)] bg-[var(--dash-card-bg)] text-sm text-[var(--dash-text-primary)] hover:text-[var(--dash-hover-text)] hover:bg-[var(--dash-hover-bg)] transition duration-200 font-semibold flex items-center gap-2"
         >
           🔄 Start Over
         </button>
-        <div className="bg-[#0F172A] border border-slate-800 px-4 py-2 rounded-xl flex items-center gap-3">
+        <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] px-4 py-2 rounded-xl flex items-center gap-3">
           <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--emerald)] opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-[var(--emerald)]"></span>
           </span>
-          <span className="text-slate-400">Security: <strong className="text-emerald-400 font-semibold uppercase">Locked</strong></span>
+          <span className="text-[var(--dash-text-secondary)]">Security: <strong className="text-[var(--emerald)] font-semibold uppercase">Locked</strong></span>
         </div>
       </div>
     </div>
   )
 
   const signedInHeader = (
-    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-800/40 pb-3 mb-4 no-print">
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-[var(--dash-border)] pb-3 mb-4 no-print">
       <div>
-        <span className="text-xs uppercase tracking-widest text-cyan-400 font-bold bg-cyan-950/40 border border-cyan-800/30 px-3 py-1 rounded-full">
+        <span className="text-xs uppercase tracking-widest text-[var(--dash-active-text)] font-bold bg-[var(--dash-active-bg)] border border-[var(--dash-active-border)] px-3 py-1 rounded-full">
           🛡️ Readiness &amp; Governance
         </span>
-        <h2 className="text-3xl font-extrabold text-white mt-2">
+        <h2 className="text-3xl font-extrabold text-[var(--dash-text-primary)] mt-2">
           AI Readiness Assessment Report
         </h2>
       </div>
@@ -220,23 +242,23 @@ export default function Report() {
         <button
           type="button"
           onClick={handlePrint}
-          className="px-4 py-2 rounded-xl border border-slate-700 hover:border-slate-500 bg-slate-900/40 text-sm text-slate-200 hover:text-white transition duration-200 font-semibold flex items-center gap-2"
+          className="px-4 py-2 rounded-xl border border-[var(--dash-border)] hover:border-[var(--dash-accent)] bg-[var(--dash-card-bg)] text-sm text-[var(--dash-text-primary)] hover:text-[var(--dash-hover-text)] hover:bg-[var(--dash-hover-bg)] transition duration-200 font-semibold flex items-center gap-2"
         >
           🖨 Print Report
         </button>
         <button
           type="button"
           onClick={() => navigate('/survey')}
-          className="px-4 py-2 rounded-xl border border-slate-700 hover:border-slate-500 bg-slate-900/40 text-sm text-slate-200 hover:text-white transition duration-200 font-semibold flex items-center gap-2"
+          className="px-4 py-2 rounded-xl border border-[var(--dash-border)] hover:border-[var(--dash-accent)] bg-[var(--dash-card-bg)] text-sm text-[var(--dash-text-primary)] hover:text-[var(--dash-hover-text)] hover:bg-[var(--dash-hover-bg)] transition duration-200 font-semibold flex items-center gap-2"
         >
           🔄 Start Over
         </button>
-        <div className="bg-[#0F172A] border border-slate-800 px-4 py-2 rounded-xl flex items-center gap-3">
+        <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] px-4 py-2 rounded-xl flex items-center gap-3">
           <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--emerald)] opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-[var(--emerald)]"></span>
           </span>
-          <span className="text-slate-400">Security Gateways: <strong className="text-emerald-400 font-semibold uppercase">Locked</strong></span>
+          <span className="text-[var(--dash-text-secondary)]">Security Gateways: <strong className="text-[var(--emerald)] font-semibold uppercase">Locked</strong></span>
         </div>
       </div>
     </div>
@@ -244,16 +266,16 @@ export default function Report() {
 
   if (user) {
     return (
-      <div className="w-full bg-[#070A13] text-slate-100 flex flex-col lg:flex-row h-[calc(100vh-64px)] overflow-hidden">
+      <div className={`w-full flex flex-col lg:flex-row h-[calc(100vh-64px)] overflow-hidden transition-colors duration-300 bg-[var(--dash-bg)] text-[var(--dash-text-primary)] ${isParchment ? 'theme-parchment' : ''}`}>
         {/* Sidebar Navigation */}
-        <aside className={`w-full transition-all duration-300 bg-[#0F172A]/80 border-b lg:border-b-0 lg:border-r border-slate-800/80 p-5 flex flex-col justify-between shrink-0 lg:h-full lg:overflow-y-auto ${
-          isCollapsed ? 'lg:w-20' : 'lg:w-64'
+        <aside className={`w-full transition-all duration-300 bg-[var(--dash-sidebar-bg)] border-b lg:border-b-0 lg:border-r border-[var(--dash-border)] p-5 flex flex-col justify-between shrink-0 lg:h-full lg:overflow-y-auto ${
+          isCollapsed ? 'lg:w-16' : 'lg:w-52'
         }`}>
           <div className="space-y-6 flex-grow flex flex-col">
             {/* Collapse/Expand Toggle Button */}
             <button
               onClick={() => setIsCollapsed(!isCollapsed)}
-              className="hidden lg:flex items-center justify-center p-1.5 rounded-lg border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800/50 transition w-full"
+              className="hidden lg:flex items-center justify-center p-1.5 rounded-lg border border-[var(--dash-border)] text-[var(--dash-text-secondary)] hover:text-[var(--dash-text-primary)] hover:bg-[var(--dash-hover-bg)] transition w-full"
               title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
             >
               {isCollapsed ? (
@@ -270,7 +292,9 @@ export default function Report() {
             <nav className="space-y-1.5">
               <button
                 onClick={() => navigate('/dashboard?tab=home')}
-                className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-left transition duration-200 text-slate-400 hover:text-white hover:bg-slate-800/40"
+                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-left transition duration-200 text-[var(--dash-text-secondary)] hover:text-[var(--dash-hover-text)] hover:bg-[var(--dash-hover-bg)] ${
+                  isCollapsed ? 'lg:justify-center' : ''
+                }`}
                 title="Home"
               >
                 <Icons.Home />
@@ -279,36 +303,33 @@ export default function Report() {
 
               <button
                 onClick={() => navigate('/dashboard?tab=dashboard')}
-                className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-left transition duration-200 text-slate-400 hover:text-white hover:bg-slate-800/40"
+                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-left transition duration-200 text-[var(--dash-text-secondary)] hover:text-[var(--dash-hover-text)] hover:bg-[var(--dash-hover-bg)] ${
+                  isCollapsed ? 'lg:justify-center' : ''
+                }`}
                 title="Dashboard"
               >
                 <Icons.Dashboard />
                 {!isCollapsed && <span className="text-sm font-semibold">Dashboard</span>}
               </button>
 
-              {/* 
-              <button
-                onClick={() => navigate('/dashboard?tab=portfolio')}
-                className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-left transition duration-200 text-slate-400 hover:text-white hover:bg-slate-800/40"
-                title="Strategic Advisory Portfolio"
-              >
-                <Icons.Portfolio />
-                {!isCollapsed && <span className="text-sm font-semibold">Strategic Advisory Portfolio</span>}
-              </button>
-              */}
-
-              <button
-                onClick={() => navigate('/dashboard?tab=readiness')}
-                className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-left transition duration-200 text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 shadow-[0_0_15px_rgba(34,211,238,0.1)] font-bold"
-                title="AI Readiness"
-              >
-                <Icons.Readiness />
-                {!isCollapsed && <span className="text-sm font-semibold">AI Readiness</span>}
-              </button>
+              {SHOW_AI_READINESS_NAV && (
+                <button
+                  onClick={() => navigate('/dashboard?tab=readiness')}
+                  className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-left transition duration-200 bg-[var(--dash-active-bg)] text-[var(--dash-active-text)] border border-[var(--dash-active-border)] shadow-[var(--dash-active-shadow)] font-bold ${
+                    isCollapsed ? 'lg:justify-center' : ''
+                  }`}
+                  title="AI Readiness"
+                >
+                  <Icons.Readiness />
+                  {!isCollapsed && <span className="text-sm font-semibold">AI Readiness</span>}
+                </button>
+              )}
 
               <button
                 onClick={() => navigate('/dashboard?tab=reports')}
-                className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-left transition duration-200 text-slate-400 hover:text-white hover:bg-slate-800/40"
+                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-left transition duration-200 text-[var(--dash-text-secondary)] hover:text-[var(--dash-hover-text)] hover:bg-[var(--dash-hover-bg)] ${
+                  isCollapsed ? 'lg:justify-center' : ''
+                }`}
                 title="Saved Reports"
               >
                 <Icons.Reports />
@@ -322,7 +343,9 @@ export default function Report() {
             <nav className="space-y-1">
               <button
                 onClick={() => navigate('/dashboard?tab=settings')}
-                className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-left transition duration-200 text-slate-400 hover:text-white hover:bg-slate-800/40"
+                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-left transition duration-200 text-[var(--dash-text-secondary)] hover:text-[var(--dash-hover-text)] hover:bg-[var(--dash-hover-bg)] ${
+                  isCollapsed ? 'lg:justify-center' : ''
+                }`}
                 title="Settings"
               >
                 <Icons.Settings />
@@ -330,9 +353,28 @@ export default function Report() {
               </button>
             </nav>
 
+            {/* Co-brand Trust Block */}
+            {!isCollapsed && (
+              <div className="px-3 py-2.5 rounded-xl border border-[var(--dash-border)] bg-[var(--dash-card-bg)]/20 text-[10px] space-y-1.5 font-sans">
+                <div className="flex flex-col">
+                  <span className="text-[8px] uppercase tracking-wider text-[var(--dash-text-secondary)] font-bold">BUILT ON</span>
+                  <div className="flex items-center mt-0.5">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3.5 h-3.5 text-[var(--dash-accent)] mr-1.5 shrink-0">
+                      <path d="M17.5 19A3.5 3.5 0 0 0 21 15.5c0-2.79-2.54-4.5-5-4.5-.42 0-.83.04-1.24.11A7 7 0 0 0 3 11.5c0 3.62 3.1 6.5 7 6.5h7.5z" />
+                    </svg>
+                    <span className="text-[11px] font-semibold text-[var(--dash-text-primary)]">Google Cloud</span>
+                  </div>
+                  <span className="text-[9px] mt-0.5 text-[var(--dash-text-secondary)]">Powered by Vertex AI · Cloud Run</span>
+                </div>
+                <div className="border-t border-[var(--dash-border)] pt-1.5 text-[8.5px] leading-normal text-[var(--dash-text-secondary)]">
+                  Aligned to NIST AI RMF · ISO 42001 · EU AI Act
+                </div>
+              </div>
+            )}
+
             {/* User Card */}
-            <div className="pt-4 border-t border-slate-800/60 hidden lg:block">
-              <div className={`flex items-center gap-3 bg-slate-900/40 p-3 rounded-xl border border-slate-800 transition duration-200 ${
+            <div className="pt-4 border-t border-[var(--dash-border)] hidden lg:block">
+              <div className={`flex items-center gap-3 bg-[var(--dash-card-bg)] p-3 rounded-xl border border-[var(--dash-border)] transition duration-200 ${
                 isCollapsed ? 'justify-center' : ''
               }`} title={user?.email}>
                 <div className="w-9 h-9 rounded-lg bg-gradient-to-tr from-cyan-500 to-indigo-500 flex items-center justify-center font-bold text-slate-950 text-sm shrink-0">
@@ -341,8 +383,8 @@ export default function Report() {
                 {!isCollapsed && (
                   <div className="flex items-center justify-between flex-1 min-w-0">
                     <div className="min-w-0">
-                      <p className="text-xs text-slate-400 uppercase tracking-widest font-semibold">{user?.role || 'Enterprise User'}</p>
-                      <p className="text-sm text-slate-200 font-bold truncate">{user?.email}</p>
+                      <p className="text-xs text-[var(--dash-text-secondary)] uppercase tracking-widest font-semibold">{user?.role || 'Enterprise User'}</p>
+                      <p className="text-sm text-[var(--dash-text-primary)] font-bold truncate">{user?.email}</p>
                     </div>
                   </div>
                 )}
@@ -355,8 +397,6 @@ export default function Report() {
         <main className="flex-1 p-3 lg:py-4 lg:px-6 space-y-3 overflow-y-auto w-full no-print">
           {signedInHeader}
 
-
-
           {/* Report Body */}
           {reportBody}
         </main>
@@ -365,19 +405,19 @@ export default function Report() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-950">
+    <div className={`min-h-screen flex flex-col transition-colors duration-300 bg-[var(--dash-bg)] text-[var(--dash-text-primary)] ${isParchment ? 'theme-parchment' : ''}`}>
 
       {loading && (
-        <div className="flex-1 flex items-center justify-center text-slate-400 text-sm">Loading report…</div>
+        <div className="flex-1 flex items-center justify-center text-[var(--dash-text-secondary)] text-sm">Loading report…</div>
       )}
       {!loading && error && (
         <div className="flex-1 flex items-center justify-center px-4">
-          <div className="max-w-md text-center bg-slate-900/60 border border-slate-800 rounded-2xl p-6">
-            <p className="text-rose-400 text-sm">{error}</p>
+          <div className="max-w-md text-center bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-6">
+            <p className="text-[var(--rose)] text-sm">{error}</p>
             <button
               type="button"
               onClick={() => navigate('/survey')}
-              className="mt-4 px-4 py-2 rounded-lg text-sm border border-slate-700 hover:border-slate-500 transition"
+              className="mt-4 px-4 py-2 rounded-lg text-sm border border-[var(--dash-border)] hover:border-[var(--dash-accent)] hover:text-[var(--dash-hover-text)] hover:bg-[var(--dash-hover-bg)] transition duration-200"
             >
               Start a new assessment
             </button>
@@ -385,7 +425,7 @@ export default function Report() {
         </div>
       )}
       {!loading && !error && (
-        <div className="flex-1 flex flex-col bg-slate-950 p-3 lg:py-4 lg:px-6 max-w-[1380px] mx-auto w-full">
+        <div className="flex-1 flex flex-col p-3 lg:py-4 lg:px-6 max-w-[1380px] mx-auto w-full">
           {guestHeader}
           {reportBody}
         </div>

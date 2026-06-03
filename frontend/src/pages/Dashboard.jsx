@@ -6,6 +6,8 @@ import api from '../lib/api'
 import voiceKnowledgeBase from '../lib/voiceKnowledgeBase.json'
 import SurveyWizard from '../components/survey/SurveyWizard'
 
+const SHOW_AI_READINESS_NAV = false;
+
 // Lucide-like custom inline SVGs for premium look & feel
 const Icons = {
   Home: () => (
@@ -789,6 +791,10 @@ export default function Dashboard() {
   const [copilotListening, setCopilotListening] = useState(false)
   const [copilotStreaming, setCopilotStreaming] = useState(false)
   const [showCopilotModelDropdown, setShowCopilotModelDropdown] = useState(false)
+  const [isParchment, setIsParchment] = useState(() => {
+    const theme = localStorage.getItem('dashboard_theme')
+    return theme === null ? true : theme === 'parchment'
+  })
   const [copilotReadingId, setCopilotReadingId] = useState(null)
   const [voiceAssistantOpen, setVoiceAssistantOpen] = useState(false)
   const [voiceSuggestedPrompts, setVoiceSuggestedPrompts] = useState([])
@@ -1729,7 +1735,7 @@ export default function Dashboard() {
         glowColor = 'rgba(148, 163, 184, 0.4)' // Slate for idle
       }
 
-      ctx.shadowBlur = 10
+      ctx.shadowBlur = isParchment ? 0 : 10
       ctx.shadowColor = glowColor
 
       for (let i = 0; i < numWaves; i++) {
@@ -1738,13 +1744,21 @@ export default function Dashboard() {
         const waveAmp = amplitude * (1 - i * 0.25)
         
         if (agentState === 'speaking') {
-          ctx.strokeStyle = i === 0 ? '#A78BFA' : 'rgba(167, 139, 250, 0.4)'
+          ctx.strokeStyle = isParchment
+            ? (i === 0 ? '#A87C3C' : 'rgba(168, 124, 60, 0.4)')
+            : (i === 0 ? '#A78BFA' : 'rgba(167, 139, 250, 0.4)')
         } else if (agentState === 'listening') {
-          ctx.strokeStyle = i === 0 ? '#22D3EE' : 'rgba(34, 211, 238, 0.3)'
+          ctx.strokeStyle = isParchment
+            ? (i === 0 ? '#1E3A36' : 'rgba(30, 58, 54, 0.3)')
+            : (i === 0 ? '#22D3EE' : 'rgba(34, 211, 238, 0.3)')
         } else if (agentState === 'searching') {
-          ctx.strokeStyle = i === 0 ? '#F59E0B' : 'rgba(245, 158, 11, 0.3)'
+          ctx.strokeStyle = isParchment
+            ? (i === 0 ? '#7C5723' : 'rgba(124, 87, 35, 0.3)')
+            : (i === 0 ? '#F59E0B' : 'rgba(245, 158, 11, 0.3)')
         } else {
-          ctx.strokeStyle = i === 0 ? '#94A3B8' : 'rgba(148, 163, 184, 0.2)'
+          ctx.strokeStyle = isParchment
+            ? (i === 0 ? '#73706A' : 'rgba(115, 112, 106, 0.2)')
+            : (i === 0 ? '#94A3B8' : 'rgba(148, 163, 184, 0.2)')
         }
 
         for (let x = 0; x < width; x++) {
@@ -1769,7 +1783,7 @@ export default function Dashboard() {
         cancelAnimationFrame(animationFrameRef.current)
       }
     }
-  }, [agentState])
+  }, [agentState, isParchment])
 
   // Mic Tap-to-Speak Trigger Action with Smart Interruption
   const toggleListening = () => {
@@ -2121,16 +2135,16 @@ export default function Dashboard() {
   ]
 
   return (
-    <div className="w-full bg-[#070A13] text-slate-100 flex flex-col lg:flex-row h-[calc(100vh-64px)] overflow-hidden">
+    <div className={`w-full flex flex-col lg:flex-row h-[calc(100vh-64px)] overflow-hidden transition-colors duration-300 bg-[var(--dash-bg)] text-[var(--dash-text-primary)] ${isParchment ? 'theme-parchment' : ''}`}>
       {/* Sidebar Navigation */}
-      <aside className={`w-full transition-all duration-300 bg-[#0F172A]/80 border-b lg:border-b-0 lg:border-r border-slate-800/80 p-5 flex flex-col justify-between shrink-0 lg:h-full lg:overflow-y-auto ${
-        isCollapsed ? 'lg:w-20' : 'lg:w-64'
+      <aside className={`w-full transition-all duration-300 bg-[var(--dash-sidebar-bg)] border-b lg:border-b-0 lg:border-r border-[var(--dash-border)] p-5 flex flex-col justify-between shrink-0 lg:h-full lg:overflow-y-auto ${
+        isCollapsed ? 'lg:w-16' : 'lg:w-52'
       }`}>
         <div className="space-y-6 flex-grow flex flex-col">
           {/* Collapse/Expand Toggle Button */}
           <button
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="hidden lg:flex items-center justify-center p-1.5 rounded-lg border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800/50 transition w-full"
+            className="hidden lg:flex items-center justify-center p-1.5 rounded-lg border border-[var(--dash-border)] text-[var(--dash-text-secondary)] hover:text-[var(--dash-text-primary)] hover:bg-[var(--dash-hover-bg)] transition w-full"
             title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
           >
             {isCollapsed ? (
@@ -2144,8 +2158,6 @@ export default function Dashboard() {
             )}
           </button>
 
-
-
           <nav className="space-y-1.5">
             <button
               onClick={() => handleTabChange('home')}
@@ -2153,8 +2165,8 @@ export default function Dashboard() {
                 isCollapsed ? 'lg:justify-center' : ''
               } ${
                 activeTab === 'home'
-                  ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 shadow-[0_0_15px_rgba(34,211,238,0.1)]'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
+                  ? 'bg-[var(--dash-active-bg)] text-[var(--dash-active-text)] border border-[var(--dash-active-border)] shadow-[var(--dash-active-shadow)]'
+                  : 'text-[var(--dash-text-secondary)] hover:text-[var(--dash-hover-text)] hover:bg-[var(--dash-hover-bg)]'
               }`}
               title="Home"
             >
@@ -2168,8 +2180,8 @@ export default function Dashboard() {
                 isCollapsed ? 'lg:justify-center' : ''
               } ${
                 activeTab === 'dashboard'
-                  ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 shadow-[0_0_15px_rgba(34,211,238,0.1)]'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
+                  ? 'bg-[var(--dash-active-bg)] text-[var(--dash-active-text)] border border-[var(--dash-active-border)] shadow-[var(--dash-active-shadow)]'
+                  : 'text-[var(--dash-text-secondary)] hover:text-[var(--dash-hover-text)] hover:bg-[var(--dash-hover-bg)]'
               }`}
               title="Dashboard"
             >
@@ -2177,37 +2189,22 @@ export default function Dashboard() {
               {!isCollapsed && <span className="text-sm font-semibold">Dashboard</span>}
             </button>
 
-            {/* 
-            <button
-              onClick={() => handleTabChange('portfolio')}
-              className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-left transition duration-200 ${
-                isCollapsed ? 'lg:justify-center' : ''
-              } ${
-                activeTab === 'portfolio'
-                  ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 shadow-[0_0_15px_rgba(34,211,238,0.1)]'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
-              }`}
-              title="Strategic Advisory Portfolio"
-            >
-              <Icons.Portfolio />
-              {!isCollapsed && <span className="text-sm font-semibold">Strategic Advisory Portfolio</span>}
-            </button>
-            */}
-
-            <button
-              onClick={() => handleTabChange('readiness')}
-              className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-left transition duration-200 ${
-                isCollapsed ? 'lg:justify-center' : ''
-              } ${
-                activeTab === 'readiness'
-                  ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 shadow-[0_0_15px_rgba(34,211,238,0.1)]'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
-              }`}
-              title="AI Readiness"
-            >
-              <Icons.Readiness />
-              {!isCollapsed && <span className="text-sm font-semibold">AI Readiness</span>}
-            </button>
+            {SHOW_AI_READINESS_NAV && (
+              <button
+                onClick={() => handleTabChange('readiness')}
+                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-left transition duration-200 ${
+                  isCollapsed ? 'lg:justify-center' : ''
+                } ${
+                  activeTab === 'readiness'
+                    ? 'bg-[var(--dash-active-bg)] text-[var(--dash-active-text)] border border-[var(--dash-active-border)] shadow-[var(--dash-active-shadow)]'
+                    : 'text-[var(--dash-text-secondary)] hover:text-[var(--dash-hover-text)] hover:bg-[var(--dash-hover-bg)]'
+                }`}
+                title="AI Readiness"
+              >
+                <Icons.Readiness />
+                {!isCollapsed && <span className="text-sm font-semibold">AI Readiness</span>}
+              </button>
+            )}
 
             <button
               onClick={() => handleTabChange('reports')}
@@ -2215,8 +2212,8 @@ export default function Dashboard() {
                 isCollapsed ? 'lg:justify-center' : ''
               } ${
                 activeTab === 'reports'
-                  ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 shadow-[0_0_15px_rgba(34,211,238,0.1)] font-bold'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
+                  ? 'bg-[var(--dash-active-bg)] text-[var(--dash-active-text)] border border-[var(--dash-active-border)] shadow-[var(--dash-active-shadow)] font-bold'
+                  : 'text-[var(--dash-text-secondary)] hover:text-[var(--dash-hover-text)] hover:bg-[var(--dash-hover-bg)]'
               }`}
               title="Saved Reports"
             >
@@ -2236,8 +2233,8 @@ export default function Dashboard() {
                 isCollapsed ? 'lg:justify-center' : ''
               } ${
                 activeTab === 'settings'
-                  ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 shadow-[0_0_15px_rgba(34,211,238,0.1)]'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-800/40'
+                  ? 'bg-[var(--dash-active-bg)] text-[var(--dash-active-text)] border border-[var(--dash-active-border)] shadow-[var(--dash-active-shadow)]'
+                  : 'text-[var(--dash-text-secondary)] hover:text-[var(--dash-hover-text)] hover:bg-[var(--dash-hover-bg)]'
               }`}
               title="Settings"
             >
@@ -2246,9 +2243,28 @@ export default function Dashboard() {
             </button>
           </nav>
 
+          {/* Co-brand Trust Block */}
+          {!isCollapsed && (
+            <div className="px-3 py-2.5 rounded-xl border border-[var(--dash-border)] bg-[var(--dash-card-bg)]/20 text-[10px] space-y-1.5 font-sans">
+              <div className="flex flex-col">
+                <span className="text-[8px] uppercase tracking-wider text-[var(--dash-text-secondary)] font-bold">BUILT ON</span>
+                <div className="flex items-center mt-0.5">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3.5 h-3.5 text-[var(--dash-accent)] mr-1.5 shrink-0">
+                    <path d="M17.5 19A3.5 3.5 0 0 0 21 15.5c0-2.79-2.54-4.5-5-4.5-.42 0-.83.04-1.24.11A7 7 0 0 0 3 11.5c0 3.62 3.1 6.5 7 6.5h7.5z" />
+                  </svg>
+                  <span className="text-[11px] font-semibold text-[var(--dash-text-primary)]">Google Cloud</span>
+                </div>
+                <span className="text-[9px] mt-0.5 text-[var(--dash-text-secondary)]">Powered by Vertex AI · Cloud Run</span>
+              </div>
+              <div className="border-t border-[var(--dash-border)] pt-1.5 text-[8.5px] leading-normal text-[var(--dash-text-secondary)]">
+                Aligned to NIST AI RMF · ISO 42001 · EU AI Act
+              </div>
+            </div>
+          )}
+
           {/* User Card */}
-          <div className="pt-4 border-t border-slate-800/60 hidden lg:block">
-            <div className={`flex items-center gap-3 bg-slate-900/40 p-3 rounded-xl border border-slate-800 transition duration-200 ${
+          <div className="pt-4 border-t border-[var(--dash-border)] hidden lg:block">
+            <div className={`flex items-center gap-3 bg-[var(--dash-card-bg)] p-3 rounded-xl border border-[var(--dash-border)] transition duration-200 ${
               isCollapsed ? 'justify-center' : ''
             }`} title={user?.email}>
               <div className="w-9 h-9 rounded-lg bg-gradient-to-tr from-cyan-500 to-indigo-500 flex items-center justify-center font-bold text-slate-950 text-sm shrink-0">
@@ -2257,12 +2273,12 @@ export default function Dashboard() {
               {!isCollapsed && (
                 <div className="flex items-center justify-between flex-1 min-w-0">
                   <div className="min-w-0">
-                    <p className="text-xs text-slate-400 uppercase tracking-widest font-semibold">{user?.role || 'Enterprise User'}</p>
-                    <p className="text-sm text-slate-200 font-bold truncate">{user?.email}</p>
+                    <p className="text-xs text-[var(--dash-text-secondary)] uppercase tracking-widest font-semibold">{user?.role || 'Enterprise User'}</p>
+                    <p className="text-sm text-[var(--dash-text-primary)] font-bold truncate">{user?.email}</p>
                   </div>
                   <button
                     onClick={handleLogout}
-                    className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-950/20 transition shrink-0"
+                    className="p-1.5 rounded-lg text-[var(--dash-text-secondary)] hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-500/10 transition shrink-0"
                     title="Logout"
                   >
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
@@ -2281,10 +2297,10 @@ export default function Dashboard() {
       {/* Main Panel */}
       <main className={`flex-1 ${activeTab === 'home' ? 'h-full overflow-hidden flex flex-col p-3 lg:p-4 max-w-none space-y-3' : 'p-4 lg:py-6 lg:px-8 space-y-5 overflow-y-auto max-w-[1380px]'} mx-auto w-full`}>
         {/* Header Summary Row */}
-        <div className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-800/40 pb-3`}>
+        <div className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-[var(--dash-border)] pb-3`}>
           <div>
             {activeTab !== 'home' && (
-              <span className="text-xs uppercase tracking-widest text-cyan-400 font-bold bg-cyan-950/40 border border-cyan-800/30 px-3 py-1 rounded-full">
+              <span className="text-xs uppercase tracking-widest text-[var(--dash-accent)] font-bold bg-[var(--dash-active-bg)] border border-[var(--dash-active-border)] px-3 py-1 rounded-full">
                 {activeTab === 'dashboard' && '📊 Executive Briefing'}
                 {activeTab === 'reports' && '📂 Assessment History'}
                 {activeTab === 'portfolio' && (dashboardSubTab === 'strategy' ? '💎 Strategic Advisory Portfolio' : 'Live Observability Core')}
@@ -2296,7 +2312,7 @@ export default function Dashboard() {
                 {activeTab === 'settings' && '👤 User Profile'}
               </span>
             )}
-            <h2 className="text-3xl font-extrabold text-white mt-2">
+            <h2 className="text-3xl font-extrabold text-[var(--dash-text-primary)] mt-2">
               {activeTab === 'home' && 'AI Readiness Copilot'}
               {activeTab === 'dashboard' && 'Dashboard'}
               {activeTab === 'reports' && 'Saved Reports'}
@@ -2309,25 +2325,25 @@ export default function Dashboard() {
               {activeTab === 'settings' && 'Account Settings'}
             </h2>
             {activeTab === 'home' && (
-              <p className="text-xs text-slate-400 mt-1 font-medium font-sans">
+              <p className="text-xs text-[var(--dash-text-secondary)] mt-1 font-medium font-sans">
                 Assess, Plan, Govern and Scale Enterprise AI Adoption
               </p>
             )}
             {activeTab === 'dashboard' && (
-              <p className="text-xs text-slate-400 mt-1 font-medium font-sans">
+              <p className="text-xs text-[var(--dash-text-secondary)] mt-1 font-medium font-sans">
                 Executive financial summary, investment health score, and ROI payback diagnostics.
               </p>
             )}
             {activeTab === 'readiness' && (
-              <p className="text-xs text-slate-400 mt-1 font-medium font-sans">
+              <p className="text-xs text-[var(--dash-text-secondary)] mt-1 font-medium font-sans">
                 Take the 2-minute readiness survey to instantly recalculate and regenerate your strategic C-suite deliverables.
               </p>
             )}
           </div>
           <div className="flex items-center gap-3 text-xs font-sans">
             {/* Dynamic Role Quick-Switcher - Always Visible */}
-            <div className="bg-[#0F172A] border border-slate-800 p-1 rounded-xl flex items-center gap-2 hover:border-cyan-500/50 transition">
-              <span className="text-slate-400 text-xs font-semibold px-2 shrink-0">C-Suite Focus:</span>
+            <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] p-1 rounded-xl flex items-center gap-2 hover:border-[var(--dash-accent)]/50 transition">
+              <span className="text-[var(--dash-text-secondary)] text-xs font-semibold px-2 shrink-0">C-Suite Focus:</span>
               <select
                 value={user?.role || 'user'}
                 onChange={async (e) => {
@@ -2337,7 +2353,7 @@ export default function Dashboard() {
                     console.error('Failed to quick-switch role:', err);
                   }
                 }}
-                className="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-350 focus:border-cyan-400 focus:outline-none transition cursor-pointer hover:text-white"
+                className="bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-lg px-2.5 py-1.5 text-xs font-bold text-[var(--dash-text-secondary)] focus:border-[var(--dash-accent)] focus:outline-none transition cursor-pointer hover:text-[var(--dash-text-primary)]"
               >
                 <option value="user">General Enterprise</option>
                 <option value="CFO">CFO Cockpit 💸</option>
@@ -2352,7 +2368,7 @@ export default function Dashboard() {
                 {/* New Chat Button in Top Toolbar */}
                 <button
                   onClick={handleCopilotNewChat}
-                  className="bg-[#8B1D1D] hover:bg-[#A32A2A] text-white text-xs font-bold px-3 py-1.5 rounded-xl transition duration-150 shadow-[0_0_12px_rgba(139,29,29,0.3)] hover:scale-102 active:scale-98 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                  className="bg-[var(--dash-newchat-bg)] hover:bg-[var(--dash-newchat-hover-bg)] text-[var(--dash-newchat-text)] hover:text-[var(--dash-newchat-hover-text)] text-xs font-bold px-3 py-1.5 rounded-xl transition duration-150 shadow-[var(--dash-newchat-shadow)] hover:scale-102 active:scale-98 focus:outline-none focus:ring-1 focus:ring-[var(--dash-accent)]"
                   title="Start a new chat session"
                 >
                   + New Chat
@@ -2361,13 +2377,13 @@ export default function Dashboard() {
             ) : (
               <div className="flex items-center gap-3">
                 {activeTab === 'portfolio' && (
-                  <div className="flex bg-[#0F172A] border border-slate-800 p-1 rounded-xl items-center">
+                  <div className="flex bg-[var(--dash-card-bg)] border border-[var(--dash-border)] p-1 rounded-xl items-center">
                     <button
                       onClick={() => setDashboardSubTab('strategy')}
                       className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 flex items-center gap-1.5 ${
                         dashboardSubTab === 'strategy'
-                          ? 'bg-gradient-to-r from-cyan-500/20 to-violet-500/20 border border-cyan-500/35 text-cyan-400 shadow-[0_0_12px_rgba(34,211,238,0.2)]'
-                          : 'border border-transparent text-slate-400 hover:text-slate-200'
+                          ? 'bg-[var(--dash-active-bg)] text-[var(--dash-active-text)] border border-[var(--dash-active-border)] shadow-[var(--dash-active-shadow)]'
+                          : 'border border-transparent text-[var(--dash-text-secondary)] hover:text-[var(--dash-text-primary)]'
                       }`}
                     >
                       💎 Strategy
@@ -2376,20 +2392,20 @@ export default function Dashboard() {
                       onClick={() => setDashboardSubTab('observability')}
                       className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 flex items-center gap-1.5 ${
                         dashboardSubTab === 'observability'
-                          ? 'bg-gradient-to-r from-cyan-500/20 to-violet-500/20 border border-cyan-500/35 text-cyan-400 shadow-[0_0_12px_rgba(34,211,238,0.2)]'
-                          : 'border border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/50'
+                          ? 'bg-[var(--dash-active-bg)] text-[var(--dash-active-text)] border border-[var(--dash-active-border)] shadow-[var(--dash-active-shadow)]'
+                          : 'border border-transparent text-[var(--dash-text-secondary)] hover:text-[var(--dash-text-primary)] hover:bg-[var(--dash-hover-bg)]'
                       }`}
                     >
                       📊 Observability Core
                     </button>
                   </div>
                 )}
-                <div className="bg-[#0F172A] border border-slate-800 px-4 py-2 rounded-xl flex items-center gap-3">
+                <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] px-4 py-2 rounded-xl flex items-center gap-3">
                   <span className="relative flex h-2 w-2">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
                   </span>
-                  <span className="text-slate-400">Security Gateways: <strong className="text-emerald-400 font-semibold uppercase">Locked</strong></span>
+                  <span className="text-[var(--dash-text-secondary)]">Security Gateways: <strong className="text-[var(--emerald)] font-semibold uppercase">Locked</strong></span>
                 </div>
               </div>
             )}
@@ -2401,19 +2417,19 @@ export default function Dashboard() {
           <div className={`flex flex-col flex-grow ${activeTab === 'home' ? 'h-full min-h-0' : ''}`}>
             {/* TAB: HOME / AI READINESS COPILOT */}
             {activeTab === 'home' && (
-              <div className="bg-[#0F172A]/50 border border-slate-800/80 rounded-2xl overflow-hidden flex flex-col md:flex-row flex-grow h-full w-full">
+              <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl overflow-hidden flex flex-col md:flex-row flex-grow h-full w-full">
                 {/* Nested Left Pane: Chat Sessions History */}
-                <div className={`w-full transition-all duration-300 border-r border-slate-800/80 bg-slate-950/40 p-3 flex flex-col justify-between shrink-0 ${
+                <div className={`w-full transition-all duration-300 border-r border-[var(--dash-border)] bg-[var(--dash-sidebar-bg)] p-3 flex flex-col justify-between shrink-0 ${
                   copilotSidebarCollapsed ? 'md:w-16' : 'md:w-56'
                 }`}>
                   <div className="space-y-4 overflow-y-auto scrollbar-none flex-1 pr-1 font-sans">
-                    <div className="flex justify-between items-center pb-2 border-b border-slate-800/40">
+                    <div className="flex justify-between items-center pb-2 border-b border-[var(--dash-border)]">
                       {!copilotSidebarCollapsed && (
-                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider animate-fade-in">Sessions</span>
+                        <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-wider animate-fade-in">Sessions</span>
                       )}
                       <button
                         onClick={() => setCopilotSidebarCollapsed(!copilotSidebarCollapsed)}
-                        className="p-1 rounded-lg border border-slate-800 text-slate-500 hover:text-cyan-400 hover:bg-slate-900/50 transition mx-auto focus:outline-none focus:ring-1 focus:ring-cyan-500"
+                        className="p-1 rounded-lg border border-[var(--dash-border)] text-[var(--dash-text-secondary)] hover:text-[var(--dash-accent)] hover:bg-[var(--dash-hover-bg)] transition mx-auto focus:outline-none focus:ring-1 focus:ring-[var(--dash-accent)]"
                         title={copilotSidebarCollapsed ? "Expand Sessions" : "Collapse Sessions"}
                         aria-label={copilotSidebarCollapsed ? "Expand Sessions" : "Collapse Sessions"}
                       >
@@ -2428,7 +2444,7 @@ export default function Dashboard() {
                         )}
                       </button>
                     </div>
-                    
+
                     {/* Session List */}
                     <div className="space-y-1">
                       {copilotSessions.map(session => (
@@ -2437,13 +2453,13 @@ export default function Dashboard() {
                           onClick={() => setCopilotActiveSessionId(session.id)}
                           className={`w-full group flex items-center justify-between px-2 py-1.5 rounded-xl text-left cursor-pointer transition duration-150 ${
                             session.id === copilotActiveSessionId
-                              ? 'bg-cyan-500/10 border border-cyan-500/20 text-cyan-400'
-                              : 'border border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/40'
+                              ? 'bg-[var(--dash-active-bg)] border border-[var(--dash-active-border)] text-[var(--dash-active-text)] shadow-[var(--dash-active-shadow)]'
+                              : 'border border-transparent text-[var(--dash-text-secondary)] hover:text-[var(--dash-text-primary)] hover:bg-[var(--dash-hover-bg)]'
                           }`}
                           title={session.title}
                         >
                           <div className="flex items-center gap-2 truncate">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 shrink-0 text-cyan-400/80">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 shrink-0 text-[var(--dash-accent)]/80">
                               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                             </svg>
                             {!copilotSidebarCollapsed && (
@@ -2453,7 +2469,7 @@ export default function Dashboard() {
                           {!copilotSidebarCollapsed && (
                             <button
                               onClick={(e) => handleCopilotDeleteSession(session.id, e)}
-                              className="opacity-0 group-hover:opacity-100 hover:text-rose-400 p-0.5 transition shrink-0"
+                              className="opacity-0 group-hover:opacity-100 hover:text-rose-600 p-0.5 transition shrink-0"
                               title="Delete session"
                               aria-label={`Delete session ${session.title}`}
                             >
@@ -2469,37 +2485,37 @@ export default function Dashboard() {
                   </div>
                   
                   {/* Clean brand badge */}
-                  <div className="pt-3 border-t border-slate-800/40 mt-3 text-[10px] text-slate-500 flex justify-between items-center font-semibold font-sans">
+                  <div className="pt-3 border-t border-[var(--dash-border)]/40 mt-3 text-[10px] text-[var(--dash-text-secondary)] flex justify-between items-center font-semibold font-sans">
                     {!copilotSidebarCollapsed ? (
                       <>
                         <span>CertaintyAI / MDx</span>
-                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
+                        <span className="h-1.5 w-1.5 rounded-full bg-[var(--emerald)]"></span>
                       </>
                     ) : (
-                      <span className="h-2 w-2 rounded-full bg-emerald-400 mx-auto animate-pulse"></span>
+                      <span className="h-2 w-2 rounded-full bg-[var(--emerald)] mx-auto animate-pulse"></span>
                     )}
                   </div>
                 </div>
 
                 {/* Main Chat Workspace Area */}
                 <div 
-                  className="flex-1 flex flex-col justify-between bg-gradient-to-b from-slate-950/20 to-slate-950/60 p-3 lg:p-4 overflow-hidden relative"
+                  className="flex-1 flex flex-col justify-between bg-gradient-to-b from-[var(--dash-chat-bg-from)] to-[var(--dash-chat-bg-to)] p-3 lg:p-4 overflow-hidden relative"
                   onDragOver={handleDragOver}
                   onDragLeave={handleDragLeave}
                   onDrop={handleDrop}
                 >
                   {/* Drag-and-Drop Overlay */}
                   {isDragging && (
-                    <div className="absolute inset-0 bg-[#070A13]/90 backdrop-blur-md border-2 border-dashed border-cyan-500/50 rounded-2xl flex flex-col items-center justify-center z-[100] transition-all duration-200 animate-fade-in">
-                      <div className="p-6 bg-slate-900/60 border border-slate-800/80 rounded-2xl flex flex-col items-center justify-center space-y-4 max-w-sm text-center shadow-[0_0_30px_rgba(34,211,238,0.25)]">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-12 h-12 text-cyan-400 animate-bounce">
+                    <div className="absolute inset-0 bg-[var(--dash-bg)]/90 backdrop-blur-md border-2 border-dashed border-[var(--dash-accent)]/50 rounded-2xl flex flex-col items-center justify-center z-[100] transition-all duration-200 animate-fade-in">
+                      <div className="p-6 bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl flex flex-col items-center justify-center space-y-4 max-w-sm text-center shadow-sm">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-12 h-12 text-[var(--dash-accent)] animate-bounce">
                           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
                           <polyline points="17 8 12 3 7 8" />
                           <line x1="12" y1="3" x2="12" y2="15" />
                         </svg>
                         <div>
-                          <h4 className="text-sm font-bold text-white uppercase tracking-wider">Ingest Document Context</h4>
-                          <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                          <h4 className="text-sm font-bold text-[var(--dash-text-primary)] uppercase tracking-wider">Ingest Document Context</h4>
+                          <p className="text-xs text-[var(--dash-text-secondary)] mt-1 leading-relaxed">
                             Drop files to ingest into CertaintyAI context. Supporting PDF, DOCX, XLSX, CSV, PPTX, TXT, PNG, JPG, JPEG.
                           </p>
                         </div>
@@ -2507,18 +2523,16 @@ export default function Dashboard() {
                     </div>
                   )}
 
-
-
                   {/* Scrollable Conversation Container / Welcome Screen */}
                   <div className="flex-1 overflow-y-auto space-y-6 pr-1 pb-4">
                     {(!activeCopilotSession || !activeCopilotSession.messages || activeCopilotSession.messages.length === 0) ? (
                       /* Welcome Screen with Prompts */
                        <div className="space-y-6 max-w-xl mx-auto py-8 font-sans text-center flex flex-col justify-center items-center min-h-[70vh]">
                          <div className="space-y-2">
-                           <h1 className="text-3xl font-extrabold text-white tracking-tight">
+                           <h1 className="text-3xl font-extrabold text-[var(--dash-text-primary)] tracking-tight">
                     {isCfo ? "Welcome to the CFO AI Cockpit." : (isCioCto ? "Welcome to the CIO/CTO AI Cockpit." : "Welcome back.")}
                   </h1>
-                  <p className="text-xl font-bold text-slate-350">
+                  <p className="text-xl font-bold text-[var(--dash-text-secondary)]">
                     {isCfo 
                       ? "Ready to analyze your AI Investment Health, cost optimization targets, and ROI payback timelines?" 
                       : (isCioCto ? "Ready to analyze your tech stack integration, GraphRAG data architecture, and security compliance?" : "How can I help you today?")
@@ -2528,7 +2542,7 @@ export default function Dashboard() {
 
                          {/* Recommended Prompt Grid */}
                          <div className="space-y-4 max-w-md mx-auto text-left w-full mt-6">
-                           <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block text-center">Suggested Starter Actions</span>
+                           <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-widest block text-center">Suggested Starter Actions</span>
                            <div className="grid grid-cols-2 gap-2.5">
                              {(isCfo
                         ? [
@@ -2558,19 +2572,19 @@ export default function Dashboard() {
                                <button
                                  key={idx}
                                  onClick={() => handleCopilotSend(prompt)}
-                                 className="text-left bg-[#070A13]/40 hover:bg-[#0F172A]/60 border border-slate-800/80 hover:border-cyan-500/35 p-3 rounded-xl text-[11px] text-slate-300 hover:text-white transition duration-150 shadow-sm flex flex-col justify-between group focus:outline-none focus:ring-2 focus:ring-cyan-500 min-h-[64px]"
+                                 className="text-left bg-[var(--dash-card-bg)] hover:bg-[var(--dash-hover-bg)] border border-[var(--dash-border)] hover:border-[var(--dash-accent)]/35 p-3 rounded-xl text-[11px] text-[var(--dash-text-secondary)] hover:text-[var(--dash-text-primary)] transition duration-150 shadow-sm flex flex-col justify-between group focus:outline-none focus:ring-2 focus:ring-[var(--dash-accent)] min-h-[64px]"
                                  aria-label={`Select prompt: ${prompt}`}
-                               >
+                                >
                                  <span className="font-bold leading-snug">{prompt}</span>
-                                 <span className="text-cyan-400 font-extrabold text-right w-full text-xs opacity-60 group-hover:opacity-100 transition duration-150 mt-1.5">→</span>
+                                 <span className="text-[var(--dash-accent)] font-extrabold text-right w-full text-xs opacity-60 group-hover:opacity-100 transition duration-150 mt-1.5">→</span>
                                </button>
                              ))}
                            </div>
                          </div>
 
                          {/* Categories hint block */}
-                         <div className="pt-6 border-t border-slate-800/40 w-full max-w-md mt-6">
-                           <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block mb-2">Ask anything about:</span>
+                         <div className="pt-6 border-t border-[var(--dash-border)]/40 w-full max-w-md mt-6">
+                           <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-widest block mb-2">Ask anything about:</span>
                            <div className="flex flex-wrap justify-center gap-1.5 px-2">
                              {(isCfo
                                 ? [
@@ -2595,7 +2609,7 @@ export default function Dashboard() {
                                <button
                                   key={cat}
                                   onClick={() => handleCopilotSend(cat)}
-                                  className="text-[10px] font-semibold bg-slate-900 border border-slate-800 px-2.5 py-1 rounded-lg text-slate-400 hover:bg-cyan-500/10 hover:text-cyan-400 hover:border-cyan-500/30 transition duration-150 cursor-pointer focus:outline-none active:scale-95"
+                                  className="text-[10px] font-semibold bg-[var(--dash-card-bg)] border border-[var(--dash-border)] px-2.5 py-1 rounded-lg text-[var(--dash-text-secondary)] hover:bg-[var(--dash-hover-bg)] hover:text-[var(--dash-accent)] hover:border-[var(--dash-accent)]/30 transition duration-150 cursor-pointer focus:outline-none active:scale-95"
                                   title={`Ask about ${cat}`}
                                   type="button"
                                 >
@@ -2619,7 +2633,7 @@ export default function Dashboard() {
                               }`}
                             >
                               {isBot && (
-                                <div className="w-8 h-8 rounded-full overflow-hidden border border-slate-800 shrink-0 shadow bg-slate-900 mt-1">
+                                <div className="w-8 h-8 rounded-full overflow-hidden border border-[var(--dash-border)] shrink-0 shadow bg-[var(--dash-card-bg)] mt-1">
                                   <img src="/assistant-avatar.jpg" alt="AI Avatar" className="w-full h-full object-cover" />
                                 </div>
                               )}
@@ -2628,19 +2642,19 @@ export default function Dashboard() {
                                 <div
                                   className={`max-w-full rounded-2xl px-4 py-3 text-xs leading-relaxed border transition shadow ${
                                     msg.role === 'user'
-                                      ? 'bg-cyan-500/10 border-cyan-500/30 text-slate-200'
-                                      : 'bg-[#0F172A]/60 border-slate-800 text-slate-350'
+                                      ? 'bg-[var(--dash-user-msg)] border-[var(--dash-user-msg-border)] text-[var(--dash-user-msg-text)]'
+                                      : 'bg-[var(--dash-assistant-msg)] border-[var(--dash-assistant-msg-border)] text-[var(--dash-assistant-msg-text)]'
                                   }`}
                                 >
                                 {msg.role === 'user' ? (
                                   <div className="font-sans">
                                     <p className="whitespace-pre-wrap font-medium">{msg.content}</p>
                                     {msg.files && msg.files.length > 0 && (
-                                      <div className="mt-2 pt-2 border-t border-cyan-500/20 flex flex-wrap gap-1.5">
+                                      <div className="mt-2 pt-2 border-t border-[var(--dash-active-border)] flex flex-wrap gap-1.5">
                                         {msg.files.map(file => (
                                           <div
                                             key={file.id}
-                                            className="bg-cyan-950/40 border border-cyan-800/30 px-2 py-0.5 rounded text-[10px] text-cyan-300 flex items-center gap-1"
+                                            className="bg-[var(--dash-active-bg)] border border-[var(--dash-active-border)] px-2 py-0.5 rounded text-[10px] text-[var(--dash-accent)] flex items-center gap-1"
                                           >
                                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-2.5 h-2.5">
                                               <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
@@ -2654,21 +2668,21 @@ export default function Dashboard() {
                                 ) : (
                                   <div className="space-y-3 font-sans">
                                     {/* Render Rich Markdown response with clean spacing */}
-                                    <div className="prose prose-invert prose-xs max-w-none text-slate-300 leading-relaxed font-sans">
+                                    <div className="prose prose-invert prose-xs max-w-none text-[var(--dash-text-secondary)] leading-relaxed font-sans">
                                       {parseMarkdownToReact(msg.content)}
                                     </div>
                                     
                                     {/* Read Aloud Trigger */}
-                                    <div className="pt-2 border-t border-slate-800/30 flex justify-between items-center mt-2">
-                                      <span className="text-[9px] uppercase tracking-wider text-slate-500 font-bold">
+                                    <div className="pt-2 border-t border-[var(--dash-border)] flex justify-between items-center mt-2">
+                                      <span className="text-[9px] uppercase tracking-wider text-[var(--dash-text-secondary)] font-bold">
                                         Generated by {copilotModel}
                                       </span>
                                       <button
                                         onClick={() => handleCopilotSpeak(msg.id, msg.content)}
-                                        className={`p-1.5 rounded-lg border transition focus:outline-none focus:ring-2 focus:ring-cyan-500 ${
+                                        className={`p-1.5 rounded-lg border transition focus:outline-none focus:ring-2 focus:ring-[var(--dash-accent)] ${
                                           copilotReadingId === msg.id
-                                            ? 'border-violet-500/30 text-violet-400 bg-violet-500/10 shadow-[0_0_8px_rgba(167,139,250,0.2)]'
-                                            : 'border-slate-800 text-slate-500 hover:text-slate-300 hover:bg-slate-900/40'
+                                            ? 'border-[var(--dash-accent)]/30 text-[var(--dash-accent)] bg-[var(--dash-active-bg)] shadow-sm'
+                                            : 'border-[var(--dash-border)] text-[var(--dash-text-secondary)] hover:text-[var(--dash-text-primary)] hover:bg-[var(--dash-hover-bg)]'
                                         }`}
                                         title="Read this analysis aloud"
                                       >
@@ -2692,7 +2706,7 @@ export default function Dashboard() {
                               {/* Dynamic Contextual Follow-Up Prompts */}
                               {isBot && isLatest && !copilotStreaming && (
                                 <div className="mt-2.5 max-w-[95%] space-y-2 font-sans animate-fade-in">
-                                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block">Suggested Follow-Ups</span>
+                                  <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-widest block">Suggested Follow-Ups</span>
                                   <div className="flex flex-wrap gap-2">
                                     {getFollowUpPromptsForResponse(
                                       activeCopilotSession.messages.findLast(m => m.role === 'user')?.content || ''
@@ -2700,7 +2714,7 @@ export default function Dashboard() {
                                       <button
                                         key={pidx}
                                         onClick={() => handleCopilotSend(prompt)}
-                                        className="text-[10px] font-semibold text-slate-350 bg-[#070A13]/40 hover:bg-[#0F172A]/70 border border-slate-800/80 hover:border-cyan-500/30 px-3 py-1.5 rounded-xl transition duration-150 shadow-sm hover:text-white"
+                                        className="text-[10px] font-semibold text-[var(--dash-text-secondary)] bg-[var(--dash-card-bg)] hover:bg-[var(--dash-hover-bg)] border border-[var(--dash-border)] hover:border-[var(--dash-accent)]/30 px-3 py-1.5 rounded-xl transition duration-150 shadow-sm hover:text-[var(--dash-text-primary)]"
                                       >
                                         {prompt}
                                       </button>
@@ -2713,11 +2727,11 @@ export default function Dashboard() {
                           );
                         })}
                         {copilotStreaming && (
-                          <div className="flex items-center gap-1.5 pl-2 text-slate-500 text-xs font-sans">
-                            <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-bounce"></span>
-                            <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-bounce [animation-delay:0.2s]"></span>
-                            <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-bounce [animation-delay:0.4s]"></span>
-                            <span className="text-[10px] uppercase font-bold tracking-widest text-slate-500 ml-1">Streaming Telemetry...</span>
+                          <div className="flex items-center gap-1.5 pl-2 text-[var(--dash-text-secondary)] text-xs font-sans">
+                            <span className="h-1.5 w-1.5 rounded-full bg-[var(--dash-accent)] animate-bounce"></span>
+                            <span className="h-1.5 w-1.5 rounded-full bg-[var(--dash-accent)] animate-bounce [animation-delay:0.2s]"></span>
+                            <span className="h-1.5 w-1.5 rounded-full bg-[var(--dash-accent)] animate-bounce [animation-delay:0.4s]"></span>
+                            <span className="text-[10px] uppercase font-bold tracking-widest text-[var(--dash-text-secondary)] ml-1">Streaming Telemetry...</span>
                           </div>
                         )}
                       </div>
@@ -2725,14 +2739,14 @@ export default function Dashboard() {
                   </div>
 
                   {/* Bottom Ask Box Panel */}
-                  <div className="pt-3 border-t border-slate-800/40 shrink-0 space-y-2 font-sans">
+                  <div className="pt-3 border-t border-[var(--dash-border)]/40 shrink-0 space-y-2 font-sans">
                     {/* File Ingestion Chips preview */}
                     {copilotFiles.length > 0 && (
                       <div className="flex flex-wrap gap-1.5 max-w-[95%] ml-2 mr-auto md:ml-4 px-1">
                         {copilotFiles.map(file => (
                           <div
                             key={file.id}
-                            className="bg-cyan-500/10 border border-cyan-500/20 px-2 py-1 rounded-xl text-[10px] text-cyan-300 flex items-center gap-1.5 shadow-sm"
+                            className="bg-[var(--dash-active-bg)] border border-[var(--dash-active-border)] px-2 py-1 rounded-xl text-[10px] text-[var(--dash-accent)] flex items-center gap-1.5 shadow-sm"
                           >
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-2.5 h-2.5">
                               <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
@@ -2740,7 +2754,7 @@ export default function Dashboard() {
                             <span className="truncate max-w-[120px]">{file.name}</span>
                             <button
                               onClick={() => handleRemoveCopilotFile(file.id)}
-                              className="hover:text-rose-400 transition font-bold"
+                              className="hover:text-[var(--rose)] transition font-bold"
                               aria-label={`Remove file ${file.name}`}
                             >
                               ×
@@ -2751,7 +2765,7 @@ export default function Dashboard() {
                     )}
 
                     {/* Floating Search Input bar */}
-                    <div className="flex items-center gap-2 max-w-[95%] ml-2 mr-auto md:ml-4 w-full bg-[#070A13]/85 border border-slate-800 rounded-2xl px-3 py-2 focus-within:border-cyan-500/50 focus-within:ring-1 focus-within:ring-cyan-500/50 transition duration-150 shadow-inner">
+                    <div className="flex items-center gap-2 max-w-[95%] ml-2 mr-auto md:ml-4 w-full bg-[var(--dash-bg)]/85 border border-[var(--dash-border)] rounded-2xl px-3 py-2 focus-within:border-[var(--dash-accent)]/50 focus-within:ring-1 focus-within:ring-[var(--dash-accent)]/50 transition duration-150 shadow-inner">
                       {/* Hidden File Input */}
                       <input
                         type="file"
@@ -2764,7 +2778,7 @@ export default function Dashboard() {
                       {/* Attach Document (paperclip) Button */}
                       <button
                         onClick={() => fileInputRef.current?.click()}
-                        className="p-1.5 rounded-lg text-slate-500 hover:text-cyan-400 hover:bg-slate-900/50 focus:outline-none focus:ring-2 focus:ring-cyan-500 transition shrink-0"
+                        className="p-1.5 rounded-lg text-[var(--dash-text-secondary)] hover:text-[var(--dash-accent)] hover:bg-[var(--dash-hover-bg)] focus:outline-none focus:ring-2 focus:ring-[var(--dash-accent)] transition shrink-0"
                         title="Upload supporting documents (PDF, DOCX, XLSX, CSV, PPTX, TXT, PNG, JPG, JPEG)"
                         aria-label="Upload supporting documents"
                       >
@@ -2776,10 +2790,10 @@ export default function Dashboard() {
                       {/* Mic Toggle Trigger */}
                       <button
                         onClick={toggleCopilotListening}
-                        className={`p-1.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 transition duration-150 shrink-0 ${
+                        className={`p-1.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--dash-accent)] transition duration-150 shrink-0 ${
                           copilotListening
-                            ? 'text-rose-400 bg-rose-500/10 shadow-[0_0_8px_rgba(239,68,68,0.2)] border border-rose-500/20'
-                            : 'text-slate-500 hover:text-cyan-400 hover:bg-slate-900/50'
+                            ? 'text-[var(--rose)] bg-[var(--rose)]/10 shadow-sm border border-[var(--rose)]/20'
+                            : 'text-[var(--dash-text-secondary)] hover:text-[var(--dash-accent)] hover:bg-[var(--dash-hover-bg)]'
                         }`}
                         title={copilotListening ? 'Stop listening...' : 'Dictate a prompt'}
                         aria-label={copilotListening ? 'Stop listening' : 'Dictate a prompt'}
@@ -2798,7 +2812,7 @@ export default function Dashboard() {
                           }
                         }}
                         placeholder="Ask anything about AI Readiness, Governance, Security, Architecture, Compliance, ROI, Agentic AI, Cloud Platforms, Data Readiness, or Enterprise Transformation..."
-                        className="flex-grow bg-transparent border-0 text-slate-200 placeholder-slate-500 text-xs focus:ring-0 focus:outline-none py-1.5 font-sans"
+                        className="flex-grow bg-transparent border-0 text-[var(--dash-text-primary)] placeholder-[var(--dash-text-secondary)]/50 text-xs focus:ring-0 focus:outline-none py-1.5 font-sans"
                         aria-label="Chat input message"
                       />
 
@@ -2807,12 +2821,12 @@ export default function Dashboard() {
                         <select
                           value={copilotLanguage}
                           onChange={(e) => setCopilotLanguage(e.target.value)}
-                          className="bg-[#070A13] border border-slate-700/80 rounded-xl text-[10px] text-slate-350 px-2 py-1 focus:outline-none focus:ring-2 focus:ring-cyan-500 cursor-pointer max-w-[85px] truncate font-semibold"
+                          className="bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl text-[10px] text-[var(--dash-text-secondary)] px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[var(--dash-accent)] cursor-pointer max-w-[85px] truncate font-semibold"
                           title="Select Language"
                           aria-label="Select translation language"
                         >
                           {copilotLanguages.map(lang => (
-                            <option key={lang.name} value={lang.name} className="bg-slate-950 text-slate-200 text-xs">
+                            <option key={lang.name} value={lang.name} className="bg-[var(--dash-card-bg)] text-[var(--dash-text-primary)] text-xs">
                               {lang.name}
                             </option>
                           ))}
@@ -2824,12 +2838,12 @@ export default function Dashboard() {
                         <select
                           value={copilotModel}
                           onChange={(e) => handleModelChange(e.target.value)}
-                          className="bg-[#070A13] border border-slate-700/80 rounded-xl text-[10px] text-slate-350 px-2 py-1 focus:outline-none focus:ring-2 focus:ring-cyan-500 cursor-pointer max-w-[100px] truncate font-semibold"
+                          className="bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl text-[10px] text-[var(--dash-text-secondary)] px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[var(--dash-accent)] cursor-pointer max-w-[100px] truncate font-semibold"
                           title="Select Model"
                           aria-label="Select inference model"
                         >
                           {copilotModels.map(model => (
-                            <option key={model} value={model} className="bg-slate-950 text-slate-200 text-xs">
+                            <option key={model} value={model} className="bg-[var(--dash-card-bg)] text-[var(--dash-text-primary)] text-xs">
                               {model}
                             </option>
                           ))}
@@ -2839,7 +2853,7 @@ export default function Dashboard() {
                       {/* Send Trigger Button */}
                       <button
                         onClick={() => handleCopilotSend()}
-                        className="p-1.5 rounded-lg text-cyan-400 hover:text-cyan-300 hover:bg-cyan-950/20 focus:outline-none focus:ring-2 focus:ring-cyan-500 transition shrink-0"
+                        className="p-1.5 rounded-lg text-[var(--dash-accent)] hover:text-[var(--dash-accent-hover)] hover:bg-[var(--dash-hover-bg)] focus:outline-none focus:ring-2 focus:ring-[var(--dash-accent)] transition shrink-0"
                         title="Send query"
                         aria-label="Send query"
                       >
@@ -2859,36 +2873,36 @@ export default function Dashboard() {
               <>
                 {dashboardSubTab === 'strategy' ? (
                   <div className="space-y-8">
-{/* Actionable 90-Day C-Suite Roadmap */}
+                    {/* Actionable 90-Day C-Suite Roadmap */}
                     <div className="space-y-6">
-                      <h3 className="text-xl font-bold text-white">Actionable 90-Day C-Suite Roadmap</h3>
+                      <h3 className="text-xl font-bold text-[var(--dash-text-primary)]">Actionable 90-Day C-Suite Roadmap</h3>
                       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         {/* Phase 1 */}
-                        <div className="bg-[#0F172A]/40 border border-slate-800/80 rounded-2xl p-6 relative overflow-hidden group hover:border-violet-500/25 transition duration-300">
-                          <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-violet-500/5 to-transparent rounded-bl-full pointer-events-none"></div>
+                        <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-6 relative overflow-hidden group hover:border-[var(--accent)] transition duration-300">
+                          <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-[var(--accent)]/5 to-transparent rounded-bl-full pointer-events-none"></div>
                           <div className="flex justify-between items-start mb-4">
-                            <span className="text-[10px] font-mono font-extrabold text-violet-400 uppercase bg-violet-950/40 border border-violet-900/30 px-2.5 py-1 rounded-full">
+                            <span className="text-[10px] font-mono font-extrabold text-[var(--accent)] uppercase bg-[var(--dash-active-bg)] border border-[var(--dash-active-border)] px-2.5 py-1 rounded-full">
                               Days 1 - 30
                             </span>
-                            <span className="text-xs font-bold text-slate-500 uppercase">Phase 1</span>
+                            <span className="text-xs font-bold text-[var(--dash-text-secondary)] uppercase">Phase 1</span>
                           </div>
-                          <h4 className="text-base font-bold text-slate-100 mb-2">AI Steering Committee Foundation</h4>
-                          <p className="text-xs text-slate-400 leading-relaxed mb-4">
+                          <h4 className="text-base font-bold text-[var(--dash-text-primary)] mb-2">AI Steering Committee Foundation</h4>
+                          <p className="text-xs text-[var(--dash-text-secondary)] leading-relaxed mb-4">
                             Assemble the cross-functional steering group to establish a standardized Acceptable-Use Policy and a Permitted/Restricted tools matrix.
                           </p>
-                          <div className="bg-slate-950/45 rounded-xl p-3.5 border border-slate-900 space-y-2">
-                            <span className="text-[10px] uppercase font-bold text-slate-500 block">Deliverables</span>
-                            <ul className="text-[11px] text-slate-350 space-y-1.5">
+                          <div className="bg-[var(--dash-bg)] rounded-xl p-3.5 border border-[var(--dash-border)] space-y-2">
+                            <span className="text-[10px] uppercase font-bold text-[var(--dash-text-secondary)] block">Deliverables</span>
+                            <ul className="text-[11px] text-[var(--dash-text-secondary)] space-y-1.5">
                               <li className="flex items-center gap-2">
-                                <span className="h-1.5 w-1.5 rounded-full bg-violet-400"></span>
+                                <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)]"></span>
                                 AI Readiness Score Diagnostic
                               </li>
                               <li className="flex items-center gap-2">
-                                <span className="h-1.5 w-1.5 rounded-full bg-violet-400"></span>
+                                <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)]"></span>
                                 Permitted / Restricted Tools Matrix
                               </li>
                               <li className="flex items-center gap-2">
-                                <span className="h-1.5 w-1.5 rounded-full bg-violet-400"></span>
+                                <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)]"></span>
                                 Draft Acceptable-Use Policy
                               </li>
                             </ul>
@@ -2896,31 +2910,31 @@ export default function Dashboard() {
                         </div>
 
                         {/* Phase 2 */}
-                        <div className="bg-[#0F172A]/40 border border-slate-800/80 rounded-2xl p-6 relative overflow-hidden group hover:border-cyan-500/25 transition duration-300">
-                          <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-cyan-500/5 to-transparent rounded-bl-full pointer-events-none"></div>
+                        <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-6 relative overflow-hidden group hover:border-[var(--accent)] transition duration-300">
+                          <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-[var(--accent)]/5 to-transparent rounded-bl-full pointer-events-none"></div>
                           <div className="flex justify-between items-start mb-4">
-                            <span className="text-[10px] font-mono font-extrabold text-cyan-400 uppercase bg-cyan-950/40 border border-cyan-900/30 px-2.5 py-1 rounded-full">
+                            <span className="text-[10px] font-mono font-extrabold text-[var(--accent)] uppercase bg-[var(--dash-active-bg)] border border-[var(--dash-active-border)] px-2.5 py-1 rounded-full">
                               Days 31 - 60
                             </span>
-                            <span className="text-xs font-bold text-slate-500 uppercase">Phase 2</span>
+                            <span className="text-xs font-bold text-[var(--dash-text-secondary)] uppercase">Phase 2</span>
                           </div>
-                          <h4 className="text-base font-bold text-slate-100 mb-2">Priority Use-Case & Ontology Mapping</h4>
-                          <p className="text-xs text-slate-400 leading-relaxed mb-4">
+                          <h4 className="text-base font-bold text-[var(--dash-text-primary)] mb-2">Priority Use-Case & Ontology Mapping</h4>
+                          <p className="text-xs text-[var(--dash-text-secondary)] leading-relaxed mb-4">
                             Execute the 1-Day Strategic Use-Case Discovery Workshop. Define semantic ontology boundaries around EHR patient feeds or logs to accelerate data pipelines.
                           </p>
-                          <div className="bg-slate-950/45 rounded-xl p-3.5 border border-slate-900 space-y-2">
-                            <span className="text-[10px] uppercase font-bold text-slate-500 block">Deliverables</span>
-                            <ul className="text-[11px] text-slate-350 space-y-1.5">
+                          <div className="bg-[var(--dash-bg)] rounded-xl p-3.5 border border-[var(--dash-border)] space-y-2">
+                            <span className="text-[10px] uppercase font-bold text-[var(--dash-text-secondary)] block">Deliverables</span>
+                            <ul className="text-[11px] text-[var(--dash-text-secondary)] space-y-1.5">
                               <li className="flex items-center gap-2">
-                                <span className="h-1.5 w-1.5 rounded-full bg-cyan-400"></span>
+                                <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)]"></span>
                                 Prioritized Use-Case Portfolio
                               </li>
                               <li className="flex items-center gap-2">
-                                <span className="h-1.5 w-1.5 rounded-full bg-cyan-400"></span>
+                                <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)]"></span>
                                 Semantic Layer / Ontology Spec
                               </li>
                               <li className="flex items-center gap-2">
-                                <span className="h-1.5 w-1.5 rounded-full bg-cyan-400"></span>
+                                <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)]"></span>
                                 1-Day Discovery Workshop Memo
                               </li>
                             </ul>
@@ -2928,31 +2942,31 @@ export default function Dashboard() {
                         </div>
 
                         {/* Phase 3 */}
-                        <div className="bg-[#0F172A]/40 border border-slate-800/80 rounded-2xl p-6 relative overflow-hidden group hover:border-emerald-500/25 transition duration-300">
-                          <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-emerald-500/5 to-transparent rounded-bl-full pointer-events-none"></div>
+                        <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-6 relative overflow-hidden group hover:border-[var(--accent)] transition duration-300">
+                          <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-[var(--accent)]/5 to-transparent rounded-bl-full pointer-events-none"></div>
                           <div className="flex justify-between items-start mb-4">
-                            <span className="text-[10px] font-mono font-extrabold text-emerald-400 uppercase bg-emerald-950/40 border border-emerald-900/30 px-2.5 py-1 rounded-full">
+                            <span className="text-[10px] font-mono font-extrabold text-[var(--accent)] uppercase bg-[var(--dash-active-bg)] border border-[var(--dash-active-border)] px-2.5 py-1 rounded-full">
                               Days 61 - 90
                             </span>
-                            <span className="text-xs font-bold text-slate-500 uppercase">Phase 3</span>
+                            <span className="text-xs font-bold text-[var(--dash-text-secondary)] uppercase">Phase 3</span>
                           </div>
-                          <h4 className="text-base font-bold text-slate-100 mb-2">NIST Compliance & Evidence Pack</h4>
-                          <p className="text-xs text-slate-400 leading-relaxed mb-4">
+                          <h4 className="text-base font-bold text-[var(--dash-text-primary)] mb-2">NIST Compliance & Evidence Pack</h4>
+                          <p className="text-xs text-[var(--dash-text-secondary)] leading-relaxed mb-4">
                             Publish operational guidelines and map controls to NIST AI RMF 1.0, ISO/IEC 42001, SOC 2, HIPAA, GDPR, and the EU AI Act.
                           </p>
-                          <div className="bg-slate-950/45 rounded-xl p-3.5 border border-slate-900 space-y-2">
-                            <span className="text-[10px] uppercase font-bold text-slate-500 block">Deliverables</span>
-                            <ul className="text-[11px] text-slate-350 space-y-1.5">
+                          <div className="bg-[var(--dash-bg)] rounded-xl p-3.5 border border-[var(--dash-border)] space-y-2">
+                            <span className="text-[10px] uppercase font-bold text-[var(--dash-text-secondary)] block">Deliverables</span>
+                            <ul className="text-[11px] text-[var(--dash-text-secondary)] space-y-1.5">
                               <li className="flex items-center gap-2">
-                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
+                                <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)]"></span>
                                 Published AI Governance Rules
                               </li>
                               <li className="flex items-center gap-2">
-                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
+                                <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)]"></span>
                                 Audit-Ready Evidence Pack
                               </li>
                               <li className="flex items-center gap-2">
-                                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
+                                <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)]"></span>
                                 Agent Kill-Switch Safety Playbook
                               </li>
                             </ul>
@@ -2964,52 +2978,52 @@ export default function Dashboard() {
                     {/* MDx Cooperative AI Solutions Catalog */}
                     <div className="space-y-6">
                       <div>
-                        <h3 className="text-xl font-bold text-white">MDx Cooperative AI Solutions Catalog</h3>
-                        <p className="text-xs text-slate-400 mt-1">Market-competitive, procurement-ready cooperative AI agreements tailored for public sector members and departments.</p>
+                        <h3 className="text-xl font-bold text-[var(--dash-text-primary)]">MDx Cooperative AI Solutions Catalog</h3>
+                        <p className="text-xs text-[var(--dash-text-secondary)] mt-1">Market-competitive, procurement-ready cooperative AI agreements tailored for public sector members and departments.</p>
                       </div>
                       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         {/* Starter Tier */}
-                        <div className="bg-[#0F172A]/50 border border-slate-800/80 hover:border-slate-700/80 rounded-2xl p-6 flex flex-col justify-between transition duration-200">
+                        <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] hover:border-[var(--dash-border)]/80 rounded-2xl p-6 flex flex-col justify-between transition duration-200">
                           <div className="space-y-4">
                             <div>
-                              <span className="text-[9px] uppercase font-bold tracking-widest text-slate-500 bg-slate-850 border border-slate-800 px-2 py-0.5 rounded">
+                              <span className="text-[9px] uppercase font-bold tracking-widest text-[var(--dash-text-secondary)] bg-[var(--dash-bg)] border border-[var(--dash-border)] px-2 py-0.5 rounded">
                                 Entry-Level
                               </span>
-                              <h4 className="text-lg font-bold text-white mt-1.5">Starter Tier</h4>
-                              <p className="text-xs text-slate-400 mt-1">Best for small agencies or first AI initiatives</p>
+                              <h4 className="text-lg font-bold text-[var(--dash-text-primary)] mt-1.5">Starter Tier</h4>
+                              <p className="text-xs text-[var(--dash-text-secondary)] mt-1">Best for small agencies or first AI initiatives</p>
                             </div>
                             
-                            <div className="border-t border-slate-800/40 pt-4 space-y-3">
-                              <span className="text-[10px] font-bold text-slate-400 block uppercase">Scope Included:</span>
-                              <ul className="text-xs text-slate-350 space-y-2">
+                            <div className="border-t border-[var(--dash-border)] pt-4 space-y-3">
+                              <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] block uppercase">Scope Included:</span>
+                              <ul className="text-xs text-[var(--dash-text-secondary)] space-y-2">
                                 <li className="flex items-start gap-2">
-                                  <span className="text-emerald-400 mt-0.5 font-bold">✓</span>
+                                  <span className="text-[var(--emerald)] mt-0.5 font-bold">✓</span>
                                   AI Readiness Assessment
                                 </li>
                                 <li className="flex items-start gap-2">
-                                  <span className="text-emerald-400 mt-0.5 font-bold">✓</span>
+                                  <span className="text-[var(--emerald)] mt-0.5 font-bold">✓</span>
                                   1-Day Use-Case Discovery Workshop
                                 </li>
                                 <li className="flex items-start gap-2">
-                                  <span className="text-emerald-400 mt-0.5 font-bold">✓</span>
+                                  <span className="text-[var(--emerald)] mt-0.5 font-bold">✓</span>
                                   Executive AI Briefing & strategic Deck
                                 </li>
                               </ul>
                             </div>
 
-                            <div className="border-t border-slate-800/40 pt-4 space-y-1">
-                              <span className="text-[10px] font-bold text-slate-400 block uppercase">Key Staff:</span>
-                              <p className="text-xs text-slate-350">AI Strategist, Project Manager (AI)</p>
+                            <div className="border-t border-[var(--dash-border)] pt-4 space-y-1">
+                              <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] block uppercase">Key Staff:</span>
+                              <p className="text-xs text-[var(--dash-text-secondary)]">AI Strategist, Project Manager (AI)</p>
                             </div>
                           </div>
 
-                          <div className="pt-6 mt-6 border-t border-slate-800/45">
+                          <div className="pt-6 mt-6 border-t border-[var(--dash-border)]">
                             <button
                               onClick={() => {
                                 setSelectedProcurementTier('starter');
                                 setIsProcurementModalOpen(true);
                               }}
-                              className="w-full bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-slate-750 text-slate-200 font-bold text-xs py-2.5 rounded-xl transition duration-150"
+                              className="w-full bg-[var(--dash-bg)] hover:bg-[var(--dash-hover-bg)] border border-[var(--dash-border)] hover:border-[var(--dash-active-border)] text-[var(--dash-text-primary)] font-bold text-xs py-2.5 rounded-xl transition duration-150"
                             >
                               Request Starter Tier
                             </button>
@@ -3017,56 +3031,56 @@ export default function Dashboard() {
                         </div>
 
                         {/* Core Tier */}
-                        <div className="bg-gradient-to-b from-[#1E1B4B]/30 to-[#0F172A]/50 border-2 border-indigo-500/45 shadow-[0_0_20px_rgba(99,102,241,0.1)] rounded-2xl p-6 flex flex-col justify-between transition duration-200 relative">
+                        <div className="bg-gradient-to-b from-[var(--dash-active-bg)]/30 to-[var(--dash-bg)] border-2 border-[var(--dash-accent)]/45 shadow-[0_0_20px_rgba(var(--accent-rgb),0.1)] rounded-2xl p-6 flex flex-col justify-between transition duration-200 relative">
                           <div className="absolute top-3 right-3">
-                            <span className="text-[9px] uppercase font-bold text-indigo-400 bg-indigo-950/60 border border-indigo-850 px-2.5 py-0.5 rounded-full">
+                            <span className="text-[9px] uppercase font-bold text-[var(--dash-accent)] bg-[var(--dash-accent)]/10 border border-[var(--dash-accent)]/20 px-2.5 py-0.5 rounded-full">
                               Most Popular
                             </span>
                           </div>
                           <div className="space-y-4">
                             <div>
-                              <span className="text-[9px] uppercase font-bold tracking-widest text-cyan-400 bg-cyan-950/40 border border-cyan-800/45 px-2 py-0.5 rounded">
+                              <span className="text-[9px] uppercase font-bold tracking-widest text-[var(--dash-accent)] bg-[var(--dash-active-bg)] border border-[var(--dash-active-border)] px-2 py-0.5 rounded">
                                 Production Ready
                               </span>
-                              <h4 className="text-lg font-bold text-white mt-1.5">Core Tier</h4>
-                              <p className="text-xs text-slate-400 mt-1">Best for departments launching production AI</p>
+                              <h4 className="text-lg font-bold text-[var(--dash-text-primary)] mt-1.5">Core Tier</h4>
+                              <p className="text-xs text-[var(--dash-text-secondary)] mt-1">Best for departments launching production AI</p>
                             </div>
                             
-                            <div className="border-t border-slate-800/40 pt-4 space-y-3">
-                              <span className="text-[10px] font-bold text-indigo-400 block uppercase">Scope Included:</span>
-                              <ul className="text-xs text-slate-350 space-y-2">
+                            <div className="border-t border-[var(--dash-border)] pt-4 space-y-3">
+                              <span className="text-[10px] font-bold text-[var(--dash-accent)] block uppercase">Scope Included:</span>
+                              <ul className="text-xs text-[var(--dash-text-secondary)] space-y-2">
                                 <li className="flex items-start gap-2">
-                                  <span className="text-emerald-400 mt-0.5 font-bold">✓</span>
+                                  <span className="text-[var(--emerald)] mt-0.5 font-bold">✓</span>
                                   Comprehensive 90-Day Roadmap
                                 </li>
                                 <li className="flex items-start gap-2">
-                                  <span className="text-emerald-400 mt-0.5 font-bold">✓</span>
+                                  <span className="text-[var(--emerald)] mt-0.5 font-bold">✓</span>
                                   1–2 Custom AI Solutions (NLP or Predictive)
                                 </li>
                                 <li className="flex items-start gap-2">
-                                  <span className="text-emerald-400 mt-0.5 font-bold">✓</span>
+                                  <span className="text-[var(--emerald)] mt-0.5 font-bold">✓</span>
                                   Instructor-Led Adoption Training
                                 </li>
                                 <li className="flex items-start gap-2">
-                                  <span className="text-emerald-400 mt-0.5 font-bold">✓</span>
+                                  <span className="text-[var(--emerald)] mt-0.5 font-bold">✓</span>
                                   Standard MLOps Setup & Monitoring
                                 </li>
                               </ul>
                             </div>
 
-                            <div className="border-t border-slate-800/40 pt-4 space-y-1">
-                              <span className="text-[10px] font-bold text-indigo-300 block uppercase">Key Staff:</span>
-                              <p className="text-xs text-slate-350">AI Architect, Data Scientist, ML Engineer, AI Trainer</p>
+                            <div className="border-t border-[var(--dash-border)] pt-4 space-y-1">
+                              <span className="text-[10px] font-bold text-[var(--dash-accent)] block uppercase">Key Staff:</span>
+                              <p className="text-xs text-[var(--dash-text-secondary)]">AI Architect, Data Scientist, ML Engineer, AI Trainer</p>
                             </div>
                           </div>
 
-                          <div className="pt-6 mt-6 border-t border-slate-800/45">
+                          <div className="pt-6 mt-6 border-t border-[var(--dash-border)]">
                             <button
                               onClick={() => {
                                 setSelectedProcurementTier('core');
                                 setIsProcurementModalOpen(true);
                               }}
-                              className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs py-2.5 rounded-xl transition duration-150 shadow-[0_0_12px_rgba(99,102,241,0.25)] hover:scale-[1.01]"
+                              className="w-full bg-[var(--dash-accent)] hover:bg-[var(--dash-accent-hover)] text-white font-extrabold text-xs py-2.5 rounded-xl transition duration-150 shadow-[0_0_12px_rgba(var(--accent-rgb),0.25)] hover:scale-[1.01]"
                             >
                               Request Core Tier
                             </button>
@@ -3074,51 +3088,51 @@ export default function Dashboard() {
                         </div>
 
                         {/* Advanced Tier */}
-                        <div className="bg-[#0F172A]/50 border border-slate-800/80 hover:border-slate-700/80 rounded-2xl p-6 flex flex-col justify-between transition duration-200">
+                        <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] hover:border-[var(--dash-border)]/80 rounded-2xl p-6 flex flex-col justify-between transition duration-200">
                           <div className="space-y-4">
                             <div>
-                              <span className="text-[9px] uppercase font-bold tracking-widest text-slate-500 bg-slate-850 border border-slate-800 px-2 py-0.5 rounded">
+                              <span className="text-[9px] uppercase font-bold tracking-widest text-[var(--dash-text-secondary)] bg-[var(--dash-bg)] border border-[var(--dash-border)] px-2 py-0.5 rounded">
                                 Enterprise
                               </span>
-                              <h4 className="text-lg font-bold text-white mt-1.5">Advanced Tier</h4>
-                              <p className="text-xs text-slate-400 mt-1">Best for enterprise multi-department rollouts</p>
+                              <h4 className="text-lg font-bold text-[var(--dash-text-primary)] mt-1.5">Advanced Tier</h4>
+                              <p className="text-xs text-[var(--dash-text-secondary)] mt-1">Best for enterprise multi-department rollouts</p>
                             </div>
                             
-                            <div className="border-t border-slate-800/40 pt-4 space-y-3">
-                              <span className="text-[10px] font-bold text-slate-400 block uppercase">Scope Included:</span>
-                              <ul className="text-xs text-slate-350 space-y-2">
+                            <div className="border-t border-[var(--dash-border)] pt-4 space-y-3">
+                              <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] block uppercase">Scope Included:</span>
+                              <ul className="text-xs text-[var(--dash-text-secondary)] space-y-2">
                                 <li className="flex items-start gap-2">
-                                  <span className="text-emerald-400 mt-0.5 font-bold">✓</span>
+                                  <span className="text-[var(--emerald)] mt-0.5 font-bold">✓</span>
                                   Multiple AI Solutions (Vision/GenAI integrations)
                                 </li>
                                 <li className="flex items-start gap-2">
-                                  <span className="text-emerald-400 mt-0.5 font-bold">✓</span>
+                                  <span className="text-[var(--emerald)] mt-0.5 font-bold">✓</span>
                                   Advanced NIST AI RMF Governance Frameworks
                                 </li>
                                 <li className="flex items-start gap-2">
-                                  <span className="text-emerald-400 mt-0.5 font-bold">✓</span>
+                                  <span className="text-[var(--emerald)] mt-0.5 font-bold">✓</span>
                                   Continuous Model Retraining & Performance Tuning
                                 </li>
                                 <li className="flex items-start gap-2">
-                                  <span className="text-emerald-400 mt-0.5 font-bold">✓</span>
+                                  <span className="text-[var(--emerald)] mt-0.5 font-bold">✓</span>
                                   Fully Managed AI Security Threat Monitoring
                                 </li>
                               </ul>
                             </div>
 
-                            <div className="border-t border-slate-800/40 pt-4 space-y-1">
-                              <span className="text-[10px] font-bold text-slate-400 block uppercase">Key Staff:</span>
-                              <p className="text-xs text-slate-350">AI Architect, Cybersecurity AI Specialist, ML Engineer</p>
+                            <div className="border-t border-[var(--dash-border)] pt-4 space-y-1">
+                              <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] block uppercase">Key Staff:</span>
+                              <p className="text-xs text-[var(--dash-text-secondary)]">AI Architect, Cybersecurity AI Specialist, ML Engineer</p>
                             </div>
                           </div>
 
-                          <div className="pt-6 mt-6 border-t border-slate-800/45">
+                          <div className="pt-6 mt-6 border-t border-[var(--dash-border)]">
                             <button
                               onClick={() => {
                                 setSelectedProcurementTier('advanced');
                                 setIsProcurementModalOpen(true);
                               }}
-                              className="w-full bg-slate-900 hover:bg-slate-850 border border-slate-800 hover:border-slate-750 text-slate-200 font-bold text-xs py-2.5 rounded-xl transition duration-150"
+                              className="w-full bg-[var(--dash-bg)] hover:bg-[var(--dash-hover-bg)] border border-[var(--dash-border)] hover:border-[var(--dash-active-border)] text-[var(--dash-text-primary)] font-bold text-xs py-2.5 rounded-xl transition duration-150"
                             >
                               Request Advanced Tier
                             </button>
@@ -3134,20 +3148,20 @@ export default function Dashboard() {
                       {llmModels.map((model, i) => (
                         <div
                           key={i}
-                          className={`relative bg-[#0F172A]/50 border border-slate-800/80 rounded-2xl p-5 flex flex-col justify-between transition duration-300 ${model.borderGlow}`}
+                          className={`relative bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-5 flex flex-col justify-between transition duration-300 ${model.borderGlow}`}
                         >
                           <div className="space-y-4">
                             <div className="flex justify-between items-start">
                               <div>
-                                <span className="text-[10px] uppercase font-bold tracking-widest text-slate-500 bg-slate-850 px-2 py-0.5 rounded border border-slate-800">
+                                <span className="text-[10px] uppercase font-bold tracking-widest text-[var(--dash-text-secondary)] bg-[var(--dash-bg)] px-2 py-0.5 rounded border border-[var(--dash-border)]">
                                   {model.type}
                                 </span>
-                                <h3 className="text-lg font-bold text-white mt-1">{model.name}</h3>
+                                <h3 className="text-lg font-bold text-[var(--dash-text-primary)] mt-1">{model.name}</h3>
                               </div>
                               <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
                                 model.partner.includes('Partner') 
-                                  ? 'border-indigo-800 text-indigo-300 bg-indigo-950/20' 
-                                  : 'border-cyan-800 text-cyan-300 bg-cyan-950/20'
+                                  ? 'border-[var(--dash-accent-2)]/40 text-[var(--dash-accent-2)] bg-[var(--dash-accent-2)]/10' 
+                                  : 'border-[var(--dash-accent)]/40 text-[var(--dash-accent)] bg-[var(--dash-accent)]/10'
                               }`}>
                                 {model.partner}
                               </span>
@@ -3155,70 +3169,70 @@ export default function Dashboard() {
 
                             {/* Usage Progress */}
                             <div className="space-y-1">
-                              <div className="flex justify-between text-xs text-slate-400">
+                              <div className="flex justify-between text-xs text-[var(--dash-text-secondary)]">
                                 <span>Quota Usage</span>
-                                <span className="font-semibold text-slate-200">{model.usage}</span>
+                                <span className="font-semibold text-[var(--dash-text-primary)]">{model.usage}</span>
                               </div>
-                              <div className="w-full bg-slate-800/60 rounded-full h-1.5 overflow-hidden">
+                              <div className="w-full bg-[var(--dash-bg)]/60 rounded-full h-1.5 overflow-hidden">
                                 <div className={`h-full bg-gradient-to-r ${model.color}`} style={{ width: `${model.percent}%` }}></div>
                               </div>
                             </div>
 
                             {/* Latency / Limit Stats */}
                             <div className="grid grid-cols-2 gap-3 pt-1 text-xs">
-                              <div className="bg-slate-900/40 p-2.5 rounded-xl border border-slate-800/60">
-                                <span className="text-[10px] text-slate-500 uppercase tracking-wider block">Limits (TPM)</span>
-                                <span className="font-mono text-slate-300">{model.tpm}</span>
+                              <div className="bg-[var(--dash-bg)]/40 p-2.5 rounded-xl border border-[var(--dash-border)]">
+                                <span className="text-[10px] text-[var(--dash-text-secondary)] uppercase tracking-wider block">Limits (TPM)</span>
+                                <span className="font-mono text-[var(--dash-text-primary)]">{model.tpm}</span>
                               </div>
-                              <div className="bg-slate-900/40 p-2.5 rounded-xl border border-slate-800/60">
-                                <span className="text-[10px] text-slate-500 uppercase tracking-wider block">Limits (RPM)</span>
-                                <span className="font-mono text-slate-300">{model.rpm}</span>
+                              <div className="bg-[var(--dash-bg)]/40 p-2.5 rounded-xl border border-[var(--dash-border)]">
+                                <span className="text-[10px] text-[var(--dash-text-secondary)] uppercase tracking-wider block">Limits (RPM)</span>
+                                <span className="font-mono text-[var(--dash-text-primary)]">{model.rpm}</span>
                               </div>
                             </div>
 
                             {/* Recommendation */}
-                            <div className="flex items-start gap-2 bg-[#070A13]/40 p-3 rounded-xl border border-slate-800/40">
+                            <div className="flex items-start gap-2 bg-[var(--dash-bg)]/40 p-3 rounded-xl border border-[var(--dash-border)]">
                               <Icons.Lightbulb />
-                              <p className="text-[11px] text-slate-400 leading-normal font-medium">{model.rec}</p>
+                              <p className="text-[11px] text-[var(--dash-text-secondary)] leading-normal font-medium">{model.rec}</p>
                             </div>
                           </div>
 
-                          <div className="flex justify-between items-center border-t border-slate-800/40 pt-4 mt-4">
+                          <div className="flex justify-between items-center border-t border-[var(--dash-border)] pt-4 mt-4">
                             <div className="flex items-center gap-1.5 text-xs">
-                              <span className="h-2 w-2 rounded-full bg-emerald-400"></span>
-                              <span className="text-slate-400 font-medium">{model.status}</span>
+                              <span className="h-2 w-2 rounded-full bg-[var(--emerald)]"></span>
+                              <span className="text-[var(--dash-text-secondary)] font-medium">{model.status}</span>
                             </div>
-                            <span className="text-xs font-mono font-bold text-slate-300">{model.cost}</span>
+                            <span className="text-xs font-mono font-bold text-[var(--dash-text-primary)]">{model.cost}</span>
                           </div>
                         </div>
                       ))}
                     </div>
 
                     {/* Forecast section */}
-                    <div className="bg-[#0F172A]/40 border border-slate-800 rounded-2xl p-6">
+                    <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-6">
                       <div className="flex justify-between items-center mb-6">
                         <div>
-                          <h3 className="text-lg font-bold text-white">30/60/90-Day Consumption Forecast</h3>
-                          <p className="text-xs text-slate-400 mt-1">Multi-cloud forecast modeling based on scheduled jobs and current trends.</p>
+                          <h3 className="text-lg font-bold text-[var(--dash-text-primary)]">30/60/90-Day Consumption Forecast</h3>
+                          <p className="text-xs text-[var(--dash-text-secondary)] mt-1">Multi-cloud forecast modeling based on scheduled jobs and current trends.</p>
                         </div>
-                        <span className="text-xs text-emerald-400 font-semibold bg-emerald-950/20 border border-emerald-800/30 px-3 py-1 rounded-full">
+                        <span className="text-xs text-[var(--emerald)] font-semibold bg-[var(--emerald)]/10 border border-[var(--emerald)]/30 px-3 py-1 rounded-full">
                           Model Confidence: 94.2%
                         </span>
                       </div>
 
                       {/* SVG Chart */}
                       <div className="relative h-44 w-full">
-                        <svg viewBox="0 0 500 150" className="w-full h-full text-cyan-400/20">
+                        <svg viewBox="0 0 500 150" className="w-full h-full text-[var(--dash-accent)]/20">
                           {/* Grid Lines */}
-                          <line x1="0" y1="20" x2="500" y2="20" stroke="rgba(255,255,255,0.03)" strokeWidth="1" />
-                          <line x1="0" y1="75" x2="500" y2="75" stroke="rgba(255,255,255,0.03)" strokeWidth="1" />
-                          <line x1="0" y1="130" x2="500" y2="130" stroke="rgba(255,255,255,0.03)" strokeWidth="1" />
+                          <line x1="0" y1="20" x2="500" y2="20" stroke="currentColor" strokeOpacity="0.05" strokeWidth="1" />
+                          <line x1="0" y1="75" x2="500" y2="75" stroke="currentColor" strokeOpacity="0.05" strokeWidth="1" />
+                          <line x1="0" y1="130" x2="500" y2="130" stroke="currentColor" strokeOpacity="0.05" strokeWidth="1" />
                           
                           {/* Spline Area Gradient */}
                           <defs>
                             <linearGradient id="chartGlow" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="#22D3EE" stopOpacity="0.15" />
-                              <stop offset="100%" stopColor="#A78BFA" stopOpacity="0" />
+                              <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.15" />
+                              <stop offset="100%" stopColor="var(--accent-2)" stopOpacity="0" />
                             </linearGradient>
                           </defs>
 
@@ -3235,25 +3249,25 @@ export default function Dashboard() {
                           />
                           
                           <linearGradient id="gradientLine" x1="0" y1="0" x2="1" y2="0">
-                            <stop offset="0%" stopColor="#22D3EE" />
-                            <stop offset="50%" stopColor="#818CF8" />
-                            <stop offset="100%" stopColor="#A78BFA" />
+                            <stop offset="0%" stopColor="var(--accent)" />
+                            <stop offset="50%" stopColor="var(--accent-2)" />
+                            <stop offset="100%" stopColor="var(--accent-2)" />
                           </linearGradient>
 
                           {/* Intercept point */}
-                          <circle cx="150" cy="60" r="5" fill="#22D3EE" className="animate-pulse" />
-                          <circle cx="450" cy="25" r="5" fill="#A78BFA" className="animate-pulse" />
+                          <circle cx="150" cy="60" r="5" fill="var(--accent)" className="animate-pulse" />
+                          <circle cx="450" cy="25" r="5" fill="var(--accent-2)" className="animate-pulse" />
                         </svg>
 
-                        <div className="absolute top-12 left-[30%] text-[10px] text-cyan-400 font-bold bg-[#0F172A] border border-cyan-800/40 rounded px-2 py-0.5">
+                        <div className="absolute top-12 left-[30%] text-[10px] text-[var(--dash-accent)] font-bold bg-[var(--dash-bg)] border border-[var(--dash-accent)]/40 rounded px-2 py-0.5">
                           Actual Usage: 642K tokens
                         </div>
-                        <div className="absolute top-2 right-[12%] text-[10px] text-violet-400 font-bold bg-[#0F172A] border border-violet-800/40 rounded px-2 py-0.5">
+                        <div className="absolute top-2 right-[12%] text-[10px] text-[var(--accent-2)] font-bold bg-[var(--dash-bg)] border border-[var(--accent-2)]/40 rounded px-2 py-0.5">
                           Projected Spike: 2.1M (compliance scan)
                         </div>
                       </div>
 
-                      <div className="flex justify-between items-center text-xs text-slate-500 pt-4 border-t border-slate-800/40">
+                      <div className="flex justify-between items-center text-xs text-[var(--dash-text-secondary)] pt-4 border-t border-[var(--dash-border)]">
                         <span>Now</span>
                         <span>30 Days (Forecast)</span>
                         <span>60 Days (Forecast)</span>
@@ -3271,13 +3285,13 @@ export default function Dashboard() {
               const monthlySpend = latestReportData?.scores?.finops?.monthly_spend || 12000;
               const annualSavings = Math.round(monthlySpend * 0.625 * 12);
               
-              let healthColor = 'text-rose-400 border-rose-500/30 bg-rose-950/20';
+              let healthColor = 'text-[var(--rose)] border-[var(--rose)]/30 bg-[var(--rose)]/10';
               let healthText = '🔴 At Risk';
               if (totalScore >= 80) {
-                healthColor = 'text-emerald-400 border-emerald-500/30 bg-emerald-950/20';
+                healthColor = 'text-[var(--emerald)] border-[var(--emerald)]/30 bg-[var(--emerald)]/10';
                 healthText = '🟢 Healthy';
               } else if (totalScore >= 50) {
-                healthColor = 'text-amber-400 border-amber-500/30 bg-amber-950/20';
+                healthColor = 'text-[var(--amber)] border-[var(--amber)]/30 bg-[var(--amber)]/10';
                 healthText = '🟡 Needs Attention';
               }
 
@@ -3289,14 +3303,14 @@ export default function Dashboard() {
                     <div className={`border rounded-2xl p-5 flex flex-col justify-between min-h-[140px] backdrop-blur relative overflow-hidden group hover:scale-[1.01] transition duration-300 ${healthColor}`}>
                       <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-white/5 to-transparent rounded-bl-full pointer-events-none"></div>
                       <div>
-                        <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1">AI Investment Health</div>
+                        <div className="text-[10px] uppercase font-bold tracking-wider text-[var(--dash-text-secondary)] mb-1">AI Investment Health</div>
                         <div className="text-3xl font-extrabold font-mono flex items-baseline">
                           {totalScore}
-                          <span className="text-xs font-normal text-slate-500 ml-1">/100</span>
+                          <span className="text-xs font-normal text-[var(--dash-text-secondary)]/80 ml-1">/100</span>
                         </div>
                         <div className="text-[10px] font-extrabold uppercase mt-1 tracking-wider">{healthText}</div>
                       </div>
-                      <div className="text-[10.5px] text-slate-400 mt-3 leading-relaxed border-t border-slate-800/40 pt-2 font-medium">
+                      <div className="text-[10.5px] text-[var(--dash-text-secondary)] mt-3 leading-relaxed border-t border-[var(--dash-border)] pt-2 font-medium">
                         • Overspending on premium models<br/>
                         • Missing governance controls<br/>
                         • No ROI measurement
@@ -3304,81 +3318,81 @@ export default function Dashboard() {
                     </div>
 
                     {/* Annual Savings */}
-                    <div className="bg-[#0F172A]/40 border border-emerald-500/20 hover:border-emerald-500/30 rounded-2xl p-5 flex flex-col justify-between min-h-[140px] backdrop-blur relative overflow-hidden group hover:scale-[1.01] transition duration-300">
-                      <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-emerald-500/5 to-transparent rounded-bl-full pointer-events-none"></div>
+                    <div className="bg-[var(--dash-card-bg)] border border-[var(--emerald)]/20 hover:border-[var(--emerald)]/30 rounded-2xl p-5 flex flex-col justify-between min-h-[140px] backdrop-blur relative overflow-hidden group hover:scale-[1.01] transition duration-300">
+                      <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-[var(--emerald)]/5 to-transparent rounded-bl-full pointer-events-none"></div>
                       <div>
-                        <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1">Annual Savings</div>
-                        <div className="text-3xl font-extrabold text-emerald-400 font-mono">
+                        <div className="text-[10px] uppercase font-bold tracking-wider text-[var(--dash-text-secondary)] mb-1">Annual Savings</div>
+                        <div className="text-3xl font-extrabold text-[var(--emerald)] font-mono">
                           ${annualSavings.toLocaleString()}
                         </div>
-                        <div className="text-[10px] text-slate-500 font-semibold mt-1">Based on ${monthlySpend.toLocaleString()}/mo spend</div>
+                        <div className="text-[10px] text-[var(--dash-text-secondary)] font-semibold mt-1">Based on ${monthlySpend.toLocaleString()}/mo spend</div>
                       </div>
-                      <div className="text-[10.5px] text-slate-400 mt-3 leading-relaxed border-t border-slate-800/40 pt-2 font-medium">
+                      <div className="text-[10.5px] text-[var(--dash-text-secondary)] mt-3 leading-relaxed border-t border-[var(--dash-border)] pt-2 font-medium">
                         62.5% monthly cost reduction projected via smart multi-cloud model routing.
                       </div>
                     </div>
 
                     {/* Cost Reduction */}
-                    <div className="bg-[#0F172A]/40 border border-cyan-500/20 hover:border-cyan-500/30 rounded-2xl p-5 flex flex-col justify-between min-h-[140px] backdrop-blur relative overflow-hidden group hover:scale-[1.01] transition duration-300">
-                      <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-cyan-500/5 to-transparent rounded-bl-full pointer-events-none"></div>
+                    <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-accent)]/20 hover:border-[var(--dash-accent)]/30 rounded-2xl p-5 flex flex-col justify-between min-h-[140px] backdrop-blur relative overflow-hidden group hover:scale-[1.01] transition duration-300">
+                      <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-[var(--dash-accent)]/5 to-transparent rounded-bl-full pointer-events-none"></div>
                       <div>
-                        <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1">Cost Reduction</div>
-                        <div className="text-3xl font-extrabold text-cyan-400 font-mono">62.5%</div>
-                        <div className="text-[10px] text-slate-500 font-semibold mt-1">Target spend optimization</div>
+                        <div className="text-[10px] uppercase font-bold tracking-wider text-[var(--dash-text-secondary)] mb-1">Cost Reduction</div>
+                        <div className="text-3xl font-extrabold text-[var(--dash-accent)] font-mono">62.5%</div>
+                        <div className="text-[10px] text-[var(--dash-text-secondary)] font-semibold mt-1">Target spend optimization</div>
                       </div>
-                      <div className="text-[10.5px] text-slate-400 mt-3 leading-relaxed border-t border-slate-800/40 pt-2 font-medium">
+                      <div className="text-[10.5px] text-[var(--dash-text-secondary)] mt-3 leading-relaxed border-t border-[var(--dash-border)] pt-2 font-medium">
                         Migrating 95% of basic tasks to standard/flash configurations.
                       </div>
                     </div>
 
                     {/* AI Risk Exposure */}
-                    <div className="bg-[#0F172A]/40 border border-rose-500/20 hover:border-rose-500/30 rounded-2xl p-5 flex flex-col justify-between min-h-[140px] backdrop-blur relative overflow-hidden group hover:scale-[1.01] transition duration-300">
-                      <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-rose-500/5 to-transparent rounded-bl-full pointer-events-none"></div>
+                    <div className="bg-[var(--dash-card-bg)] border border-[var(--rose)]/20 hover:border-[var(--rose)]/30 rounded-2xl p-5 flex flex-col justify-between min-h-[140px] backdrop-blur relative overflow-hidden group hover:scale-[1.01] transition duration-300">
+                      <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-[var(--rose)]/5 to-transparent rounded-bl-full pointer-events-none"></div>
                       <div>
-                        <div className="text-[10px] uppercase font-bold tracking-wider text-slate-400 mb-1">AI Risk Exposure</div>
-                        <div className="text-3xl font-extrabold text-rose-400 font-mono">HIGH</div>
-                        <div className="text-[10px] text-rose-400/80 font-bold uppercase mt-1 tracking-wider">⚠️ Action Required</div>
+                        <div className="text-[10px] uppercase font-bold tracking-wider text-[var(--dash-text-secondary)] mb-1">AI Risk Exposure</div>
+                        <div className="text-3xl font-extrabold text-[var(--rose)] font-mono">HIGH</div>
+                        <div className="text-[10px] text-[var(--rose)]/80 font-bold uppercase mt-1 tracking-wider">⚠️ Action Required</div>
                       </div>
-                      <div className="text-[10.5px] text-slate-400 mt-3 leading-relaxed border-t border-slate-800/40 pt-2 font-medium">
+                      <div className="text-[10.5px] text-[var(--dash-text-secondary)] mt-3 leading-relaxed border-t border-[var(--dash-border)] pt-2 font-medium">
                         Ad-hoc oversight workflows expose the firm to compliance and security gaps.
                       </div>
                     </div>
                   </div>
 
                   {/* Middle Row: Financial Opportunity Summary Table */}
-                  <div className="bg-[#0F172A]/40 border border-slate-800 rounded-2xl p-6 backdrop-blur">
-                    <h3 className="text-base font-bold text-slate-100 mb-4 flex items-center gap-2">
-                      <span className="text-cyan-400">💎</span> Financial Opportunity Summary
+                  <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-6 backdrop-blur">
+                    <h3 className="text-base font-bold text-[var(--dash-text-primary)] mb-4 flex items-center gap-2">
+                      <span className="text-[var(--dash-accent)]">💎</span> Financial Opportunity Summary
                     </h3>
                     <div className="overflow-x-auto">
                       <table className="w-full text-left border-collapse font-sans text-xs">
                         <thead>
-                          <tr className="border-b border-slate-800 text-slate-400 font-bold uppercase tracking-wider text-[10px]">
+                          <tr className="border-b border-[var(--dash-border)] text-[var(--dash-text-secondary)] font-bold uppercase tracking-wider text-[10px]">
                             <th className="pb-3 px-4">Strategic Metric</th>
                             <th className="pb-3 px-4 text-right">Target Business Value</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-800/40 text-slate-300">
-                          <tr className="hover:bg-slate-800/10 transition duration-150">
-                            <td className="py-3.5 px-4 font-bold text-slate-200">Annual Savings</td>
-                            <td className="py-3.5 px-4 text-right text-emerald-400 font-bold font-mono">${annualSavings.toLocaleString()}</td>
+                        <tbody className="divide-y divide-[var(--dash-border)]/40 text-[var(--dash-text-secondary)]">
+                          <tr className="hover:bg-[var(--dash-hover-bg)] transition duration-150">
+                            <td className="py-3.5 px-4 font-bold text-[var(--dash-text-primary)]">Annual Savings</td>
+                            <td className="py-3.5 px-4 text-right text-[var(--emerald)] font-bold font-mono">${annualSavings.toLocaleString()}</td>
                           </tr>
-                          <tr className="hover:bg-slate-800/10 transition duration-150">
-                            <td className="py-3.5 px-4 font-bold text-slate-200">Cost Reduction</td>
-                            <td className="py-3.5 px-4 text-right text-cyan-400 font-bold font-mono">62.5%</td>
+                          <tr className="hover:bg-[var(--dash-hover-bg)] transition duration-150">
+                            <td className="py-3.5 px-4 font-bold text-[var(--dash-text-primary)]">Cost Reduction</td>
+                            <td className="py-3.5 px-4 text-right text-[var(--dash-accent)] font-bold font-mono">62.5%</td>
                           </tr>
-                          <tr className="hover:bg-slate-800/10 transition duration-150">
-                            <td className="py-3.5 px-4 font-bold text-slate-200">Audit Cost Reduction</td>
-                            <td className="py-3.5 px-4 text-right text-indigo-400 font-bold font-mono">60%</td>
+                          <tr className="hover:bg-[var(--dash-hover-bg)] transition duration-150">
+                            <td className="py-3.5 px-4 font-bold text-[var(--dash-text-primary)]">Audit Cost Reduction</td>
+                            <td className="py-3.5 px-4 text-right text-[var(--accent-2)] font-bold font-mono">60%</td>
                           </tr>
-                          <tr className="hover:bg-slate-800/10 transition duration-150">
-                            <td className="py-3.5 px-4 font-bold text-slate-200">Productivity Gain</td>
-                            <td className="py-3.5 px-4 text-right text-purple-400 font-bold font-mono">15-25%</td>
+                          <tr className="hover:bg-[var(--dash-hover-bg)] transition duration-150">
+                            <td className="py-3.5 px-4 font-bold text-[var(--dash-text-primary)]">Productivity Gain</td>
+                            <td className="py-3.5 px-4 text-right text-[var(--accent-2)] font-bold font-mono">15-25%</td>
                           </tr>
-                          <tr className="hover:bg-slate-800/10 transition duration-150">
-                            <td className="py-3.5 px-4 font-bold text-slate-200">Risk Exposure</td>
+                          <tr className="hover:bg-[var(--dash-hover-bg)] transition duration-150">
+                            <td className="py-3.5 px-4 font-bold text-[var(--dash-text-primary)]">Risk Exposure</td>
                             <td className="py-3.5 px-4 text-right">
-                              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-rose-950/40 border border-rose-900/30 text-rose-400">
+                              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-[var(--rose)]/10 border border-[var(--rose)]/20 text-[var(--rose)]">
                                 High
                               </span>
                             </td>
@@ -3391,57 +3405,57 @@ export default function Dashboard() {
                   {/* Bottom Row: Donut Chart & ROI Timeline */}
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {/* Donut Spend Chart */}
-                    <div className="bg-[#0F172A]/40 border border-slate-800 rounded-2xl p-6 backdrop-blur flex flex-col justify-between">
+                    <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-6 backdrop-blur flex flex-col justify-between">
                       <div>
-                        <h3 className="text-base font-bold text-slate-100 mb-4 flex items-center gap-2">
-                          <span className="text-cyan-400">📊</span> AI Spend Breakdown
+                        <h3 className="text-base font-bold text-[var(--dash-text-primary)] mb-4 flex items-center gap-2">
+                          <span className="text-[var(--dash-accent)]">📊</span> AI Spend Breakdown
                         </h3>
                         <div className="flex flex-col sm:flex-row items-center gap-8 justify-center py-4">
                           <div className="relative w-36 h-36 rounded-full flex items-center justify-center flex-shrink-0" style={{
                             background: 'conic-gradient(var(--accent) 0% 65%, var(--accent-2) 65% 80%, var(--amber) 80% 88%, var(--rose) 88% 95%, var(--emerald) 95% 100%)'
                           }}>
                             {/* Inner circle for donut hole */}
-                            <div className="absolute w-24 h-24 rounded-full bg-[#070A13] flex flex-col items-center justify-center z-10 shadow-inner">
-                              <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">Total Spend</span>
-                              <span className="text-sm font-extrabold text-white font-mono">${monthlySpend.toLocaleString()}/mo</span>
+                            <div className="absolute w-24 h-24 rounded-full bg-[var(--dash-bg)] flex flex-col items-center justify-center z-10 shadow-inner">
+                              <span className="text-[8px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-widest">Total Spend</span>
+                              <span className="text-sm font-extrabold text-[var(--dash-text-primary)] font-mono">${monthlySpend.toLocaleString()}/mo</span>
                             </div>
                           </div>
 
                           <div className="flex flex-col gap-2.5 w-full max-w-[200px]">
                             <div className="flex items-center justify-between text-xs">
                               <div className="flex items-center gap-2">
-                                <span className="w-2.5 h-2.5 rounded bg-cyan-400 flex-shrink-0"></span>
-                                <span className="text-slate-350">Premium Models</span>
+                                <span className="w-2.5 h-2.5 rounded bg-[var(--dash-accent)] flex-shrink-0"></span>
+                                <span className="text-[var(--dash-text-secondary)]">Premium Models</span>
                               </div>
-                              <span className="font-bold text-white font-mono">65%</span>
+                              <span className="font-bold text-[var(--dash-text-primary)] font-mono">65%</span>
                             </div>
                             <div className="flex items-center justify-between text-xs">
                               <div className="flex items-center gap-2">
-                                <span className="w-2.5 h-2.5 rounded bg-violet-400 flex-shrink-0"></span>
-                                <span className="text-slate-350">Infrastructure</span>
+                                <span className="w-2.5 h-2.5 rounded bg-[var(--accent-2)] flex-shrink-0"></span>
+                                <span className="text-[var(--dash-text-secondary)]">Infrastructure</span>
                               </div>
-                              <span className="font-bold text-white font-mono">15%</span>
+                              <span className="font-bold text-[var(--dash-text-primary)] font-mono">15%</span>
                             </div>
                             <div className="flex items-center justify-between text-xs">
                               <div className="flex items-center gap-2">
-                                <span className="w-2.5 h-2.5 rounded bg-amber-400 flex-shrink-0"></span>
-                                <span className="text-slate-350">Data Quality</span>
+                                <span className="w-2.5 h-2.5 rounded bg-[var(--amber)] flex-shrink-0"></span>
+                                <span className="text-[var(--dash-text-secondary)]">Data Quality</span>
                               </div>
-                              <span className="font-bold text-white font-mono">8%</span>
+                              <span className="font-bold text-[var(--dash-text-primary)] font-mono">8%</span>
                             </div>
                             <div className="flex items-center justify-between text-xs">
                               <div className="flex items-center gap-2">
-                                <span className="w-2.5 h-2.5 rounded bg-rose-400 flex-shrink-0"></span>
-                                <span className="text-slate-350">RAG pipelines</span>
+                                <span className="w-2.5 h-2.5 rounded bg-[var(--rose)] flex-shrink-0"></span>
+                                <span className="text-[var(--dash-text-secondary)]">RAG pipelines</span>
                               </div>
-                              <span className="font-bold text-white font-mono">7%</span>
+                              <span className="font-bold text-[var(--dash-text-primary)] font-mono">7%</span>
                             </div>
                             <div className="flex items-center justify-between text-xs">
                               <div className="flex items-center gap-2">
-                                <span className="w-2.5 h-2.5 rounded bg-emerald-400 flex-shrink-0"></span>
-                                <span className="text-slate-350">Embeddings</span>
+                                <span className="w-2.5 h-2.5 rounded bg-[var(--emerald)] flex-shrink-0"></span>
+                                <span className="text-[var(--dash-text-secondary)]">Embeddings</span>
                               </div>
-                              <span className="font-bold text-white font-mono">5%</span>
+                              <span className="font-bold text-[var(--dash-text-primary)] font-mono">5%</span>
                             </div>
                           </div>
                         </div>
@@ -3449,44 +3463,44 @@ export default function Dashboard() {
                     </div>
 
                     {/* ROI Payback Timeline */}
-                    <div className="bg-[#0F172A]/40 border border-slate-800 rounded-2xl p-6 backdrop-blur flex flex-col justify-between">
+                    <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-6 backdrop-blur flex flex-col justify-between">
                       <div>
-                        <h3 className="text-base font-bold text-slate-100 mb-4 flex items-center gap-2">
-                          <span className="text-cyan-400">📈</span> ROI Timeline
+                        <h3 className="text-base font-bold text-[var(--dash-text-primary)] mb-4 flex items-center gap-2">
+                          <span className="text-[var(--dash-accent)]">📈</span> ROI Timeline
                         </h3>
-                        <p className="text-xs text-slate-400 mb-6 leading-relaxed">
+                        <p className="text-xs text-[var(--dash-text-secondary)] mb-6 leading-relaxed">
                           Projected cumulative savings and break-even milestones over a 12-month horizon.
                         </p>
                         
                         <div className="relative flex justify-between items-start pt-8 pb-4">
                           {/* Progress Line */}
-                          <div className="absolute top-[41px] left-2.5 right-2.5 h-0.5 bg-slate-850 z-0">
-                            <div className="h-full bg-cyan-400" style={{ width: '40%' }}></div>
+                          <div className="absolute top-[41px] left-2.5 right-2.5 h-0.5 bg-[var(--dash-border)] z-0">
+                            <div className="h-full bg-[var(--dash-accent)]" style={{ width: '40%' }}></div>
                           </div>
 
                           {/* Steps */}
                           <div className="flex flex-col items-center z-10 w-[20%] text-center">
-                            <div className="w-5 h-5 rounded-full bg-cyan-400 border-4 border-slate-950 shadow-[0_0_8px_var(--accent)] flex items-center justify-center"></div>
-                            <span className="text-[8px] font-bold text-slate-500 uppercase tracking-wider mt-2.5">Month 0</span>
-                            <span className="text-[10px] font-bold text-white mt-1">Inception</span>
+                            <div className="w-5 h-5 rounded-full bg-[var(--dash-accent)] border-4 border-[var(--dash-bg)] shadow-[0_0_8px_var(--accent)] flex items-center justify-center"></div>
+                            <span className="text-[8px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-wider mt-2.5">Month 0</span>
+                            <span className="text-[10px] font-bold text-[var(--dash-text-primary)] mt-1">Inception</span>
                           </div>
                           
                           <div className="flex flex-col items-center z-10 w-[20%] text-center">
-                            <div className="w-5 h-5 rounded-full bg-cyan-400 border-4 border-slate-950 shadow-[0_0_8px_var(--accent)] flex items-center justify-center"></div>
-                            <span className="text-[8px] font-bold text-cyan-400 uppercase tracking-wider mt-2.5">Month 3</span>
+                            <div className="w-5 h-5 rounded-full bg-[var(--dash-accent)] border-4 border-[var(--dash-bg)] shadow-[0_0_8px_var(--accent)] flex items-center justify-center"></div>
+                            <span className="text-[8px] font-bold text-[var(--dash-accent)] uppercase tracking-wider mt-2.5">Month 3</span>
                             <span className="text-[10px] font-extrabold text-emerald-400 mt-1">🏆 Break-Even</span>
                           </div>
 
                           <div className="flex flex-col items-center z-10 w-[20%] text-center">
-                            <div className="w-5 h-5 rounded-full bg-slate-900 border-4 border-slate-800 flex items-center justify-center"></div>
-                            <span className="text-[8px] font-bold text-slate-500 uppercase tracking-wider mt-2.5">Month 6</span>
-                            <span className="text-[10px] font-bold text-slate-400 mt-1">62% savings</span>
+                            <div className="w-5 h-5 rounded-full bg-[var(--dash-bg)] border-4 border-[var(--dash-border)] flex items-center justify-center"></div>
+                            <span className="text-[8px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-wider mt-2.5">Month 6</span>
+                            <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] mt-1">62% savings</span>
                           </div>
 
                           <div className="flex flex-col items-center z-10 w-[20%] text-center">
-                            <div className="w-5 h-5 rounded-full bg-slate-900 border-4 border-slate-800 flex items-center justify-center"></div>
-                            <span className="text-[8px] font-bold text-slate-500 uppercase tracking-wider mt-2.5">Month 12</span>
-                            <span className="text-[10px] font-bold text-slate-400 mt-1">$90K saved</span>
+                            <div className="w-5 h-5 rounded-full bg-[var(--dash-bg)] border-4 border-[var(--dash-border)] flex items-center justify-center"></div>
+                            <span className="text-[8px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-wider mt-2.5">Month 12</span>
+                            <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] mt-1">$90K saved</span>
                           </div>
                         </div>
                       </div>
@@ -3494,29 +3508,29 @@ export default function Dashboard() {
                   </div>
 
                   {/* Recommendations Row */}
-                  <div className="bg-gradient-to-r from-[#0F172A]/40 to-[#1e1b4b]/10 border border-slate-850 rounded-2xl p-6 backdrop-blur">
-                    <h3 className="text-base font-bold text-white mb-4 flex items-center gap-2">
-                      <span className="text-violet-400">💡</span> Top 3 Recommendations
+                  <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-6 backdrop-blur">
+                    <h3 className="text-base font-bold text-[var(--dash-text-primary)] mb-4 flex items-center gap-2">
+                      <span className="text-[var(--accent)]">💡</span> Top 3 Recommendations
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      <div className="bg-slate-950/40 border border-slate-850 rounded-xl p-4.5 space-y-2">
-                        <span className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider">Recommendation 1</span>
-                        <h4 className="text-sm font-bold text-slate-200">Optimize Model Usage</h4>
-                        <p className="text-xs text-slate-450 leading-relaxed font-sans">
+                      <div className="bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl p-4.5 space-y-2">
+                        <span className="text-[10px] font-bold text-[var(--dash-accent)] uppercase tracking-wider">Recommendation 1</span>
+                        <h4 className="text-sm font-bold text-[var(--dash-text-primary)]">Optimize Model Usage</h4>
+                        <p className="text-xs text-[var(--dash-text-secondary)] leading-relaxed font-sans">
                           Establish a smart routing tier to migrate 95% of basic tasks to standard/flash models, keeping premium models reserved exclusively for complex logic.
                         </p>
                       </div>
-                      <div className="bg-slate-950/40 border border-slate-850 rounded-xl p-4.5 space-y-2">
-                        <span className="text-[10px] font-bold text-violet-400 uppercase tracking-wider">Recommendation 2</span>
-                        <h4 className="text-sm font-bold text-slate-200">Implement Governance</h4>
-                        <p className="text-xs text-slate-450 leading-relaxed font-sans">
+                      <div className="bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl p-4.5 space-y-2">
+                        <span className="text-[10px] font-bold text-[var(--accent-2)] uppercase tracking-wider">Recommendation 2</span>
+                        <h4 className="text-sm font-bold text-[var(--dash-text-primary)]">Implement Governance</h4>
+                        <p className="text-xs text-[var(--dash-text-secondary)] leading-relaxed font-sans">
                           Build a steering committee and formal permitted/restricted tools matrix to eliminate random compliance exposure and establish clear accountability boundaries.
                         </p>
                       </div>
-                      <div className="bg-slate-950/40 border border-slate-850 rounded-xl p-4.5 space-y-2">
-                        <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">Recommendation 3</span>
-                        <h4 className="text-sm font-bold text-slate-200">Establish ROI Tracking</h4>
-                        <p className="text-xs text-slate-450 leading-relaxed font-sans">
+                      <div className="bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl p-4.5 space-y-2">
+                        <span className="text-[10px] font-bold text-[var(--emerald)] uppercase tracking-wider">Recommendation 3</span>
+                        <h4 className="text-sm font-bold text-[var(--dash-text-primary)]">Establish ROI Tracking</h4>
+                        <p className="text-xs text-[var(--dash-text-secondary)] leading-relaxed font-sans">
                           Deploy automated instrumentation dashboards to measure, analyze, and report cumulative multi-agent savings back to the CFO boardroom monthly.
                         </p>
                       </div>
@@ -3908,27 +3922,27 @@ export default function Dashboard() {
                 </div>
 
                 {/* Bottom Section: Trend Graphic */}
-                <div className="bg-[#0F172A]/40 border border-slate-800 rounded-2xl p-6">
+                <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-6">
                   <div className="flex justify-between items-center mb-4">
                     <div>
-                      <h4 className="text-sm font-bold text-white">Daily Web Mention Trend Index (MDx / CertaintyAI)</h4>
-                      <p className="text-xs text-slate-400 mt-0.5">7-day tracking of brand index volume across dev ecosystems and tech wires.</p>
+                      <h4 className="text-sm font-bold text-[var(--dash-text-primary)]">Daily Web Mention Trend Index (MDx / CertaintyAI)</h4>
+                      <p className="text-xs text-[var(--dash-text-secondary)] mt-0.5">7-day tracking of brand index volume across dev ecosystems and tech wires.</p>
                     </div>
-                    <span className="text-xs font-bold font-mono text-cyan-400">Peak Volume: +42%</span>
+                    <span className="text-xs font-bold font-mono text-[var(--dash-accent)]">Peak Volume: +42%</span>
                   </div>
 
                   <div className="h-16 w-full relative">
-                    <svg viewBox="0 0 500 50" className="w-full h-full text-cyan-400/20">
+                    <svg viewBox="0 0 500 50" className="w-full h-full text-[var(--dash-accent)]/20">
                       <path 
                         d="M 0,45 Q 50,40 100,20 T 200,45 T 300,10 T 400,25 T 500,5" 
                         fill="none" 
-                        stroke="#22D3EE" 
+                        stroke="var(--trend-chart-stroke)" 
                         strokeWidth="2.5" 
                         strokeLinecap="round"
-                        className="drop-shadow-[0_0_8px_rgba(34,211,238,0.5)]"
+                        style={{ filter: 'var(--trend-chart-shadow)' }}
                       />
-                      <circle cx="300" cy="10" r="4" fill="#A78BFA" />
-                      <circle cx="500" cy="5" r="4" fill="#22D3EE" className="animate-pulse" />
+                      <circle cx="300" cy="10" r="4" fill="var(--trend-chart-circle-1)" />
+                      <circle cx="500" cy="5" r="4" fill="var(--trend-chart-circle-2)" className="animate-pulse" />
                     </svg>
                   </div>
                 </div>
@@ -4264,17 +4278,17 @@ export default function Dashboard() {
       {/* Global Floating Voice AI Assistant Bot Widget (Anchored in bottom right) */}
       <div className="fixed bottom-6 right-6 z-[9999] flex flex-col items-end">
         {voiceAssistantOpen && (
-          <div className="mb-4 w-80 overflow-hidden bg-slate-950/95 border border-cyan-500/30 rounded-2xl p-4.5 shadow-[0_10px_40px_rgba(0,0,0,0.8)] backdrop-blur-md flex flex-col space-y-3.5 animate-fade-in font-sans">
+          <div className="mb-4 w-80 overflow-hidden bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-4.5 shadow-[var(--shadow-lg)] backdrop-blur-md flex flex-col space-y-3.5 animate-fade-in font-sans">
             {/* Header */}
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-2.5">
-                <div className="relative w-8 h-8 rounded-full overflow-hidden border border-cyan-500/35 shrink-0 shadow-[0_0_8px_rgba(34,211,238,0.25)] bg-slate-900">
+                <div className="relative w-8 h-8 rounded-full overflow-hidden border border-[var(--dash-border)] shrink-0 bg-transparent">
                   <img src="/assistant-avatar.jpg" alt="Voice AI Avatar" className="w-full h-full object-cover" />
-                  <span className={`absolute bottom-0 right-0 block h-2 w-2 rounded-full border border-[#0B0F19] ${
+                  <span className={`absolute bottom-0 right-0 block h-2 w-2 rounded-full border border-[var(--dash-border)] ${
                     agentState === 'speaking' ? 'bg-violet-500 animate-pulse' : (agentState === 'searching' ? 'bg-amber-500 animate-pulse' : 'bg-emerald-500')
                   }`} />
                 </div>
-                <h3 className="text-xs font-bold tracking-wider text-slate-200 uppercase">Voice AI Assistant</h3>
+                <h3 className="text-xs font-bold tracking-wider text-[var(--dash-text-primary)] uppercase">Voice AI Assistant</h3>
               </div>
 
               <div className="flex items-center gap-2">
@@ -4282,12 +4296,12 @@ export default function Dashboard() {
                 <select
                   value={voiceLanguage}
                   onChange={(e) => setVoiceLanguage(e.target.value)}
-                  className="bg-[#070A13] border border-slate-800 rounded-xl text-[10px] text-slate-350 px-2 py-1 focus:outline-none focus:ring-1 focus:ring-cyan-500 cursor-pointer max-w-[105px] truncate font-semibold font-sans"
+                  className="bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl text-[10px] text-[var(--dash-text-primary)] px-2 py-1 focus:outline-none focus:ring-1 focus:ring-[var(--dash-accent)] cursor-pointer max-w-[105px] truncate font-semibold font-sans"
                   title="Select Voice Language"
                   aria-label="Select Voice translation language"
                 >
                   {copilotLanguages.map(l => (
-                    <option key={l.code} value={l.name} className="bg-slate-950 text-slate-200 text-xs">
+                    <option key={l.code} value={l.name} className="bg-[var(--dash-card-bg)] text-[var(--dash-text-primary)] text-xs">
                       {l.name}
                     </option>
                   ))}
@@ -4301,8 +4315,8 @@ export default function Dashboard() {
                   }}
                   className={`p-1.5 rounded-lg border transition ${
                     voiceEnabled 
-                      ? 'border-cyan-500/30 text-cyan-400 bg-cyan-500/5' 
-                      : 'border-slate-800 text-slate-500 hover:text-slate-400'
+                      ? 'border-[var(--dash-accent)]/30 text-[var(--dash-accent)] bg-[var(--dash-accent)]/5' 
+                      : 'border-[var(--dash-border)] text-[var(--dash-text-secondary)] hover:text-[var(--dash-text-primary)]'
                   }`}
                   title={voiceEnabled ? 'Mute Assistant Voice' : 'Unmute Assistant Voice'}
                 >
@@ -4312,27 +4326,27 @@ export default function Dashboard() {
             </div>
 
             {/* Animated Waveform Canvas */}
-            <div className="w-full bg-[#070A13]/80 border border-slate-800 rounded-xl p-3 flex flex-col items-center justify-center space-y-2">
+            <div className="w-full bg-[var(--dash-bg)]/80 border border-[var(--dash-border)] rounded-xl p-3 flex flex-col items-center justify-center space-y-2">
               <canvas ref={canvasRef} width="240" height="60" className="w-full h-16 rounded-lg"></canvas>
-              <div className="flex items-center gap-1.5 text-[9px] text-slate-400 uppercase tracking-widest font-bold">
+              <div className="flex items-center gap-1.5 text-[9px] text-[var(--dash-text-secondary)] uppercase tracking-widest font-bold">
                 {agentState === 'idle' && (
-                  <span className="text-slate-500">{isAudioPaused ? 'Audio Paused' : 'System Idle'}</span>
+                  <span className="text-[var(--dash-text-secondary)]">{isAudioPaused ? 'Audio Paused' : 'System Idle'}</span>
                 )}
                 {agentState === 'listening' && (
-                  <div className="flex items-center gap-1 text-cyan-400">
-                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping"></span>
+                  <div className="flex items-center gap-1 text-[var(--dash-accent)]">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[var(--dash-accent)] animate-ping"></span>
                     <span>Listening...</span>
                   </div>
                 )}
                 {agentState === 'searching' && (
-                  <div className="flex items-center gap-1 text-amber-400">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
+                  <div className="flex items-center gap-1 text-[var(--amber)]">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[var(--amber)] animate-pulse"></span>
                     <span>⚡ Processing...</span>
                   </div>
                 )}
                 {agentState === 'speaking' && (
-                  <div className="flex items-center gap-1 text-violet-400">
-                    <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-bounce"></span>
+                  <div className="flex items-center gap-1 text-[var(--accent-2)]">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent-2)] animate-bounce"></span>
                     <span>🔊 Speaking...</span>
                   </div>
                 )}
@@ -4341,20 +4355,20 @@ export default function Dashboard() {
 
             {/* Low Confidence / Accent Alert */}
             {isLowConfidence && (
-              <div className="text-[9px] text-amber-400 font-bold bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-lg text-center animate-pulse font-sans leading-tight">
+              <div className="text-[9px] text-[var(--amber)] font-bold bg-[var(--amber)]/10 border border-[var(--amber)]/20 px-2.5 py-1 rounded-lg text-center animate-pulse font-sans leading-tight">
                 ⚠️ Dialect match low confidence. Speak clearly or select your specific dialect accent from the language dropdown.
               </div>
             )}
 
             {/* Transcript Dialog */}
-            <div className="bg-[#070A13]/60 border border-slate-800/80 rounded-xl p-3 min-h-24 max-h-36 overflow-y-auto scrollbar-none flex flex-col justify-between">
-              <p className="text-[11px] text-slate-350 leading-relaxed italic">
+            <div className="bg-[var(--dash-bg)]/60 border border-[var(--dash-border)] rounded-xl p-3 min-h-24 max-h-36 overflow-y-auto scrollbar-none flex flex-col justify-between">
+              <p className="text-[11px] text-[var(--dash-text-secondary)] leading-relaxed italic">
                 "{agentText}"
               </p>
               <div ref={voiceBottomRef} />
-              <div className="pt-2 border-t border-slate-800/40 mt-2 flex justify-between items-center text-[8px] text-slate-500 font-bold uppercase">
+              <div className="pt-2 border-t border-[var(--dash-border)]/40 mt-2 flex justify-between items-center text-[8px] text-[var(--dash-text-secondary)] font-bold uppercase">
                 <span>CertaintyAI Orchestrator</span>
-                <span className="text-cyan-400/80">Online</span>
+                <span className="text-[var(--dash-accent)]/80">Online</span>
               </div>
             </div>
 
@@ -4363,9 +4377,9 @@ export default function Dashboard() {
               {(agentState === 'idle' || agentState === 'speaking') && (
                 <button
                   onClick={toggleListening}
-                  className="w-full flex items-center justify-center gap-2 border border-cyan-500/30 hover:border-cyan-400 text-cyan-400 bg-cyan-500/5 hover:bg-cyan-500/10 py-3 rounded-xl transition-all duration-200 text-xs font-bold shadow-[0_0_15px_rgba(34,211,238,0.1)] active:scale-98 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                  className="w-full flex items-center justify-center gap-2 border border-[var(--dash-accent)]/30 hover:border-[var(--dash-accent)] text-[var(--dash-accent)] bg-[var(--dash-accent)]/5 hover:bg-[var(--dash-accent)]/10 py-3 rounded-xl transition-all duration-200 text-xs font-bold shadow-[var(--dash-active-shadow)] active:scale-98 focus:outline-none focus:ring-2 focus:ring-[var(--dash-accent)]"
                 >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3.5 h-3.5 animate-pulse text-cyan-400">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3.5 h-3.5 animate-pulse text-[var(--dash-accent)]">
                     <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
                     <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
                     <line x1="12" y1="19" x2="12" y2="23" />
@@ -4377,16 +4391,16 @@ export default function Dashboard() {
               {agentState === 'listening' && (
                 <button
                   onClick={toggleListening}
-                  className="w-full flex items-center justify-center gap-2 border border-rose-500/30 text-rose-400 bg-rose-500/10 py-3 rounded-xl transition-all duration-200 text-xs font-bold shadow-[0_0_20px_rgba(239,68,68,0.25)] active:scale-98 animate-pulse focus:outline-none focus:ring-2 focus:ring-rose-500"
+                  className="w-full flex items-center justify-center gap-2 border border-[var(--rose)]/30 text-[var(--rose)] bg-[var(--rose)]/10 py-3 rounded-xl transition-all duration-200 text-xs font-bold shadow-[0_0_20px_rgba(239,68,68,0.25)] active:scale-98 animate-pulse focus:outline-none focus:ring-2 focus:ring-[var(--rose)]"
                 >
-                  <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
+                  <span className="w-2 h-2 rounded-full bg-[var(--rose)] animate-ping"></span>
                   <span>🎤 Listening... {Math.floor(recordingSeconds / 60)}:{(recordingSeconds % 60).toString().padStart(2, '0')}</span>
                 </button>
               )}
 
               {agentState === 'searching' && (
-                <div className="w-full flex items-center justify-center gap-2 border border-amber-500/30 text-amber-400 bg-amber-500/5 py-3 rounded-xl transition-all duration-200 text-xs font-bold cursor-not-allowed">
-                  <svg className="animate-spin h-3.5 w-3.5 text-amber-400" fill="none" viewBox="0 0 24 24">
+                <div className="w-full flex items-center justify-center gap-2 border border-[var(--amber)]/30 text-[var(--amber)] bg-[var(--amber)]/5 py-3 rounded-xl transition-all duration-200 text-xs font-bold cursor-not-allowed">
+                  <svg className="animate-spin h-3.5 w-3.5 text-[var(--amber)]" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                   </svg>
@@ -4396,14 +4410,14 @@ export default function Dashboard() {
             </div>
 
             {/* Contextual Prompts List */}
-            <div className="flex flex-col gap-1.5 pt-1.5 border-t border-slate-900/60 font-sans">
-              <span className="text-[8px] font-bold text-slate-500 uppercase tracking-wider block">Suggested Prompts</span>
+            <div className="flex flex-col gap-1.5 pt-1.5 border-t border-[var(--dash-border)]/60 font-sans">
+              <span className="text-[8px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-wider block">Suggested Prompts</span>
               <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto scrollbar-none">
                 {voiceSuggestedPrompts.map((p, i) => (
                   <button
                     key={i}
                     onClick={() => handleAgentQuery(p.query)}
-                    className="text-[9px] font-semibold text-cyan-400 hover:text-white bg-cyan-950/20 border border-cyan-900/20 hover:border-cyan-500/50 px-2 py-1 rounded-lg transition duration-150 text-left truncate max-w-full"
+                    className="text-[9px] font-semibold text-[var(--dash-accent)] hover:text-[var(--dash-hover-text)] bg-[var(--dash-accent)]/10 border border-[var(--dash-accent)]/20 hover:border-[var(--dash-accent)] px-2 py-1 rounded-lg transition duration-150 text-left truncate max-w-full"
                   >
                     {p.label}
                   </button>
@@ -4418,11 +4432,19 @@ export default function Dashboard() {
         {/* Pulse Floating bot toggle circular button */}
         <button
           onClick={() => setVoiceAssistantOpen(!voiceAssistantOpen)}
-          className="w-14 h-14 rounded-full bg-gradient-to-tr from-cyan-500 via-blue-600 to-indigo-500 hover:scale-105 active:scale-95 transition-all duration-200 flex items-center justify-center shadow-[0_0_20px_rgba(34,211,238,0.45)] border-2 border-cyan-400/30 text-white relative overflow-hidden shrink-0"
+          className="w-14 h-14 rounded-full hover:scale-105 active:scale-95 transition-all duration-200 flex items-center justify-center text-white relative overflow-hidden shrink-0"
+          style={{
+            background: 'var(--voice-toggle-bg)',
+            border: 'var(--voice-toggle-border)',
+            boxShadow: 'var(--voice-toggle-shadow)'
+          }}
           title={voiceAssistantOpen ? "Close Assistant" : "Open Assistant"}
         >
           <div className="relative w-full h-full">
-            <span className="animate-ping absolute inset-0 rounded-full bg-cyan-400 opacity-20"></span>
+            <span 
+              className="animate-ping absolute inset-0 rounded-full opacity-20"
+              style={{ backgroundColor: 'var(--voice-pulse-color)' }}
+            ></span>
             <img
               src="/assistant-avatar.jpg"
               alt="Assistant Avatar"

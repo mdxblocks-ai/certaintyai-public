@@ -60,8 +60,11 @@ export default function Navbar() {
     }
   }
 
-  // Determine styling based on whether the user is logged in
-  const isParchment = !user
+  // Determine styling based on whether the user is logged in or parchment theme is active
+  const isParchment = !user || (() => {
+    const theme = localStorage.getItem('dashboard_theme')
+    return theme === null ? true : theme === 'parchment'
+  })()
   const headerClass = isParchment
     ? "theme-parchment bg-[#F4F0E6] border-b border-[#14161A]/10 text-[#14161A] sticky top-0 z-50 transition-all duration-300"
     : "border-b border-slate-800/60 bg-slate-950/60 backdrop-blur-md sticky top-0 z-50 shadow-[0px_8px_32px_rgba(0,0,0,0.5)] transition-all duration-300"
@@ -94,7 +97,7 @@ export default function Navbar() {
                   ? "font-serif-brand font-bold text-lg text-[#14161A]" 
                   : "font-semibold tracking-tight text-slate-100 group-hover:text-white transition duration-200"
                 }>
-                  CertaintyAI
+                  CertaintyAI<sup className="text-[10px] ml-0.5 font-sans">™</sup>
                 </div>
                 <div className={isParchment 
                   ? "text-[10px] text-[#73706A] italic font-medium font-serif-brand" 

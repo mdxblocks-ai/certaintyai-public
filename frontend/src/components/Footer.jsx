@@ -26,7 +26,7 @@ export default function Footer() {
                 <LogoMark className="w-[28px] h-[28px] text-[#14161A]" />
               </div>
               <div className="leading-tight">
-                <div className="font-serif-brand font-bold text-lg text-[#14161A]">CertaintyAI</div>
+                <div className="font-serif-brand font-bold text-lg text-[#14161A]">CertaintyAI<sup className="text-[10px] ml-0.5 font-sans">™</sup></div>
                 <div className="text-[10px] text-[#73706A] italic font-medium font-serif-brand mt-0.5">
                   {activeRegion?.tag || 'Defensible AI for regulated industries'}
                 </div>
@@ -61,7 +61,7 @@ export default function Footer() {
           </div>
         </div>
         <div className="foot-bottom">
-          <div className="copy">© {new Date().getFullYear()} CertaintyAI. All rights reserved.</div>
+          <div className="copy">© {new Date().getFullYear()} CertaintyAI<sup className="text-[8px] ml-0.5 font-sans">™</sup>. All rights reserved.</div>
           <div className="attrib">BY <b>MDxBlocks</b></div>
         </div>
       </div>
