@@ -41,12 +41,71 @@ const WHY_CARDS = [
 ]
 
 const INDUSTRIES = [
-  { name: 'Healthcare & Life Sciences', emoji: '🏥', slug: 'healthcare' },
-  { name: 'Banking & Financial Services', emoji: '🏦', slug: 'finance' },
-  { name: 'Government & Public Sector', emoji: '🏛️', slug: 'other' },
-  { name: 'Education', emoji: '🎓', slug: 'education' },
-  { name: 'Cybersecurity', emoji: '🛡️', slug: 'cyber' },
-  { name: 'IT Consulting', emoji: '💼', slug: 'consulting' },
+  { 
+    name: 'Healthcare & Life Sciences', 
+    slug: 'healthcare',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className="w-6 h-6">
+        <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+      </svg>
+    )
+  },
+  { 
+    name: 'Banking & Financial Services', 
+    slug: 'finance',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className="w-6 h-6">
+        <rect x="4" y="2" width="16" height="20" rx="2" ry="2" />
+        <line x1="9" y1="22" x2="9" y2="16" />
+        <line x1="15" y1="22" x2="15" y2="16" />
+        <line x1="9" y1="16" x2="15" y2="16" />
+        <path d="M8 6h2v2H8V6zm0 4h2v2H8v-2zm0 4h2v2H8v-2zm6-8h2v2h-2V6zm0 4h2v2h-2v-2zm0 4h2v2h-2v-2z" />
+      </svg>
+    )
+  },
+  { 
+    name: 'Government & Public Sector', 
+    slug: 'other',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className="w-6 h-6">
+        <line x1="3" y1="22" x2="21" y2="22" />
+        <line x1="6" y1="18" x2="6" y2="11" />
+        <line x1="10" y1="18" x2="10" y2="11" />
+        <line x1="14" y1="18" x2="14" y2="11" />
+        <line x1="18" y1="18" x2="18" y2="11" />
+        <path d="M3 11h18L12 2Z" />
+      </svg>
+    )
+  },
+  { 
+    name: 'Education', 
+    slug: 'education',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className="w-6 h-6">
+        <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
+        <path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5" />
+      </svg>
+    )
+  },
+  { 
+    name: 'Cybersecurity', 
+    slug: 'cyber',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className="w-6 h-6">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+      </svg>
+    )
+  },
+  { 
+    name: 'IT Consulting', 
+    slug: 'consulting',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className="w-6 h-6">
+        <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+        <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+      </svg>
+    )
+  },
 ]
 
 const FRAMEWORKS = [
@@ -244,7 +303,9 @@ export default function Landing() {
                 onClick={() => navigate('/foundry')}
               >
                 <div>
-                  <div className="text-3xl mb-4">{ind.emoji}</div>
+                  <div className="w-11 h-11 rounded-xl bg-[#1E3A36] text-[#D8B679] flex items-center justify-center mb-4">
+                    {ind.icon}
+                  </div>
                   <h4 className="font-serif-brand text-lg font-semibold text-[#14161A]">{ind.name}</h4>
                 </div>
                 <span className="text-[11px] text-[#A87C3C] font-semibold mt-6 block">
