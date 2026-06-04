@@ -182,7 +182,7 @@ export default function Landing() {
               <div className="text-sm text-[#3B3D42] mt-2.5">
                 of AI projects lacking AI-ready data will be abandoned through 2026.
               </div>
-              <div className="text-[10px] text-[#73706A] mt-1.5 italic font-serif-brand">Source: Gartner (2024)</div>
+              <div className="text-[10px] text-[#73706A] mt-1.5 italic font-serif-brand">Source: Gartner (2025)</div>
             </div>
             <div className="border-t border-[#14161A]/10 pt-6">
               <div className="font-serif-brand text-5xl font-normal text-[#14161A]">
