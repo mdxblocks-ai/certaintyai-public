@@ -245,12 +245,12 @@ export default function Landing() {
             </div>
             <div className="border-t border-[#14161A]/10 pt-6">
               <div className="font-serif-brand text-5xl font-normal text-[#14161A]">
-                ~$30–40<span className="text-[#7C5723] text-2xl font-sans-brand font-normal">B</span>
+                63<span className="text-[#7C5723] text-2xl font-sans-brand font-normal">%</span>
               </div>
               <div className="text-sm text-[#3B3D42] mt-2.5">
-                in enterprise GenAI spend in 2025, with the majority seeing no measurable return.
+                of organizations don&apos;t have, or are unsure they have, the right data management practices for AI.
               </div>
-              <div className="text-[10px] text-[#73706A] mt-1.5 italic font-serif-brand">Source: MIT Project NANDA — The GenAI Divide (2025)</div>
+              <div className="text-[10px] text-[#73706A] mt-1.5 italic font-serif-brand">Source: Gartner (2025)</div>
             </div>
           </div>
         </div>
