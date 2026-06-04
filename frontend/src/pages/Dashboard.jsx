@@ -1242,7 +1242,7 @@ export default function Dashboard() {
   const getContextualWelcomeText = () => {
     if (activeTab === 'home') {
       if (isCfo) {
-        return "Welcome to the CFO AI Readiness Cockpit. I can help analyze your C-suite financial metrics, estimate annual savings, simulate FinOps multi-cloud cost optimization, or review GSA blended labor rates."
+        return "Welcome to the CFO AI Readiness Cockpit. I can help analyze your C-suite financial metrics, estimate annual savings, simulate FinOps multi-cloud cost optimization, or review illustrative cooperative labor rates."
       }
       if (isCioCto) {
         return "Welcome to the Technical AI Readiness Cockpit. I can help analyze your GraphRAG architecture, model latencies, security scanner reports, or regulatory compliance rules."
@@ -1260,7 +1260,7 @@ export default function Dashboard() {
     }
     if (activeTab === 'portfolio' && dashboardSubTab === 'strategy') {
       if (isCfo) {
-        return "Welcome back! I am your financial AI advisor. How can I assist you with your AI cost amortization modeling or GSA blended labor rates today?"
+        return "Welcome back! I am your financial AI advisor. How can I assist you with your AI cost amortization modeling or illustrative cooperative labor rates today?"
       }
       return "Welcome back! I am your strategic AI advisor. How can I assist you with your Strategic Roadmap or the MDx Cooperative AI Solutions Catalog today?"
     }
@@ -1311,7 +1311,7 @@ export default function Dashboard() {
       if (isCfo) {
         return [
           { label: '🗓️ 90-Day Roadmap', query: 'Explain the 90-Day C-Suite Roadmap' },
-          { label: '💼 Blended GSA Rates', query: 'Review GSA Blended Rates' },
+          { label: '💼 Blended Cooperative Rates', query: 'Review Blended Cooperative Rates' },
           { label: '🌐 Solutions Catalog', query: 'Browse the MDx Cooperative AI Solutions Catalog' }
         ];
       }
@@ -2550,7 +2550,7 @@ export default function Dashboard() {
                             'Analyze Cost Optimization Savings',
                             'Compare Multi-Cloud FinOps',
                             'Explain AI Investment Health',
-                            'Review GSA Blended Rates'
+                            'Review Blended Cooperative Rates'
                           ]
                         : (isCioCto
                             ? [
@@ -2590,7 +2590,7 @@ export default function Dashboard() {
                                 ? [
                                     'AI ROI & Payback',
                                     'FinOps Optimization',
-                                    'GSA Blended Rates',
+                                    'Blended Cooperative Rates',
                                     'AI Investment Health',
                                     'Financial Readiness',
                                     'Commercial Risk'
@@ -4519,9 +4519,9 @@ export default function Dashboard() {
                   <>
                     {/* Catalog Staffing & Vehicle Info */}
                     <div className="bg-[#0F172A]/50 border border-slate-800 p-4 rounded-2xl space-y-3">
-                      <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider">Contract Vehicle & Rates</h4>
+                      <h4 className="text-xs font-bold text-slate-200 uppercase tracking-wider">Illustrative Blended Rates</h4>
                       <p className="text-[11px] text-slate-400 leading-relaxed">
-                        This catalog operates under GSA Schedule Cooperative Pricing Schedule Contract No. <strong className="text-cyan-400">#GS-35F-COOP</strong>. Pre-negotiated, procurement-ready fixed-price packages and blended labor rates cut public sector sourcing times from months to hours.
+                        This catalog displays illustrative, example cooperative labor rates. These sample figures demonstrate the kind of pre-negotiated, procurement-ready fixed-price packages and blended labor rates that cut public sector sourcing times from months to hours.
                       </p>
                       
                       <div className="border-t border-slate-800/60 pt-3">
