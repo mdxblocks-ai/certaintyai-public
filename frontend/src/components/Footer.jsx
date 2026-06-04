@@ -62,6 +62,19 @@ export default function Footer() {
         </div>
         <div className="foot-bottom">
           <div className="copy">© {new Date().getFullYear()} CertaintyAI<sup className="text-[8px] ml-0.5 font-sans">™</sup>. All rights reserved.</div>
+          <div className="flex items-center gap-1.5 text-[10px] text-[var(--dash-text-secondary)] font-sans">
+            <span className="text-[8.5px] uppercase tracking-wider font-bold">Built on</span>
+            <div className="flex items-center">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3.5 h-3.5 text-[var(--dash-accent)] mr-1 shrink-0">
+                <path d="M17.5 19A3.5 3.5 0 0 0 21 15.5c0-2.79-2.54-4.5-5-4.5-.42 0-.83.04-1.24.11A7 7 0 0 0 3 11.5c0 3.62 3.1 6.5 7 6.5h7.5z" />
+              </svg>
+              <span className="font-semibold text-[var(--dash-text-primary)]">Google Cloud</span>
+            </div>
+            <span className="mx-0.5 opacity-40">·</span>
+            <span>Powered by Vertex AI</span>
+            <span className="mx-0.5 opacity-40">·</span>
+            <span>Cloud Run</span>
+          </div>
           <div className="attrib">BY <b>MDxBlocks</b></div>
         </div>
       </div>
