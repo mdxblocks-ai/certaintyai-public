@@ -38,3 +38,10 @@ Thumbs.db
 
 backend/test_output.txt
 test_output.txt
+
+# Internal docs
+CONTEXT.md
+INSTRUCTIONS.md
+New-Direction/
+PHASE_1_5_CHANGELOG.md
+
