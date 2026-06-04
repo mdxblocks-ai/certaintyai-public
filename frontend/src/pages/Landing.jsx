@@ -297,7 +297,7 @@ export default function Landing() {
             Defensive enterprise AI in two minutes.
           </h2>
           <p className="text-sm text-[#F4F0E6]/78 max-w-xl mx-auto mb-8 leading-relaxed">
-            Answer a short, role-tailored assessment to get a board-ready report on your gaps, scores, and target payback period.
+            Answer a short, role-tailored assessment to get a board-ready report on your gaps, scores, and priority actions.
           </p>
           <Link 
             to="/survey" 
