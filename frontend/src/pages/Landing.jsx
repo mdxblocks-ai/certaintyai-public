@@ -171,27 +171,27 @@ export default function Landing() {
                 95<span className="text-[#7C5723] text-2xl font-sans-brand font-normal">%</span>
               </div>
               <div className="text-sm text-[#3B3D42] mt-2.5">
-                of GenAI pilots show no measurable P&amp;L impact.
+                of enterprise generative-AI pilots show no measurable P&amp;L impact.
               </div>
-              <div className="text-[10px] text-[#73706A] mt-1.5 italic font-serif-brand">Source: HBR / industry analysis</div>
+              <div className="text-[10px] text-[#73706A] mt-1.5 italic font-serif-brand">Source: MIT Project NANDA — The GenAI Divide: State of AI in Business 2025 (2025)</div>
             </div>
             <div className="border-t border-[#14161A]/10 pt-6">
               <div className="font-serif-brand text-5xl font-normal text-[#14161A]">
-                7<span className="text-[#7C5723] text-2xl font-sans-brand font-normal">%</span>
+                60<span className="text-[#7C5723] text-2xl font-sans-brand font-normal">%</span>
               </div>
               <div className="text-sm text-[#3B3D42] mt-2.5">
-                of enterprises say their data is fully ready for AI.
+                of AI projects lacking AI-ready data will be abandoned through 2026.
               </div>
-              <div className="text-[10px] text-[#73706A] mt-1.5 italic font-serif-brand">Source: enterprise readiness surveys</div>
+              <div className="text-[10px] text-[#73706A] mt-1.5 italic font-serif-brand">Source: Gartner (2024)</div>
             </div>
             <div className="border-t border-[#14161A]/10 pt-6">
               <div className="font-serif-brand text-5xl font-normal text-[#14161A]">
-                56<span className="text-[#7C5723] text-2xl font-sans-brand font-normal">%</span>
+                ~$30–40<span className="text-[#7C5723] text-2xl font-sans-brand font-normal">B</span>
               </div>
               <div className="text-sm text-[#3B3D42] mt-2.5">
-                name siloed data as the single biggest blocker to AI value.
+                in enterprise GenAI spend in 2025, with the majority seeing no measurable return.
               </div>
-              <div className="text-[10px] text-[#73706A] mt-1.5 italic font-serif-brand">Source: enterprise readiness surveys</div>
+              <div className="text-[10px] text-[#73706A] mt-1.5 italic font-serif-brand">Source: MIT Project NANDA — The GenAI Divide (2025)</div>
             </div>
           </div>
         </div>
