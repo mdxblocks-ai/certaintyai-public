@@ -19,7 +19,7 @@ const WHY_CARDS = [
   {
     title: 'Explainable agentic AI',
     blurb:
-      'Multi-agent reasoning with GraphRAG and human-in-the-loop. Every recommendation cites the evidence behind it.',
+      'Multi-agent reasoning with retrieval-augmented generation and human-in-the-loop. Every recommendation cites the evidence behind it.',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className="w-6 h-6">
         <rect x="3" y="4" width="18" height="14" rx="2" />
