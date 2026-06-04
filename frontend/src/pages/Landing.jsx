@@ -266,7 +266,7 @@ export default function Landing() {
                 Aligned to audit frameworks.
               </h2>
               <p className="text-sm text-[#3B3D42] mt-3">
-                Pre-mapped to over twenty global privacy, healthcare, cybersecurity, and public policy rules, tailored dynamically during your readiness assessment.
+                Pre-mapped to twenty global privacy, healthcare, cybersecurity, and public policy rules, tailored dynamically during your readiness assessment.
               </p>
             </div>
             <Link 
