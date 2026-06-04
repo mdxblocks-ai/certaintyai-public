@@ -85,7 +85,7 @@ export default function Navbar() {
       <header className={headerClass}>
         <div className={`${user ? 'max-w-full' : 'max-w-7xl'} mx-auto px-6 h-20 flex items-center justify-between`}>
           <div className="flex items-center gap-4">
-            <Link to="/" className="flex items-center gap-3 group">
+            <Link to={user ? "/dashboard" : "/"} className="flex items-center gap-3 group">
               <div className={isParchment 
                 ? "w-[42px] h-[42px] border-[1.5px] border-[#14161A] rounded-[9px] flex items-center justify-center bg-[#FBF8F0] shrink-0" 
                 : "w-10 h-10 border border-slate-800 rounded-lg flex items-center justify-center bg-slate-900 group-hover:border-slate-700 shrink-0 transition"

@@ -9,7 +9,7 @@ export default function Signup() {
     register, handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm({ mode: 'onBlur' })
-  const { signup } = useAuth()
+  const { signup, refreshUser } = useAuth()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const claimToken = searchParams.get('claim')
@@ -18,16 +18,23 @@ export default function Signup() {
   async function onSubmit(values) {
     setServerError('')
     try {
-      await signup({
+      const signedUpUser = await signup({
         email: values.email,
         password: values.password,
         full_name: values.full_name || '',
       })
       if (claimToken) {
-        try { await api.post(`/auth/claim-report/${claimToken}`) } catch { }
+        try {
+          await api.post(`/auth/claim-report/${claimToken}`)
+          await refreshUser()
+        } catch { }
         navigate(`/dashboard?tab=readiness&reportToken=${claimToken}`, { replace: true })
       } else {
-        navigate('/dashboard?tab=home', { replace: true })
+        if (signedUpUser && !signedUpUser.first_assessment_completed) {
+          navigate('/dashboard?tab=readiness', { replace: true })
+        } else {
+          navigate('/dashboard?tab=home', { replace: true })
+        }
       }
     } catch (err) {
       const detail = err.response?.data?.detail

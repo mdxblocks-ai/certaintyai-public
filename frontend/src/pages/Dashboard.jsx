@@ -741,6 +741,7 @@ export default function Dashboard() {
   const [searchParams, setSearchParams] = useSearchParams()
   const activeTab = searchParams.get('tab') || 'home'
   const [isCollapsed, setIsCollapsed] = useState(false)
+  const disableNav = user && !user.first_assessment_completed
 
   // --- AI Readiness Copilot State ---
   const [copilotSessions, setCopilotSessions] = useState(() => {
@@ -822,6 +823,13 @@ export default function Dashboard() {
   useEffect(() => {
     localStorage.setItem('copilot_active_session_id', copilotActiveSessionId)
   }, [copilotActiveSessionId])
+
+  // Redirect to readiness tab if survey not completed
+  useEffect(() => {
+    if (user && !user.first_assessment_completed && activeTab !== 'readiness') {
+      setSearchParams({ tab: 'readiness' })
+    }
+  }, [user, activeTab, setSearchParams])
 
   // Get active session
   const activeCopilotSession = copilotSessions.find(s => s.id === copilotActiveSessionId) || copilotSessions[0] || null
@@ -1144,6 +1152,9 @@ export default function Dashboard() {
 
   // Tab switching helper
   const handleTabChange = (tabName) => {
+    if (user && !user.first_assessment_completed && tabName !== 'readiness') {
+      return
+    }
     setSearchParams({ tab: tabName })
   }
 
@@ -2159,37 +2170,41 @@ export default function Dashboard() {
           </button>
 
           <nav className="space-y-1.5">
-            <button
-              onClick={() => handleTabChange('home')}
-              className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-left transition duration-200 ${
-                isCollapsed ? 'lg:justify-center' : ''
-              } ${
-                activeTab === 'home'
-                  ? 'bg-[var(--dash-active-bg)] text-[var(--dash-active-text)] border border-[var(--dash-active-border)] shadow-[var(--dash-active-shadow)]'
-                  : 'text-[var(--dash-text-secondary)] hover:text-[var(--dash-hover-text)] hover:bg-[var(--dash-hover-bg)]'
-              }`}
-              title="Home"
-            >
-              <Icons.Home />
-              {!isCollapsed && <span className="text-sm font-semibold">Home</span>}
-            </button>
+            {!disableNav && (
+              <button
+                onClick={() => handleTabChange('home')}
+                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-left transition duration-200 ${
+                  isCollapsed ? 'lg:justify-center' : ''
+                } ${
+                  activeTab === 'home'
+                    ? 'bg-[var(--dash-active-bg)] text-[var(--dash-active-text)] border border-[var(--dash-active-border)] shadow-[var(--dash-active-shadow)]'
+                    : 'text-[var(--dash-text-secondary)] hover:text-[var(--dash-hover-text)] hover:bg-[var(--dash-hover-bg)]'
+                }`}
+                title="Home"
+              >
+                <Icons.Home />
+                {!isCollapsed && <span className="text-sm font-semibold">Home</span>}
+              </button>
+            )}
 
-            <button
-              onClick={() => handleTabChange('dashboard')}
-              className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-left transition duration-200 ${
-                isCollapsed ? 'lg:justify-center' : ''
-              } ${
-                activeTab === 'dashboard'
-                  ? 'bg-[var(--dash-active-bg)] text-[var(--dash-active-text)] border border-[var(--dash-active-border)] shadow-[var(--dash-active-shadow)]'
-                  : 'text-[var(--dash-text-secondary)] hover:text-[var(--dash-hover-text)] hover:bg-[var(--dash-hover-bg)]'
-              }`}
-              title="Dashboard"
-            >
-              <Icons.Dashboard />
-              {!isCollapsed && <span className="text-sm font-semibold">Dashboard</span>}
-            </button>
+            {!disableNav && (
+              <button
+                onClick={() => handleTabChange('dashboard')}
+                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-left transition duration-200 ${
+                  isCollapsed ? 'lg:justify-center' : ''
+                } ${
+                  activeTab === 'dashboard'
+                    ? 'bg-[var(--dash-active-bg)] text-[var(--dash-active-text)] border border-[var(--dash-active-border)] shadow-[var(--dash-active-shadow)]'
+                    : 'text-[var(--dash-text-secondary)] hover:text-[var(--dash-hover-text)] hover:bg-[var(--dash-hover-bg)]'
+                }`}
+                title="Dashboard"
+              >
+                <Icons.Dashboard />
+                {!isCollapsed && <span className="text-sm font-semibold">Dashboard</span>}
+              </button>
+            )}
 
-            {SHOW_AI_READINESS_NAV && (
+            {(SHOW_AI_READINESS_NAV || disableNav) && (
               <button
                 onClick={() => handleTabChange('readiness')}
                 className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-left transition duration-200 ${
@@ -2206,42 +2221,46 @@ export default function Dashboard() {
               </button>
             )}
 
-            <button
-              onClick={() => handleTabChange('reports')}
-              className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-left transition duration-200 ${
-                isCollapsed ? 'lg:justify-center' : ''
-              } ${
-                activeTab === 'reports'
-                  ? 'bg-[var(--dash-active-bg)] text-[var(--dash-active-text)] border border-[var(--dash-active-border)] shadow-[var(--dash-active-shadow)] font-bold'
-                  : 'text-[var(--dash-text-secondary)] hover:text-[var(--dash-hover-text)] hover:bg-[var(--dash-hover-bg)]'
-              }`}
-              title="Saved Reports"
-            >
-              <Icons.Reports />
-              {!isCollapsed && <span className="text-sm font-semibold">Saved Reports</span>}
-            </button>
+            {!disableNav && (
+              <button
+                onClick={() => handleTabChange('reports')}
+                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-left transition duration-200 ${
+                  isCollapsed ? 'lg:justify-center' : ''
+                } ${
+                  activeTab === 'reports'
+                    ? 'bg-[var(--dash-active-bg)] text-[var(--dash-active-text)] border border-[var(--dash-active-border)] shadow-[var(--dash-active-shadow)] font-bold'
+                    : 'text-[var(--dash-text-secondary)] hover:text-[var(--dash-hover-text)] hover:bg-[var(--dash-hover-bg)]'
+                }`}
+                title="Saved Reports"
+              >
+                <Icons.Reports />
+                {!isCollapsed && <span className="text-sm font-semibold">Saved Reports</span>}
+              </button>
+            )}
           </nav>
         </div>
 
         {/* Bottom Group: Settings & User Profile Card */}
         <div className="space-y-4 mt-auto">
           {/* Settings button */}
-          <nav className="space-y-1">
-            <button
-              onClick={() => handleTabChange('settings')}
-              className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-left transition duration-200 ${
-                isCollapsed ? 'lg:justify-center' : ''
-              } ${
-                activeTab === 'settings'
-                  ? 'bg-[var(--dash-active-bg)] text-[var(--dash-active-text)] border border-[var(--dash-active-border)] shadow-[var(--dash-active-shadow)]'
-                  : 'text-[var(--dash-text-secondary)] hover:text-[var(--dash-hover-text)] hover:bg-[var(--dash-hover-bg)]'
-              }`}
-              title="Settings"
-            >
-              <Icons.Settings />
-              {!isCollapsed && <span className="text-sm font-semibold">Settings</span>}
-            </button>
-          </nav>
+          {!disableNav && (
+            <nav className="space-y-1">
+              <button
+                onClick={() => handleTabChange('settings')}
+                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-left transition duration-200 ${
+                  isCollapsed ? 'lg:justify-center' : ''
+                } ${
+                  activeTab === 'settings'
+                    ? 'bg-[var(--dash-active-bg)] text-[var(--dash-active-text)] border border-[var(--dash-active-border)] shadow-[var(--dash-active-shadow)]'
+                    : 'text-[var(--dash-text-secondary)] hover:text-[var(--dash-hover-text)] hover:bg-[var(--dash-hover-bg)]'
+                }`}
+                title="Settings"
+              >
+                <Icons.Settings />
+                {!isCollapsed && <span className="text-sm font-semibold">Settings</span>}
+              </button>
+            </nav>
+          )}
 
           {/* Co-brand Trust Block */}
           {!isCollapsed && (

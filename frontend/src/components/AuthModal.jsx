@@ -1,8 +1,10 @@
 import React, { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
 export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }) {
-  const { login, signup, changePassword, user } = useAuth()
+  const { login, signup, changePassword, user, refreshUser } = useAuth()
+  const navigate = useNavigate()
   const [mode, setMode] = useState(initialMode) // 'signin' | 'signup' | 'forgot' | 'sent' | 'changepass' | 'changed'
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -21,8 +23,13 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }) {
     setError('')
     setLoading(true)
     try {
-      await login(email, password)
+      const loggedInUser = await login(email, password)
       onClose()
+      if (loggedInUser && !loggedInUser.first_assessment_completed) {
+        navigate('/dashboard?tab=readiness', { replace: true })
+      } else {
+        navigate('/dashboard?tab=home', { replace: true })
+      }
     } catch (err) {
       const detail = err.response?.data?.detail
       setError(typeof detail === 'string' ? detail : 'Invalid email or password.')
@@ -44,8 +51,13 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }) {
     }
     setLoading(true)
     try {
-      await signup({ email, password, full_name: fullName })
+      const signedUpUser = await signup({ email, password, full_name: fullName })
       onClose()
+      if (signedUpUser && !signedUpUser.first_assessment_completed) {
+        navigate('/dashboard?tab=readiness', { replace: true })
+      } else {
+        navigate('/dashboard?tab=home', { replace: true })
+      }
     } catch (err) {
       const detail = err.response?.data?.detail
       setError(typeof detail === 'string' ? detail : 'An error occurred during account creation.')

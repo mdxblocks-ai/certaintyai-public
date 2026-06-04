@@ -35,6 +35,22 @@ async def lifespan(app: FastAPI):
             logger.warning("Could not create pgvector extension: %s", exc)
 
     Base.metadata.create_all(bind=engine)
+
+    # Check if first_assessment_completed column exists in users table, and add it if missing
+    try:
+        with engine.connect() as conn:
+            from sqlalchemy import inspect
+            inspector = inspect(engine)
+            columns = [c["name"] for c in inspector.get_columns("users")]
+            if "first_assessment_completed" not in columns:
+                logger.info("Adding first_assessment_completed column to users table...")
+                from sqlalchemy import text
+                conn.execute(text("ALTER TABLE users ADD COLUMN first_assessment_completed BOOLEAN NOT NULL DEFAULT FALSE;"))
+                conn.commit()
+                logger.info("Successfully added first_assessment_completed column to users table.")
+    except Exception as exc:
+        logger.warning("Could not add first_assessment_completed column dynamically: %s", exc)
+
     db = SessionLocal()
     try:
         seed_demo_users(db)

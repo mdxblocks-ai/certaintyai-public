@@ -23,6 +23,7 @@ class UserOut(BaseModel):
     email: EmailStr
     full_name: str
     role: str
+    first_assessment_completed: bool
     created_at: datetime
 
 

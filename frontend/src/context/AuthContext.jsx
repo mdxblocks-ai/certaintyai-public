@@ -69,7 +69,13 @@ export function AuthProvider({ children }) {
     return data
   }, [])
 
-  const value = { user, loading, login, signup, logout, changePassword, updateUserRole }
+  const refreshUser = useCallback(async () => {
+    const me = await api.get('/auth/me')
+    setUser(me.data)
+    return me.data
+  }, [])
+
+  const value = { user, loading, login, signup, logout, changePassword, updateUserRole, refreshUser }
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 

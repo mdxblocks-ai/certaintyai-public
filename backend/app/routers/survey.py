@@ -427,6 +427,9 @@ def submit_survey(
             scores=score_results,
             report_html="",
         )
+        if current:
+            current.first_assessment_completed = True
+            db.add(current)
         db.add(assessment)
         db.commit()
         db.refresh(assessment)
@@ -532,6 +535,9 @@ def submit_survey(
         scores={},
         report_html="",
     )
+    if current:
+        current.first_assessment_completed = True
+        db.add(current)
     db.add(assessment)
     db.commit()
     db.refresh(assessment)

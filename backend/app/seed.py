@@ -80,6 +80,13 @@ def seed_demo_assessment(db: Session) -> bool:
     if not demo_user:
         logger.info("Demo user %s not found; skipping demo assessment seed.", DEMO_USER_EMAIL)
         return False
+    
+    # Ensure demo user is marked as completed so they skip the wizard
+    if not demo_user.first_assessment_completed:
+        demo_user.first_assessment_completed = True
+        db.add(demo_user)
+        db.commit()
+
     existing = db.query(Assessment).filter(Assessment.user_id == demo_user.id).first()
     if existing:
         logger.info("Demo user already has an assessment; skipping seed.")

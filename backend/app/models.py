@@ -2,7 +2,7 @@
 from datetime import datetime, timezone
 from uuid import uuid4
 
-from sqlalchemy import JSON, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import JSON, DateTime, ForeignKey, Integer, String, Text, Boolean
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .database import Base
@@ -24,6 +24,7 @@ class User(Base):
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     full_name: Mapped[str] = mapped_column(String(255), nullable=False, default="")
     role: Mapped[str] = mapped_column(String(64), nullable=False, default="user")
+    first_assessment_completed: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow, nullable=False)
 
     assessments: Mapped[list["Assessment"]] = relationship(

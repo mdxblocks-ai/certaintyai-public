@@ -30,6 +30,8 @@ def _claim_orphan_assessments(db: Session, user: User) -> int:
         a.user_id = user.id
         db.add(a)
     if rows:
+        user.first_assessment_completed = True
+        db.add(user)
         db.commit()
     return len(rows)
 
@@ -116,6 +118,8 @@ def claim_report(
     if a.user_id and a.user_id != current.id:
         raise HTTPException(status_code=403, detail="Report belongs to another user.")
     a.user_id = current.id
+    current.first_assessment_completed = True
     db.add(a)
+    db.add(current)
     db.commit()
     return {"claimed": True, "report_id": a.id, "anon_token": a.anon_token}

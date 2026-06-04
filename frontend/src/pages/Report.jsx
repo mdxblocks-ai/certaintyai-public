@@ -56,7 +56,7 @@ const Icons = {
 export default function Report() {
   const { token } = useParams()
   const navigate = useNavigate()
-  const { user } = useAuth()
+  const { user, refreshUser } = useAuth()
   const iframeRef = useRef(null)
   const [html, setHtml] = useState('')
   const [meta, setMeta] = useState(null)
@@ -114,10 +114,13 @@ export default function Report() {
   useEffect(() => {
     if (user && meta && !meta.is_claimed) {
       api.post(`/auth/claim-report/${token}`)
-        .then(() => setMeta((m) => (m ? { ...m, is_claimed: true } : m)))
+        .then(() => {
+          setMeta((m) => (m ? { ...m, is_claimed: true } : m))
+          refreshUser().catch(() => {})
+        })
         .catch(() => { })
     }
-  }, [user, meta, token])
+  }, [user, meta, token, refreshUser])
 
   // Dynamically resize iframe to fit its content scrollHeight and completely eliminate nested scrolling.
   useEffect(() => {
