@@ -261,7 +261,7 @@ export default function Report() {
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--emerald)] opacity-75"></span>
             <span className="relative inline-flex rounded-full h-2 w-2 bg-[var(--emerald)]"></span>
           </span>
-          <span className="text-[var(--dash-text-secondary)]">Security Gateways: <strong className="text-[var(--emerald)] font-semibold uppercase">Locked</strong></span>
+          <span className="text-[var(--dash-text-secondary)]">Security: <strong className="text-[var(--emerald)] font-semibold uppercase">Locked</strong></span>
         </div>
       </div>
     </div>

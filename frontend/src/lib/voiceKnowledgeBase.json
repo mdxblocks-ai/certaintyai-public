@@ -145,10 +145,6 @@
       "response": "Your Healthcare AI assessment indicates a {totalScore}/100 score. Under HIPAA Privacy and Security rules, your low Governance ({auditScore}%) and Data Readiness ({ragScore}%) present critical vulnerabilities for PHI data exposure. MDx recommends establishing automated data guardrails and audit logging immediately.",
       "followUps": [
         {
-          "text": "Enable WatsonX strict guardrails",
-          "action": "enable_watsonx_guard"
-        },
-        {
           "text": "View compliance matrix",
           "action": "go_to_insights"
         }
@@ -235,43 +231,6 @@
         {
           "label": "💰 FinOps Simulation",
           "query": "Simulate FinOps cost savings for multi-cloud"
-        }
-      ]
-    },
-    {
-      "id": "watsonx_compliance",
-      "keywords": [
-        "watsonx",
-        "compliance",
-        "sovereignty"
-      ],
-      "response": "For strict regulated sovereignty, IBM WatsonX guarantees full on-premise and single-tenant private cloud isolation. When dealing with highly sensitive patient healthcare data or BFSI transactions, MDx blocks generic open-endpoint API routing and maps models securely to your WatsonX dedicated cluster to prevent potential cross-border metadata leaks.",
-      "followUps": [
-        {
-          "text": "Enable WatsonX strict guardrails",
-          "action": "enable_watsonx_guard"
-        },
-        {
-          "text": "View Azure OpenAI security",
-          "action": "azure_security"
-        },
-        {
-          "text": "Read compliance matrix",
-          "action": "go_to_insights"
-        }
-      ],
-      "voicePrompts": [
-        {
-          "label": "🛡️ Show Governance Gaps",
-          "query": "Show my governance gaps"
-        },
-        {
-          "label": "⚠️ High-Risk Gaps",
-          "query": "Identify high-risk governance and operational gaps"
-        },
-        {
-          "label": "⚙️ WatsonX Compliance",
-          "query": "Explain WatsonX regulatory compliance vaults"
         }
       ]
     },
@@ -367,7 +326,7 @@
     }
   ],
   "voiceDefault": {
-    "response": "Understood. Analyzing \"{text}\". The MDx multi-cloud orchestrator shows fully operational health status for OpenAI, Anthropic, Gemini, Azure OpenAI, WatsonX, and Snowflake Cortex. Average multi-agent response latency stands at a highly optimized 320ms.",
+    "response": "Understood. Analyzing \"{text}\". The MDx multi-cloud orchestrator shows fully operational health status for OpenAI, Anthropic, Gemini, Azure OpenAI, and Snowflake Cortex. Average multi-agent response latency stands at a highly optimized 320ms.",
     "followUps": [
       {
         "text": "Show all LLM Latencies",

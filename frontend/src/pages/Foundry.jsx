@@ -47,7 +47,7 @@ const ADAPTERS = [
   { n: "OpenMetadata", cat: "Open-source · cloud-agnostic", lg: "O" },
   { n: "Collibra", cat: "Enterprise data governance", lg: "C" },
   { n: "Alation", cat: "Enterprise data catalog", lg: "A" },
-  { n: "IBM Knowledge Catalog", cat: "+ watsonx.governance", lg: "I" },
+  { n: "Apache Atlas", cat: "Open-source data governance", lg: "A" },
   { n: "Google Dataplex", cat: "GCP-native governance", lg: "G" }
 ]
 

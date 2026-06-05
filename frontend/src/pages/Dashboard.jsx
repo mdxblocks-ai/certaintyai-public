@@ -535,7 +535,7 @@ const getFollowUpPromptsForResponse = (query) => {
       'Assess AI Security Risks',
       'Identify compliance risks',
       'Draft secure gateway rules',
-      'Review WatsonX sovereignty features',
+      'Review multicloud sovereignty features',
       'Explain my AI Readiness Score',
       'Calculate AI ROI'
     ]
@@ -1529,9 +1529,8 @@ export default function Dashboard() {
       ];
     }
     return [
-      { label: '🛡️ Security Gateways', query: 'Check security gateways and firewall lock status' },
-      { label: '⚙️ WatsonX Compliance', query: 'Explain WatsonX regulatory compliance vaults' },
-      { label: '💸 FinOps Simulation', query: 'Simulate FinOps cost savings for multi-cloud' }
+      { label: '💸 FinOps Simulation', query: 'Simulate FinOps cost savings for multi-cloud' },
+      { label: '📊 Maturity Summary', query: 'Explain my AI maturity level and readiness timeline' }
     ];
   };
 
@@ -1544,7 +1543,7 @@ export default function Dashboard() {
   const [followUps, setFollowUps] = useState([
     { text: 'Analyze LLM cost efficiency', action: 'cost' },
     { text: 'Show forecast anomalies', action: 'forecast' },
-    { text: 'Explain WatsonX compliance', action: 'compliance' },
+    { text: 'Review security frameworks', action: 'security' },
     { text: 'Optimize my API limits', action: 'optimize' },
   ])
 
@@ -2046,7 +2045,7 @@ export default function Dashboard() {
   // Answer Agent Query with streaming tokens & real-time TTS segment queueing
   const handleAgentQuery = (text) => {
     setAgentState('searching')
-    setAgentText('Analyzing telemetry across OpenAI, Anthropic, Gemini, Azure OpenAI, WatsonX, and Snowflake Cortex...')
+    setAgentText('Analyzing telemetry across OpenAI, Anthropic, Gemini, Azure OpenAI, and Snowflake Cortex...')
     window.speechSynthesis.cancel() // Stop any ongoing playback before starting a new run
 
     setTimeout(() => {
@@ -2244,8 +2243,8 @@ export default function Dashboard() {
       partner: 'MDx Partnered'
     },
     {
-      name: 'IBM WatsonX.ai',
-      type: 'Sovereign Compliance',
+      name: 'Google Vertex AI',
+      type: 'Sovereign Compliance & Agents',
       usage: '72,110 tokens / 500K',
       percent: 14,
       calls: 231,
@@ -2256,7 +2255,7 @@ export default function Dashboard() {
       status: 'Sovereignty Protection Enforced',
       color: 'from-purple-500 to-pink-500',
       borderGlow: 'hover:shadow-[0_0_15px_rgba(168,85,247,0.3)]',
-      rec: 'Sovereign guardrails are active. WatsonX hosts all internal patient medical files.',
+      rec: 'Sovereign guardrails are active. Vertex AI secure endpoint hosts all patient medical pipelines.',
       partner: 'MDx Partnered'
     },
     {
@@ -2278,7 +2277,7 @@ export default function Dashboard() {
   ]
 
   const tasksList = [
-    { id: 1, name: 'HIPAA Monthly Compliance Scan', status: 'Running', progress: 68, model: 'IBM WatsonX', type: 'Security' },
+    { id: 1, name: 'HIPAA Monthly Compliance Scan', status: 'Running', progress: 68, model: 'Google Vertex AI', type: 'Security' },
     { id: 2, name: 'EHR Patient Data Intake', status: 'Active', progress: 100, model: 'Snowflake Cortex', type: 'Data Sync' },
     { id: 3, name: 'Ontology Graph Entity Reconciliation', status: 'Pending', progress: 0, model: 'Google Gemini 1.5 Pro', type: 'Ontology' },
     { id: 4, name: 'Strategic Financial Anomaly Audit', status: 'Failed', progress: 42, model: 'Azure OpenAI', type: 'FinOps' },
@@ -4111,7 +4110,7 @@ export default function Dashboard() {
                           <span>2h ago</span>
                         </div>
                         <p className="text-xs text-slate-200 leading-relaxed font-medium">
-                          "MDx Blocks' multi-cloud partnership framework with **Azure OpenAI, IBM WatsonX, and Snowflake Cortex** establishes a highly secure, sovereign multi-agent deployment blueprint."
+                          "MDx Blocks' multi-cloud partnership framework with **Azure OpenAI, Google Vertex AI, and Snowflake Cortex** establishes a highly secure, sovereign multi-agent deployment blueprint."
                         </p>
                       </div>
 
@@ -4121,7 +4120,7 @@ export default function Dashboard() {
                           <span>4h ago</span>
                         </div>
                         <p className="text-xs text-slate-200 leading-relaxed font-medium">
-                          "Just deployed MDx CertaintyAI HIPAA scan directly on IBM WatsonX dedicated cloud. The deterministic ontology gateway pulled latency down to 180ms. Highly impressed!"
+                          "Just deployed MDx CertaintyAI HIPAA scan directly on Google Vertex AI dedicated cloud. The deterministic ontology gateway pulled latency down to 180ms. Highly impressed!"
                         </p>
                       </div>
                     </div>
@@ -4164,12 +4163,12 @@ export default function Dashboard() {
 
                       <div className="p-4 bg-slate-900/40 border border-slate-800/80 rounded-xl space-y-2">
                         <div className="flex justify-between items-center text-xs">
-                          <span className="font-bold text-slate-200 bg-purple-950/40 text-purple-400 border border-purple-900/30 px-2 py-0.5 rounded">IBM WatsonX.ai</span>
+                          <span className="font-bold text-slate-200 bg-purple-950/40 text-purple-400 border border-purple-900/30 px-2 py-0.5 rounded">Google Vertex AI</span>
                           <span className="text-slate-500">3d ago</span>
                         </div>
-                        <h4 className="text-xs font-bold text-white mt-1">WatsonX introduces strict single-tenant healthcare container vaults</h4>
+                        <h4 className="text-xs font-bold text-white mt-1">Vertex AI introduces strict single-tenant healthcare container vaults</h4>
                         <p className="text-xs text-slate-400 leading-normal">
-                          IBM WatsonX secures sovereign regulatory compliance by providing physical network vaults. CertaintyAI's backend maps all confidential EHR operations to these vaults automatically.
+                          Google Vertex AI secures sovereign regulatory compliance by providing physical network vaults. CertaintyAI's backend maps all confidential EHR operations to these vaults automatically.
                         </p>
                       </div>
                     </div>
@@ -4220,7 +4219,7 @@ export default function Dashboard() {
                       <option value="anthropic">Anthropic Claude 3.5 Sonnet</option>
                       <option value="openai">OpenAI GPT-4o</option>
                       <option value="azure">Azure OpenAI Private Instance (MDx Partner)</option>
-                      <option value="watsonx">IBM WatsonX.ai Sandbox (MDx Partner)</option>
+                      <option value="vertex">Google Vertex AI Sandbox (MDx Partner)</option>
                       <option value="snowflake">Snowflake Cortex Triples Engine (MDx Partner)</option>
                     </select>
                   </div>
@@ -4521,8 +4520,8 @@ export default function Dashboard() {
                   <span className="text-[8px] uppercase tracking-wider text-slate-500 font-semibold mt-0.5">Azure OpenAI</span>
                 </div>
                 <div className="bg-slate-900/60 border border-slate-800/80 p-2 rounded-lg text-center flex flex-col justify-center items-center">
-                  <span className="text-xs font-extrabold text-purple-400">IBM</span>
-                  <span className="text-[8px] uppercase tracking-wider text-slate-500 font-semibold mt-0.5">WatsonX.ai</span>
+                  <span className="text-xs font-extrabold text-purple-400">Google</span>
+                  <span className="text-[8px] uppercase tracking-wider text-slate-500 font-semibold mt-0.5">Vertex AI</span>
                 </div>
                 <div className="bg-slate-900/60 border border-slate-800/80 p-2 rounded-lg text-center flex flex-col justify-center items-center">
                   <span className="text-xs font-extrabold text-sky-400">Snowflake</span>
