@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CertaintyAI — Agent Builder (Mockup)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Hanken+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.3.0/dist/tabler-icons.min.css">
+<style>
+  :root{
+    --parchment:#F4F0E6; --surface:#FBF9F3; --card:#FEFDFA;
+    --ink:#14161A; --muted:#5A5750; --faint:#8A857A;
+    --brass:#A87C3C; --brass-deep:#7A5A24; --brass-tint:#EDE3CF; --brass-tint2:#F0E5D0;
+    --teal:#1E3A36; --teal-tint:#EAF1EE;
+    --line:rgba(20,22,26,0.12); --line2:rgba(20,22,26,0.18);
+    --r:8px; --rl:12px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:#E7E1D2;font-family:'Hanken Grotesk',system-ui,sans-serif;color:var(--ink);
+       display:flex;align-items:flex-start;justify-content:center;padding:24px 16px;min-height:100vh;}
+  .serif{font-family:'Fraunces',serif;}
+  .app{width:100%;max-width:1180px;background:var(--parchment);border-radius:16px;overflow:hidden;
+       border:0.5px solid var(--line);box-shadow:0 20px 60px rgba(20,22,26,0.14);}
+
+  /* top bar */
+  .topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 22px;
+          background:var(--surface);border-bottom:0.5px solid var(--line);}
+  .brand{display:flex;align-items:center;gap:11px;}
+  .logo{width:34px;height:34px;border-radius:8px;background:var(--teal);color:#E1F0EC;
+        display:flex;align-items:center;justify-content:center;font-size:19px;}
+  .brand .name{font-size:18px;font-weight:600;}
+  .brand .tm{font-size:10px;vertical-align:super;}
+  .brand .tag{font-size:11px;color:var(--muted);font-style:italic;}
+  .chips{display:flex;align-items:center;gap:9px;font-size:12px;color:var(--muted);}
+  .chip{display:flex;align-items:center;gap:6px;border:0.5px solid var(--line2);border-radius:8px;padding:6px 11px;background:var(--card);}
+  .dot{width:7px;height:7px;border-radius:50%;background:#BA7517;}
+
+  .body{display:flex;min-height:560px;}
+
+  /* sidebar */
+  .side{width:204px;flex-shrink:0;padding:16px 12px;background:var(--surface);
+        border-right:0.5px solid var(--line);display:flex;flex-direction:column;gap:5px;}
+  .nav{display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:8px;
+       font-size:14px;color:var(--muted);cursor:pointer;transition:background .12s;}
+  .nav i{font-size:18px;}
+  .nav:hover{background:var(--brass-tint);}
+  .nav.active{background:var(--brass-tint);color:var(--brass-deep);font-weight:500;}
+  .spacer{flex:1;}
+  .built{border:0.5px solid var(--line);border-radius:8px;padding:11px;margin-top:8px;}
+  .built .l{font-size:9px;letter-spacing:0.6px;color:var(--faint);}
+  .built .g{font-size:12px;font-weight:500;margin:3px 0;}
+  .built .s{font-size:9.5px;color:var(--faint);line-height:1.55;}
+  .userc{display:flex;align-items:center;gap:9px;border:0.5px solid var(--line);border-radius:10px;padding:9px;margin-top:8px;}
+  .av{width:32px;height:32px;border-radius:8px;background:var(--brass);color:#FFFDF8;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;}
+
+  /* main */
+  .main{flex:1;min-width:0;padding:22px 26px;}
+  .head{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+  h1{font-size:25px;font-weight:600;margin:0;}
+  .sub{font-size:13px;color:var(--muted);margin-top:3px;}
+  .gated{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--brass-deep);background:var(--brass-tint2);border-radius:7px;padding:6px 11px;}
+
+  /* library */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-top:18px;}
+  .agentcard{background:var(--card);border:0.5px solid var(--line2);border-radius:12px;padding:14px;cursor:pointer;transition:border-color .12s,transform .12s;}
+  .agentcard:hover{border-color:var(--brass);transform:translateY(-2px);}
+  .agentcard .t{font-size:14px;font-weight:600;display:flex;align-items:center;gap:7px;}
+  .agentcard .t i{color:var(--teal);font-size:16px;}
+  .agentcard .d{font-size:12px;color:var(--muted);margin:7px 0 10px;line-height:1.5;}
+  .agentcard .m{font-size:11px;color:var(--faint);display:flex;gap:12px;}
+  .newcard{border:1.5px dashed var(--brass);color:var(--brass-deep);display:flex;flex-direction:column;
+           align-items:center;justify-content:center;gap:6px;font-size:13px;font-weight:500;min-height:118px;background:transparent;}
+  .newcard i{font-size:22px;}
+
+  /* builder */
+  .back{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);cursor:pointer;margin-bottom:14px;}
+  .panel{background:var(--card);border:0.5px solid var(--line2);border-radius:14px;padding:20px;}
+  .cols{display:flex;gap:22px;flex-wrap:wrap;}
+  .colL{flex:1.5;min-width:280px;}
+  .colR{flex:1;min-width:230px;}
+  label{font-size:12px;color:var(--muted);display:block;margin-bottom:6px;font-weight:500;}
+  .fld{width:100%;background:var(--surface);border:0.5px solid var(--line2);border-radius:8px;
+       padding:10px 12px;font-size:13.5px;color:var(--ink);font-family:inherit;outline:none;transition:border-color .12s;}
+  .fld:focus{border-color:var(--brass);}
+  textarea.fld{resize:vertical;line-height:1.55;}
+  .row{display:flex;gap:12px;}
+  .field{margin-bottom:14px;}
+  input[type=range]{width:100%;accent-color:var(--brass);}
+  .pills{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:16px;}
+  .pill{font-size:12px;padding:6px 12px;border-radius:7px;border:0.5px solid var(--line2);
+        background:var(--surface);color:#3A382F;cursor:pointer;user-select:none;transition:all .12s;}
+  .pill:hover{border-color:var(--teal);}
+  .pill.on{background:var(--teal);color:#E1F0EC;border-color:var(--teal);}
+  .drop{border:1.5px dashed var(--line2);border-radius:9px;padding:16px;text-align:center;color:var(--faint);
+        font-size:12px;cursor:pointer;margin-bottom:14px;transition:border-color .12s;}
+  .drop:hover{border-color:var(--brass);}
+  .drop i{font-size:18px;display:block;margin-bottom:4px;}
+  .filechip{display:inline-flex;align-items:center;gap:6px;font-size:11px;background:var(--teal-tint);color:var(--teal);
+            border-radius:6px;padding:4px 9px;margin:2px 3px 2px 0;}
+  .gov{background:var(--teal-tint);border-radius:9px;padding:11px 12px;font-size:11.5px;color:var(--teal);line-height:1.6;}
+  .gov i{font-size:13px;vertical-align:-2px;margin-right:4px;}
+
+  /* agent icon picker */
+  .namerow{display:flex;gap:12px;align-items:flex-end;}
+  .iconpick{flex-shrink:0;text-align:center;}
+  .iconpick label{margin-bottom:6px;}
+  .iconbtn{width:46px;height:46px;border-radius:11px;background:var(--teal);color:#E1F0EC;border:0.5px solid var(--line2);
+           display:flex;align-items:center;justify-content:center;font-size:24px;cursor:pointer;overflow:hidden;transition:transform .12s;}
+  .iconbtn:hover{transform:scale(1.05);}
+  .iconbtn img{width:100%;height:100%;object-fit:cover;}
+  .iconmenu{display:none;flex-wrap:wrap;gap:6px;margin-top:8px;padding:8px;background:var(--surface);
+            border:0.5px solid var(--line2);border-radius:9px;max-width:230px;position:absolute;z-index:20;}
+  .iconmenu.show{display:flex;}
+  .iconopt{width:32px;height:32px;border-radius:8px;background:var(--brass-tint);color:var(--brass-deep);
+           display:flex;align-items:center;justify-content:center;font-size:17px;cursor:pointer;}
+  .iconopt:hover{background:var(--teal);color:#E1F0EC;}
+  .iconopt.up{background:var(--card);border:1px dashed var(--brass);color:var(--brass-deep);}
+
+  /* multi-source attach */
+  .srctabs{display:flex;gap:6px;margin-bottom:10px;}
+  .srctab{flex:1;font-size:11.5px;padding:7px 6px;border-radius:7px;border:0.5px solid var(--line2);background:var(--surface);
+          color:var(--muted);cursor:pointer;text-align:center;transition:all .12s;}
+  .srctab i{font-size:14px;vertical-align:-2px;margin-right:3px;}
+  .srctab.on{background:var(--brass-tint);color:var(--brass-deep);border-color:var(--brass);font-weight:500;}
+  .srcpane{display:none;margin-bottom:12px;}
+  .srcpane.on{display:block;}
+  .urlrow{display:flex;gap:7px;}
+  .urlrow .fld{flex:1;font-size:12px;padding:8px 10px;}
+  .addbtn{font-size:12px;padding:0 14px;border-radius:8px;border:none;background:var(--teal);color:#E1F0EC;cursor:pointer;white-space:nowrap;}
+  .addbtn:hover{background:#15302C;}
+  .filechip i.src{font-size:12px;}
+
+  /* c-suite role focus */
+  .rolebar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:var(--surface);
+           border:0.5px solid var(--line2);border-radius:11px;padding:12px 14px;margin-bottom:18px;}
+  .rolebar .lbl{font-size:12px;color:var(--muted);font-weight:600;}
+  .roleseg{display:flex;gap:0;border:0.5px solid var(--line2);border-radius:9px;overflow:hidden;background:var(--card);}
+  .roleopt{font-size:12.5px;padding:8px 16px;cursor:pointer;color:var(--muted);display:flex;align-items:center;gap:6px;transition:all .12s;}
+  .roleopt i{font-size:15px;}
+  .roleopt + .roleopt{border-left:0.5px solid var(--line2);}
+  .roleopt.on{background:var(--teal);color:#E1F0EC;font-weight:500;}
+  .rolehint{font-size:11px;color:var(--faint);flex:1;min-width:160px;}
+  .rolehint b{color:var(--brass-deep);}
+
+  /* advanced settings expander */
+  .adv{border-top:0.5px solid var(--line);margin-top:4px;padding-top:12px;}
+  .advtoggle{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);cursor:pointer;user-select:none;font-weight:500;}
+  .advtoggle i{font-size:15px;transition:transform .15s;}
+  .advtoggle.open i{transform:rotate(90deg);}
+  .advbody{display:none;margin-top:12px;}
+  .advbody.open{display:block;}
+  .sublabel{font-size:11px;color:var(--faint);margin:-2px 0 9px;}
+  .rangeends{display:flex;justify-content:space-between;font-size:10.5px;color:var(--faint);margin-top:3px;}
+  .rangeends #tval{color:var(--brass-deep);font-weight:600;}
+  .actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px;border-top:0.5px solid var(--line);padding-top:16px;}
+  .btn{font-size:13px;padding:9px 18px;border-radius:8px;cursor:pointer;font-family:inherit;border:0.5px solid var(--line2);
+       background:var(--surface);color:#3A382F;transition:all .12s;}
+  .btn:hover{background:var(--brass-tint);}
+  .btn.primary{border:none;background:var(--brass);color:#FFFDF8;font-weight:600;}
+  .btn.primary:hover{background:var(--brass-deep);}
+
+  /* test run */
+  .run{margin-top:16px;background:var(--surface);border:0.5px solid var(--line2);border-radius:10px;padding:14px;display:none;}
+  .run.show{display:block;}
+  .run .rh{font-size:12px;font-weight:600;color:var(--teal);margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+  .step{display:flex;gap:10px;font-size:12.5px;padding:7px 0;border-bottom:0.5px dashed var(--line);opacity:0;transform:translateY(4px);transition:all .3s;}
+  .step.in{opacity:1;transform:none;}
+  .step .n{width:20px;height:20px;border-radius:50%;background:var(--brass-tint);color:var(--brass-deep);
+           display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;flex-shrink:0;}
+  .step .tx{color:var(--ink);}
+  .step .tx b{font-weight:600;}
+  .step .tg{font-size:10px;color:var(--faint);}
+
+  /* toast */
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
+         background:var(--teal);color:#E1F0EC;padding:11px 18px;border-radius:10px;font-size:13px;
+         display:flex;align-items:center;gap:8px;opacity:0;transition:all .3s;pointer-events:none;z-index:50;}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  .note{font-size:11px;color:var(--faint);text-align:center;padding:10px;font-style:italic;}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- top bar -->
+  <div class="topbar">
+    <div class="brand">
+      <div class="logo"><i class="ti ti-box-multiple"></i></div>
+      <div>
+        <div class="name serif">CertaintyAI<span class="tm">™</span></div>
+        <div class="tag">Defensible AI for regulated industries</div>
+      </div>
+    </div>
+    <div class="chips">
+      <span class="chip"><span class="dot"></span>Ontology engine <i class="ti ti-chevron-down"></i></span>
+      <span class="chip"><i class="ti ti-world"></i>N. America</span>
+      <span class="chip"><i class="ti ti-user"></i>demo@mdxblocks.com</span>
+    </div>
+  </div>
+
+  <div class="body">
+    <!-- sidebar -->
+    <div class="side">
+      <div class="nav"><i class="ti ti-home"></i>Home</div>
+      <div class="nav"><i class="ti ti-layout-dashboard"></i>Dashboard</div>
+      <div class="nav active"><i class="ti ti-robot"></i>Agent Builder</div>
+      <div class="nav"><i class="ti ti-file-text"></i>Saved Reports</div>
+      <div class="spacer"></div>
+      <div class="nav"><i class="ti ti-settings"></i>Settings</div>
+      <div class="built">
+        <div class="l">BUILT ON</div>
+        <div class="g"><i class="ti ti-cloud" style="font-size:14px;vertical-align:-2px;margin-right:4px;"></i>Google Cloud</div>
+        <div class="s">Powered by Vertex AI · Cloud Run<br>Aligned to NIST AI RMF · ISO 42001 · EU AI Act</div>
+      </div>
+      <div class="userc">
+        <div class="av">D</div>
+        <div><div style="font-size:12px;font-weight:600;">Demo Admin</div><div style="font-size:10px;color:var(--faint);">demo@mdxblocks.com</div></div>
+      </div>
+    </div>
+
+    <!-- main -->
+    <div class="main">
+      <div class="head">
+        <div>
+          <h1 class="serif">Agent Builder</h1>
+          <div class="sub">Compose your own governed agents — no code required.</div>
+        </div>
+        <span class="gated"><i class="ti ti-lock"></i>Logged-in users only</span>
+      </div>
+
+      <!-- LIBRARY VIEW -->
+      <div id="library">
+        <div class="grid" id="agentGrid"></div>
+        <div class="note">Click an agent to edit it, or “New agent” to start fresh — then hit Test to watch a simulated run.</div>
+      </div>
+
+      <!-- BUILDER VIEW -->
+      <div id="builder" style="display:none;">
+        <div class="back" onclick="showLibrary()"><i class="ti ti-arrow-left"></i>Back to my agents</div>
+        <div class="panel">
+          <div class="rolebar">
+            <span class="lbl">C-Suite focus</span>
+            <div class="roleseg">
+              <div class="roleopt on" data-role="ciso" onclick="pickRole('ciso')"><i class="ti ti-shield-check"></i>CISO</div>
+              <div class="roleopt" data-role="cfo" onclick="pickRole('cfo')"><i class="ti ti-building-bank"></i>CFO</div>
+            </div>
+            <span class="rolehint" id="roleHint"></span>
+          </div>
+          <div class="cols">
+            <div class="colL">
+              <div class="field">
+                <div class="namerow">
+                  <div class="iconpick">
+                    <label>Icon</label>
+                    <div class="iconbtn" id="iconBtn" onclick="toggleIconMenu(event)"><i class="ti ti-robot" id="iconGlyph"></i></div>
+                    <div class="iconmenu" id="iconMenu"></div>
+                  </div>
+                  <div style="flex:1;"><label>Agent name</label><input class="fld" id="f-name" placeholder="e.g. Vendor Risk Triage"></div>
+                </div>
+              </div>
+              <div class="field"><label>Description</label><input class="fld" id="f-desc" placeholder="One line on what this agent does"></div>
+              <div class="field"><label>Instructions</label>
+                <textarea class="fld" id="f-inst" rows="4" placeholder="Describe the agent's role, what it should do, and how it should behave."></textarea></div>
+
+              <div class="adv">
+                <div class="advtoggle" id="advToggle" onclick="toggleAdv()"><i class="ti ti-chevron-right" id="advChevron"></i>Advanced settings</div>
+                <div class="advbody" id="advBody">
+                  <div class="row">
+                    <div class="field" style="flex:1;"><label>Model</label>
+                      <select class="fld" id="f-model"><option>Gemini 2.5 · Vertex AI</option><option>Gemini 2.5 Flash · Vertex AI</option></select></div>
+                    <div class="field" style="width:140px;"><label>Effort limit</label><input class="fld" id="f-steps" value="25"></div>
+                  </div>
+                  <div class="field" style="margin-bottom:4px;">
+                    <label>Response style</label>
+                    <input type="range" id="f-temp" min="0" max="1" step="0.1" value="0.3">
+                    <div class="rangeends"><span>Focused</span><span id="tval">balanced</span><span>Creative</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="colR">
+              <label>What this agent can do</label>
+              <div class="pills" id="toolPills"></div>
+              <label>Knowledge base</label>
+              <div class="sublabel">Documents this agent should reference.</div>
+              <div class="srctabs">
+                <div class="srctab on" data-src="local" onclick="switchSrc('local')"><i class="ti ti-device-laptop"></i>Local</div>
+                <div class="srctab" data-src="sharepoint" onclick="switchSrc('sharepoint')"><i class="ti ti-brand-windows"></i>SharePoint</div>
+                <div class="srctab" data-src="portal" onclick="switchSrc('portal')"><i class="ti ti-link"></i>Portal URL</div>
+              </div>
+              <div class="srcpane on" id="pane-local">
+                <div class="drop" id="drop"><i class="ti ti-upload"></i>Click to browse &amp; index a document</div>
+              </div>
+              <div class="srcpane" id="pane-sharepoint">
+                <div class="urlrow">
+                  <input class="fld" id="sp-url" placeholder="https://mdxblocks.sharepoint.com/sites/...">
+                  <button class="addbtn" onclick="addUrl('sharepoint')">Link</button>
+                </div>
+              </div>
+              <div class="srcpane" id="pane-portal">
+                <div class="urlrow">
+                  <input class="fld" id="pt-url" placeholder="https://procurement.opengov.com/portal/...">
+                  <button class="addbtn" onclick="addUrl('portal')">Ingest</button>
+                </div>
+              </div>
+              <div id="files" style="margin-bottom:14px;"></div>
+              <div class="gov"><i class="ti ti-shield-check"></i>Every run is logged step-by-step for audit. Role feeds question generation only — the deterministic scoring engine is never touched.</div>
+            </div>
+          </div>
+
+          <div class="actions">
+            <button class="btn" onclick="runTest()"><i class="ti ti-player-play" style="font-size:14px;vertical-align:-2px;margin-right:4px;"></i>Test</button>
+            <button class="btn primary" onclick="deploy()">Deploy agent</button>
+          </div>
+
+          <div class="run" id="run">
+            <div class="rh"><i class="ti ti-history"></i>Run trace <span class="tg" id="runtg"></span></div>
+            <div id="steps"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><i class="ti ti-check"></i><span id="toastmsg">Agent deployed</span></div>
+
+<script>
+  var ALL_TOOLS = ["Web search","Doc retrieval","Score lookup","Email","Calendar","Database query","Notify Slack"];
+  var ICONS = ["ti-robot","ti-shield-check","ti-file-search","ti-scale","ti-building-bank","ti-heartbeat","ti-gavel","ti-briefcase","ti-chart-dots","ti-radar"];
+  var agents = [
+    {name:"Vendor Risk Triage", icon:"ti-shield-check", role:"ciso", desc:"Reviews vendor docs and flags missing controls vs NIST AI RMF.", inst:"You are a compliance analyst. Review vendor documents, flag missing controls against NIST AI RMF, and draft a short risk summary for review.", model:"Gemini 2.5 · Vertex AI", steps:"25", temp:"0.3", tools:["Web search","Doc retrieval","Score lookup"], files:[{name:"vendor_soc2.pdf",src:"local"}], runs:12},
+    {name:"Policy Summarizer", icon:"ti-file-search", role:"cfo", desc:"Condenses long internal policies into board-ready briefs.", inst:"Summarize internal policy documents into a concise, governance-flavored brief suitable for executive review.", model:"Gemini 2.5 Flash · Vertex AI", steps:"15", temp:"0.2", tools:["Doc retrieval","Notify Slack"], files:[{name:"ai_use_policy.docx",src:"sharepoint"}], runs:47}
+  ];
+  var current = null;
+  var curIcon = "ti-robot";
+  var curImg = null;
+  var curRole = "ciso";
+
+  // Role pre-fill templates. NOTE: role shapes the STARTING TEMPLATE only —
+  // it never re-weights or touches the deterministic scoring engine (firewall).
+  var ROLE_PROFILES = {
+    ciso: {
+      icon:"ti-shield-check",
+      name:"Vendor Risk Triage",
+      desc:"Reviews vendor docs and flags missing controls vs NIST AI RMF.",
+      inst:"You are a CISO's security analyst. Review documents through a security and risk lens: flag missing or weak controls against NIST AI RMF, identify data-protection and threat-exposure gaps, and draft a concise risk summary for review.",
+      tools:["Web search","Doc retrieval","Score lookup","Notify Slack"],
+      hint:"Pre-filled for a <b>CISO</b>: security &amp; risk lens, controls, threat exposure."
+    },
+    cfo: {
+      icon:"ti-building-bank",
+      name:"AI ROI Analyzer",
+      desc:"Assesses cost, ROI, and budget impact of AI initiatives.",
+      inst:"You are a CFO's finance analyst. Review documents through a financial lens: estimate cost and ROI, flag budget and value-realization risks, and summarize the business case in board-ready terms.",
+      tools:["Database query","Doc retrieval","Score lookup","Calendar"],
+      hint:"Pre-filled for a <b>CFO</b>: cost, ROI, budget impact, value realization."
+    }
+  };
+
+  function el(id){return document.getElementById(id);}
+
+  function renderLibrary(){
+    var g = el("agentGrid"); g.innerHTML = "";
+    agents.forEach(function(a,i){
+      var c = document.createElement("div");
+      c.className = "agentcard";
+      c.onclick = function(){ openBuilder(i); };
+      c.innerHTML = '<div class="t"><i class="ti '+(a.icon||"ti-robot")+'"></i>'+a.name+'</div>'+
+                    '<div class="d">'+a.desc+'</div>'+
+                    '<div class="m"><span><i class="ti ti-tool" style="font-size:13px;vertical-align:-2px;"></i> '+a.tools.length+' tools</span>'+
+                    '<span><i class="ti ti-player-play" style="font-size:13px;vertical-align:-2px;"></i> '+a.runs+' runs</span></div>';
+      g.appendChild(c);
+    });
+    var n = document.createElement("div");
+    n.className = "agentcard newcard";
+    n.onclick = function(){ openBuilder(null); };
+    n.innerHTML = '<i class="ti ti-plus"></i>New agent';
+    g.appendChild(n);
+  }
+
+  function renderTools(selected){
+    var p = el("toolPills"); p.innerHTML = "";
+    ALL_TOOLS.forEach(function(t){
+      var s = document.createElement("span");
+      s.className = "pill" + (selected.indexOf(t)>-1 ? " on":"");
+      s.textContent = t;
+      s.onclick = function(){ s.classList.toggle("on"); };
+      p.appendChild(s);
+    });
+  }
+  function selectedTools(){
+    return Array.prototype.slice.call(document.querySelectorAll("#toolPills .pill.on")).map(function(e){return e.textContent;});
+  }
+
+  var pendingFiles = [];
+  var SRC_ICON = {local:"ti-file", sharepoint:"ti-brand-windows", portal:"ti-link"};
+  function renderFiles(){
+    var f = el("files"); f.innerHTML = "";
+    pendingFiles.forEach(function(item){
+      var s = document.createElement("span");
+      s.className = "filechip";
+      s.innerHTML = '<i class="ti '+(SRC_ICON[item.src]||"ti-file")+' src"></i>'+item.name+' · indexed';
+      f.appendChild(s);
+    });
+  }
+
+  function switchSrc(src){
+    document.querySelectorAll(".srctab").forEach(function(t){ t.classList.toggle("on", t.dataset.src===src); });
+    document.querySelectorAll(".srcpane").forEach(function(p){ p.classList.remove("on"); });
+    el("pane-"+src).classList.add("on");
+  }
+  function addUrl(src){
+    var input = el(src==="sharepoint" ? "sp-url" : "pt-url");
+    var url = input.value.trim();
+    if(!url){ toast("Paste a "+src+" link first"); return; }
+    var name = src==="sharepoint" ? "SharePoint: "+shortUrl(url) : "Portal: "+shortUrl(url);
+    pendingFiles.push({name:name, src:src}); renderFiles(); input.value="";
+    toast("Linked & queued for indexing");
+  }
+  function shortUrl(u){
+    try{ var p=u.replace(/^https?:\/\//,"").split("/"); return p[0]+(p.length>2?"/…/"+p[p.length-1]:""); }
+    catch(e){ return u.slice(0,28); }
+  }
+
+  function buildIconMenu(){
+    var m = el("iconMenu"); m.innerHTML = "";
+    ICONS.forEach(function(ic){
+      var o = document.createElement("div"); o.className="iconopt";
+      o.innerHTML = '<i class="ti '+ic+'"></i>';
+      o.onclick = function(e){ e.stopPropagation(); setIcon(ic); el("iconMenu").classList.remove("show"); };
+      m.appendChild(o);
+    });
+    var up = document.createElement("label"); up.className="iconopt up"; up.title="Upload image";
+    up.innerHTML = '<i class="ti ti-photo"></i><input type="file" accept="image/*" style="display:none" id="imgUp">';
+    m.appendChild(up);
+    up.addEventListener("click", function(e){ e.stopPropagation(); });
+  }
+  function toggleIconMenu(e){ e.stopPropagation(); el("iconMenu").classList.toggle("show"); }
+  function setIcon(ic){ curIcon=ic; curImg=null; el("iconGlyph").outerHTML='<i class="ti '+ic+'" id="iconGlyph"></i>'; }
+  function setImg(dataUrl){ curImg=dataUrl; el("iconBtn").innerHTML='<img src="'+dataUrl+'" alt="agent icon">'; }
+  document.addEventListener("click", function(){ el("iconMenu").classList.remove("show"); });
+  document.addEventListener("change", function(e){
+    if(e.target && e.target.id==="imgUp" && e.target.files && e.target.files[0]){
+      var r=new FileReader(); r.onload=function(){ setImg(r.result); el("iconMenu").classList.remove("show"); };
+      r.readAsDataURL(e.target.files[0]);
+    }
+  });
+
+  function setRoleUI(role){
+    document.querySelectorAll(".roleopt").forEach(function(o){ o.classList.toggle("on", o.dataset.role===role); });
+    el("roleHint").innerHTML = ROLE_PROFILES[role].hint;
+  }
+  // Picking a role pre-fills the builder with that C-suite starting template.
+  function pickRole(role){
+    curRole = role;
+    setRoleUI(role);
+    var p = ROLE_PROFILES[role];
+    el("f-name").value = p.name;
+    el("f-desc").value = p.desc;
+    el("f-inst").value = p.inst;
+    setIcon(p.icon);
+    renderTools(p.tools);
+    toast(role.toUpperCase()+" template applied");
+  }
+
+  function openBuilder(idx){
+    el("library").style.display = "none";
+    el("builder").style.display = "block";
+    el("run").classList.remove("show");
+    if(idx===null){
+      current = null;
+      curRole = "ciso";
+      var p = ROLE_PROFILES.ciso;
+      el("f-name").value=p.name; el("f-desc").value=p.desc; el("f-inst").value=p.inst;
+      el("f-model").value="Gemini 2.5 · Vertex AI"; el("f-steps").value="25";
+      el("f-temp").value="0.3"; el("tval").textContent=styleWord("0.3");
+      pendingFiles = []; renderTools(p.tools);
+      setIcon(p.icon); curImg=null;
+      setRoleUI("ciso");
+      switchSrc("local");
+    } else {
+      var a = agents[idx]; current = idx;
+      curRole = a.role || "ciso";
+      el("f-name").value=a.name; el("f-desc").value=a.desc; el("f-inst").value=a.inst;
+      el("f-model").value=a.model; el("f-steps").value=a.steps;
+      el("f-temp").value=a.temp; el("tval").textContent=styleWord(a.temp);
+      pendingFiles = a.files.slice(); renderTools(a.tools);
+      curIcon=a.icon||"ti-robot"; curImg=a.img||null;
+      el("iconBtn").innerHTML = curImg ? '<img src="'+curImg+'" alt="icon">' : '<i class="ti '+curIcon+'" id="iconGlyph"></i>';
+      setRoleUI(curRole);
+      switchSrc("local");
+    }
+    renderFiles();
+    window.scrollTo({top:0,behavior:"smooth"});
+  }
+
+  function showLibrary(){
+    el("builder").style.display = "none";
+    el("library").style.display = "block";
+    renderLibrary();
+  }
+
+  function styleWord(v){ v=Number(v); return v<=0.3 ? "focused" : (v>=0.7 ? "creative" : "balanced"); }
+  el("f-temp").addEventListener("input", function(){ el("tval").textContent = styleWord(this.value); });
+
+  function toggleAdv(){
+    el("advToggle").classList.toggle("open");
+    el("advBody").classList.toggle("open");
+  }
+
+  el("drop").addEventListener("click", function(){
+    var names = ["compliance_matrix.pdf","controls_register.xlsx","risk_appetite.docx","audit_log_q2.csv"];
+    var pick = names[pendingFiles.filter(function(f){return f.src==="local";}).length % names.length];
+    if(!pendingFiles.some(function(f){return f.name===pick;})){ pendingFiles.push({name:pick,src:"local"}); renderFiles(); }
+  });
+
+  function toast(msg){
+    el("toastmsg").textContent = msg;
+    var t = el("toast"); t.classList.add("show");
+    setTimeout(function(){ t.classList.remove("show"); }, 2200);
+  }
+
+  function runTest(){
+    var name = el("f-name").value || "Untitled agent";
+    var tools = selectedTools();
+    var steps = [
+      {tx:"<b>"+name+"</b> initialized on Gemini · Vertex AI", tg:"orchestrator"},
+      {tx:"Retrieved "+(pendingFiles.length||1)+" document(s) from pgvector index", tg:"tool: Doc retrieval"},
+      {tx:"Reasoned over controls and identified 3 gaps", tg:"reasoning step"},
+      {tx:tools.length? ("Called tool: "+tools[0]) : "No external tools selected", tg:"tool call"},
+      {tx:"Drafted governed summary — run logged for audit", tg:"complete"}
+    ];
+    var box = el("steps"); box.innerHTML = "";
+    el("run").classList.add("show");
+    el("runtg").textContent = "· "+styleWord(el("f-temp").value)+" · effort "+el("f-steps").value;
+    steps.forEach(function(s,i){
+      var d = document.createElement("div");
+      d.className = "step";
+      d.innerHTML = '<div class="n">'+(i+1)+'</div><div><div class="tx">'+s.tx+'</div><div class="tg">'+s.tg+'</div></div>';
+      box.appendChild(d);
+      setTimeout(function(){ d.classList.add("in"); }, 250*(i+1));
+    });
+    setTimeout(function(){ toast("Test run complete — logged"); }, 250*(steps.length+1));
+  }
+
+  function deploy(){
+    var a = {
+      name: el("f-name").value || "Untitled agent",
+      icon: curIcon, img: curImg, role: curRole,
+      desc: el("f-desc").value || "No description.",
+      inst: el("f-inst").value,
+      model: el("f-model").value,
+      steps: el("f-steps").value,
+      temp: el("f-temp").value,
+      tools: selectedTools(),
+      files: pendingFiles.slice(),
+      runs: current!==null ? agents[current].runs : 0
+    };
+    if(current!==null){ agents[current] = a; } else { agents.push(a); }
+    toast(current!==null ? "Agent updated & deployed" : "Agent deployed");
+    setTimeout(showLibrary, 600);
+  }
+
+  buildIconMenu();
+  renderLibrary();
+</script>
+</body>
+</html>

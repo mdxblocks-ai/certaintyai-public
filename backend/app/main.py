@@ -8,6 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from . import models  # noqa: F401 — ensures tables register on Base.metadata
 from .database import Base, SessionLocal, engine
 from .routers import a2a as a2a_router
+from .routers import agent_builder as agent_builder_router
 from .routers import auth as auth_router
 from .routers import report as report_router
 from .routers import survey as survey_router
@@ -36,20 +37,43 @@ async def lifespan(app: FastAPI):
 
     Base.metadata.create_all(bind=engine)
 
-    # Check if first_assessment_completed column exists in users table, and add it if missing
+    # Check and add columns if missing dynamically to support zero-config sync
     try:
         with engine.connect() as conn:
             from sqlalchemy import inspect
             inspector = inspect(engine)
-            columns = [c["name"] for c in inspector.get_columns("users")]
-            if "first_assessment_completed" not in columns:
-                logger.info("Adding first_assessment_completed column to users table...")
-                from sqlalchemy import text
-                conn.execute(text("ALTER TABLE users ADD COLUMN first_assessment_completed BOOLEAN NOT NULL DEFAULT FALSE;"))
-                conn.commit()
-                logger.info("Successfully added first_assessment_completed column to users table.")
+            table_names = inspector.get_table_names()
+            
+            if "users" in table_names:
+                columns = [c["name"] for c in inspector.get_columns("users")]
+                if "first_assessment_completed" not in columns:
+                    logger.info("Adding first_assessment_completed column to users table...")
+                    from sqlalchemy import text
+                    conn.execute(text("ALTER TABLE users ADD COLUMN first_assessment_completed BOOLEAN NOT NULL DEFAULT FALSE;"))
+                    conn.commit()
+                    
+            if "agents" in table_names:
+                columns = [c["name"] for c in inspector.get_columns("agents")]
+                if "voice_enabled" not in columns:
+                    logger.info("Adding voice_enabled column to agents table...")
+                    from sqlalchemy import text
+                    conn.execute(text("ALTER TABLE agents ADD COLUMN voice_enabled BOOLEAN NOT NULL DEFAULT TRUE;"))
+                    conn.commit()
+                    
+            if "agent_runs" in table_names:
+                columns = [c["name"] for c in inspector.get_columns("agent_runs")]
+                if "follow_ups" not in columns:
+                    logger.info("Adding follow_ups column to agent_runs table...")
+                    from sqlalchemy import text
+                    conn.execute(text("ALTER TABLE agent_runs ADD COLUMN follow_ups JSON NOT NULL DEFAULT '[]';"))
+                    conn.commit()
+                if "retrieved_sources" not in columns:
+                    logger.info("Adding retrieved_sources column to agent_runs table...")
+                    from sqlalchemy import text
+                    conn.execute(text("ALTER TABLE agent_runs ADD COLUMN retrieved_sources JSON NOT NULL DEFAULT '[]';"))
+                    conn.commit()
     except Exception as exc:
-        logger.warning("Could not add first_assessment_completed column dynamically: %s", exc)
+        logger.warning("Could not add database columns dynamically: %s", exc)
 
     db = SessionLocal()
     try:
@@ -90,6 +114,7 @@ app.include_router(auth_router.router)
 app.include_router(survey_router.router)
 app.include_router(report_router.router)
 app.include_router(a2a_router.router)
+app.include_router(agent_builder_router.router)
 
 
 @app.get("/health")

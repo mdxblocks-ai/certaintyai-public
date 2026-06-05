@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form'
 import api from '../lib/api'
 import voiceKnowledgeBase from '../lib/voiceKnowledgeBase.json'
 import SurveyWizard from '../components/survey/SurveyWizard'
+import AgentBuilder from './AgentBuilder'
 
 const SHOW_AI_READINESS_NAV = false;
 
@@ -812,27 +813,75 @@ export default function Dashboard() {
   const copilotSpeechRecognitionRef = useRef(null)
   const voiceBottomRef = useRef(null)
 
+  const [allAgents, setAllAgents] = useState([])
+  const [activeAgentId, setActiveAgentId] = useState(0)
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const [copilotReadAloud, setCopilotReadAloud] = useState(true)
 
-
-  // Persist Copilot Sessions to localStorage
-  useEffect(() => {
-    localStorage.setItem('copilot_sessions', JSON.stringify(copilotSessions))
-  }, [copilotSessions])
-
-  // Persist active session id
-  useEffect(() => {
-    localStorage.setItem('copilot_active_session_id', copilotActiveSessionId)
-  }, [copilotActiveSessionId])
-
-  // Redirect to readiness tab if survey not completed
-  useEffect(() => {
-    if (user && !user.first_assessment_completed && activeTab !== 'readiness') {
-      setSearchParams({ tab: 'readiness' })
+  // Get greeting name helper
+  const getGreetingName = () => {
+    if (!user) return 'User'
+    if (user.first_name) return user.first_name
+    if (user.name) return user.name.split(' ')[0]
+    if (user.email) {
+      const localPart = user.email.split('@')[0]
+      if (localPart === 'demo') return 'Demo User'
+      const clean = localPart.split('.')[0]
+      return clean.charAt(0).toUpperCase() + clean.slice(1)
     }
-  }, [user, activeTab, setSearchParams])
+    return 'User'
+  }
 
-  // Get active session
-  const activeCopilotSession = copilotSessions.find(s => s.id === copilotActiveSessionId) || copilotSessions[0] || null
+  // Get starter prompts for an agent based on its role
+  const getAgentStarters = (agent) => {
+    if (!agent) return ["Explain my AI Readiness Score", "Identify AI maturity gaps", "Build an AI adoption roadmap"]
+    const roleKey = (agent.role || 'base').toLowerCase()
+    if (roleKey === 'ciso') {
+      return [
+        "Which NIST AI RMF controls are missing from this vendor's documentation?",
+        "What are our top data-protection and threat-exposure gaps right now?",
+        "Draft a concise risk summary of our current AI security posture."
+      ]
+    }
+    if (roleKey === 'cfo') {
+      return [
+        "What's our current AI spend, and where is the biggest waste?",
+        "What's our AI cost-saving opportunity and the payback period?",
+        "Does this AI proposal meet our investment and governance bar?"
+      ]
+    }
+    return ["Explain my AI Readiness Score", "Identify AI maturity gaps", "Build an AI adoption roadmap"]
+  }
+
+  // Fetch agents list
+  const fetchCustomAgents = async () => {
+    try {
+      const res = await api.get('/agents')
+      setAllAgents(res.data)
+      const baseDbAgent = res.data.find(a => a.role === 'base')
+      if (baseDbAgent && (activeAgentId === 0 || activeAgentId === undefined)) {
+        setActiveAgentId(baseDbAgent.id)
+      }
+    } catch (err) {
+      console.error("Failed to fetch custom agents:", err)
+    }
+  }
+
+  useEffect(() => {
+    if (user) {
+      fetchCustomAgents()
+    }
+  }, [user, activeTab])
+
+  const activeAgent = allAgents.find(a => a.id === activeAgentId) || allAgents.find(a => a.role === 'base') || null
+
+  // Filter sessions by activeAgentId
+  const displayedSessions = copilotSessions.filter(s => 
+    s.agentId === activeAgentId || 
+    (!s.agentId && activeAgent?.role === 'base')
+  )
+
+  const activeCopilotSession = displayedSessions.find(s => s.id === copilotActiveSessionId) || displayedSessions[0] || null
 
   // Ensure active model is updated when session changes
   useEffect(() => {
@@ -840,6 +889,39 @@ export default function Dashboard() {
       setCopilotModel(activeCopilotSession.selectedModel || 'Gemini 2.5 Flash')
     }
   }, [copilotActiveSessionId])
+
+  // Sync sessions when activeAgentId changes
+  useEffect(() => {
+    if (!activeAgentId) return;
+    
+    const agentSessions = copilotSessions.filter(s => s.agentId === activeAgentId);
+    if (agentSessions.length > 0) {
+      const lastActiveId = localStorage.getItem(`last_active_session_for_agent_${activeAgentId}`)
+      if (lastActiveId && agentSessions.some(s => s.id === lastActiveId)) {
+        setCopilotActiveSessionId(lastActiveId)
+      } else {
+        setCopilotActiveSessionId(agentSessions[0].id)
+      }
+    } else {
+      const fallbackId = `session-${activeAgentId}-${Date.now()}`
+      const newSession = {
+        id: fallbackId,
+        title: 'New Chat Session',
+        selectedModel: copilotModel,
+        createdDate: new Date().toISOString(),
+        messages: [],
+        agentId: activeAgentId
+      }
+      setCopilotSessions(prev => [newSession, ...prev])
+      setCopilotActiveSessionId(fallbackId)
+    }
+  }, [activeAgentId])
+
+  useEffect(() => {
+    if (copilotActiveSessionId && activeAgentId) {
+      localStorage.setItem(`last_active_session_for_agent_${activeAgentId}`, copilotActiveSessionId)
+    }
+  }, [copilotActiveSessionId, activeAgentId])
 
   const handleModelChange = (modelName) => {
     setCopilotModel(modelName)
@@ -854,13 +936,14 @@ export default function Dashboard() {
   }
 
   const handleCopilotNewChat = () => {
-    const newId = `session-${Date.now()}`
+    const newId = `session-${activeAgentId}-${Date.now()}`
     const newSession = {
       id: newId,
       title: 'New Chat Session',
       selectedModel: copilotModel,
       createdDate: new Date().toISOString(),
-      messages: []
+      messages: [],
+      agentId: activeAgentId
     }
     setCopilotSessions(prev => [newSession, ...prev])
     setCopilotActiveSessionId(newId)
@@ -870,18 +953,23 @@ export default function Dashboard() {
     e.stopPropagation()
     const updated = copilotSessions.filter(s => s.id !== id)
     setCopilotSessions(updated)
+    const agentSessions = updated.filter(s => s.agentId === activeAgentId)
     if (copilotActiveSessionId === id) {
-      if (updated.length > 0) {
-        setCopilotActiveSessionId(updated[0].id)
+      if (agentSessions.length > 0) {
+        setCopilotActiveSessionId(agentSessions[0].id)
       } else {
-        const fallbackId = `session-${Date.now()}`
-        setCopilotSessions([{
-          id: fallbackId,
-          title: 'New Chat Session',
-          selectedModel: copilotModel,
-          createdDate: new Date().toISOString(),
-          messages: []
-        }])
+        const fallbackId = `session-${activeAgentId}-${Date.now()}`
+        setCopilotSessions(prev => [
+          ...prev.filter(s => s.id !== id),
+          {
+            id: fallbackId,
+            title: 'New Chat Session',
+            selectedModel: copilotModel,
+            createdDate: new Date().toISOString(),
+            messages: [],
+            agentId: activeAgentId
+          }
+        ])
         setCopilotActiveSessionId(fallbackId)
       }
     }
@@ -967,14 +1055,14 @@ export default function Dashboard() {
     const files = Array.from(e.target.files)
     if (files.length === 0) return
 
-    const allowedExtensions = ['pdf', 'docx', 'xlsx', 'csv', 'pptx', 'txt', 'png', 'jpg', 'jpeg']
+    const allowedExtensions = ['txt', 'md']
     const validFiles = files.filter(file => {
       const ext = file.name.split('.').pop().toLowerCase()
       return allowedExtensions.includes(ext)
     })
 
     if (validFiles.length < files.length) {
-      alert("Some files were skipped. Only PDF, DOCX, XLSX, CSV, PPTX, TXT, PNG, JPG, JPEG files are allowed.")
+      alert("Some files were skipped. Only plain-text files (.txt, .md) are allowed.")
     }
 
     if (validFiles.length === 0) return
@@ -982,8 +1070,9 @@ export default function Dashboard() {
     const formatted = validFiles.map(file => ({
       name: file.name,
       size: file.size,
-      type: file.type || 'application/octet-stream',
-      id: `file-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      type: file.type || 'text/plain',
+      id: `file-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      file: file
     }))
     setCopilotFiles(prev => [...prev, ...formatted])
     e.target.value = '' // reset input
@@ -1013,14 +1102,14 @@ export default function Dashboard() {
     const files = Array.from(e.dataTransfer.files)
     if (files.length === 0) return
 
-    const allowedExtensions = ['pdf', 'docx', 'xlsx', 'csv', 'pptx', 'txt', 'png', 'jpg', 'jpeg']
+    const allowedExtensions = ['txt', 'md']
     const validFiles = files.filter(file => {
       const ext = file.name.split('.').pop().toLowerCase()
       return allowedExtensions.includes(ext)
     })
 
     if (validFiles.length < files.length) {
-      alert("Some files were skipped. Only PDF, DOCX, XLSX, CSV, PPTX, TXT, PNG, JPG, JPEG files are allowed.")
+      alert("Some files were skipped. Only plain-text files (.txt, .md) are allowed.")
     }
 
     if (validFiles.length === 0) return
@@ -1028,36 +1117,51 @@ export default function Dashboard() {
     const formatted = validFiles.map(file => ({
       name: file.name,
       size: file.size,
-      type: file.type || 'application/octet-stream',
-      id: `file-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      type: file.type || 'text/plain',
+      id: `file-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      file: file
     }))
     setCopilotFiles(prev => [...prev, ...formatted])
   }
 
-  const handleCopilotSend = (textToSend = copilotInput) => {
+  const readFileAsText = (file) => {
+    // TODO: Implement real PDF/docx parsing + pgvector chunking later in production.
+    // Currently fallback to browser FileReader for plain-text (.txt, .md) only.
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(reader.result)
+      reader.onerror = () => reject(reader.error)
+      reader.readAsText(file)
+    })
+  }
+
+  const handleCopilotSend = async (textToSend = copilotInput) => {
     const trimmed = textToSend.trim()
     if (!trimmed && copilotFiles.length === 0) return
 
     let currentSession = activeCopilotSession
     if (!currentSession) {
-      const newId = `session-${Date.now()}`
+      const newId = `session-${activeAgentId}-${Date.now()}`
       currentSession = {
         id: newId,
         title: trimmed ? (trimmed.length > 25 ? trimmed.substring(0, 25) + '...' : trimmed) : 'File Upload Chat',
         selectedModel: copilotModel,
         createdDate: new Date().toISOString(),
-        messages: []
+        messages: [],
+        agentId: activeAgentId
       }
       setCopilotSessions(prev => [currentSession, ...prev])
       setCopilotActiveSessionId(newId)
     }
+
+    const attachedFiles = [...copilotFiles]
 
     // Add user message
     const userMsg = {
       id: `msg-user-${Date.now()}`,
       role: 'user',
       content: trimmed,
-      files: [...copilotFiles],
+      files: attachedFiles,
       timestamp: new Date().toISOString()
     }
 
@@ -1086,63 +1190,106 @@ export default function Dashboard() {
     const query = trimmed.toLowerCase()
     if (query.includes('hola') || query.includes('reporte') || query.includes('explicar')) detectedLang = 'Spanish'
     else if (query.includes('bonjour') || query.includes('rapport')) detectedLang = 'French'
-    else if (query.includes('hallo') || query.includes('bericht')) detectedLang = 'German'
-    else if (query.includes('olá') || query.includes('relatório')) detectedLang = 'Portuguese'
-    else if (query.includes('مرحبا') || query.includes('تقرير')) detectedLang = 'Arabic'
-    else if (query.includes('नमस्ते') || query.includes('विवरण') || query.includes('रिपोर्ट')) detectedLang = 'Hindi'
-    else if (query.includes('ನಮಸ್ಕಾರ') || query.includes('ವರದಿ') || query.includes('ಸ್ಕೋರ್')) detectedLang = 'Kannada'
-    else if (query.includes('నమస్కారం') || query.includes('నివేదిక')) detectedLang = 'Telugu'
-    else if (query.includes('வணக்கம்') || query.includes('அறிக்கை')) detectedLang = 'Tamil'
-    else if (query.includes('നമസ്കാരം') || query.includes('റിപ്പോർട്ട്')) detectedLang = 'Malayalam'
-    else if (query.includes('こんにちは') || query.includes('レポート') || query.includes('ロードマップ')) detectedLang = 'Japanese'
-    else if (query.includes('안녕하세요') || query.includes('보고서')) detectedLang = 'Korean'
-    else if (query.includes('你好') || query.includes('评估') || query.includes('报告')) detectedLang = 'Chinese'
-
+    
     if (detectedLang !== copilotLanguage) {
       setCopilotLanguage(detectedLang)
     }
 
-    // Match prompt against our expert response mapping
-    const botResponseText = getExpertResponse(trimmed, copilotModel, detectedLang, latestReportData)
+    // Thread history: map past messages
+    const historyList = (currentSession.messages || []).map(m => ({
+      role: m.role,
+      content: m.content
+    }))
 
-    // Add bot message container
-    const botMsgId = `msg-bot-${Date.now()}`
-    const botMsg = {
-      id: botMsgId,
-      role: 'assistant',
-      content: '', // Start empty for streaming
-      timestamp: new Date().toISOString()
+    // Read first file if attached
+    let attachedDocRef = null
+    let attachedDocContent = null
+    if (attachedFiles.length > 0) {
+      const firstFile = attachedFiles[0]
+      attachedDocRef = firstFile.name
+      if (firstFile.file) {
+        try {
+          attachedDocContent = await readFileAsText(firstFile.file)
+        } catch (e) {
+          console.error("Failed to read attached file content:", e)
+        }
+      }
     }
 
-    setCopilotSessions(prev => prev.map(s => 
-      s.id === currentSession.id 
-        ? { ...s, messages: [...updatedMessages, botMsg] } 
-        : s
-    ))
+    try {
+      // Execute agent run API call
+      const res = await api.post(`/agents/${activeAgentId}/run`, {
+        input: trimmed,
+        history: historyList,
+        attached_doc_ref: attachedDocRef,
+        attached_doc_content: attachedDocContent
+      })
 
-    // Stream effect
-    let currentIdx = 0
-    const words = botResponseText.split(' ')
-    const interval = setInterval(() => {
-      if (currentIdx < words.length) {
-        const partialResponse = words.slice(0, currentIdx + 1).join(' ')
-        setCopilotSessions(prev => prev.map(s => {
-          if (s.id === currentSession.id) {
-            const msgs = [...s.messages]
-            const lastMsgIdx = msgs.findIndex(m => m.id === botMsgId)
-            if (lastMsgIdx !== -1) {
-              msgs[lastMsgIdx] = { ...msgs[lastMsgIdx], content: partialResponse }
-            }
-            return { ...s, messages: msgs }
-          }
-          return s
-        }))
-        currentIdx++
-      } else {
-        clearInterval(interval)
-        setCopilotStreaming(false)
+      const runLog = res.data
+      const botResponseText = runLog.outcome || "No output generated by the assistant."
+      const followUps = runLog.follow_ups || []
+      const retrievedSources = runLog.retrieved_sources || []
+
+      // Add bot message container
+      const botMsgId = `msg-bot-${Date.now()}`
+      const botMsg = {
+        id: botMsgId,
+        role: 'assistant',
+        content: '', // Start empty for streaming
+        follow_ups: followUps,
+        retrieved_sources: retrievedSources,
+        timestamp: new Date().toISOString()
       }
-    }, 40)
+
+      setCopilotSessions(prev => prev.map(s => 
+        s.id === currentSession.id 
+          ? { ...s, messages: [...updatedMessages, botMsg] } 
+          : s
+      ))
+
+      // Stream effect word-by-word
+      let currentIdx = 0
+      const words = botResponseText.split(' ')
+      const interval = setInterval(() => {
+        if (currentIdx < words.length) {
+          const partialResponse = words.slice(0, currentIdx + 1).join(' ')
+          setCopilotSessions(prev => prev.map(s => {
+            if (s.id === currentSession.id) {
+              const msgs = [...s.messages]
+              const lastMsgIdx = msgs.findIndex(m => m.id === botMsgId)
+              if (lastMsgIdx !== -1) {
+                msgs[lastMsgIdx] = { ...msgs[lastMsgIdx], content: partialResponse }
+              }
+              return { ...s, messages: msgs }
+            }
+            return s
+          }))
+          currentIdx++
+        } else {
+          clearInterval(interval)
+          setCopilotStreaming(false)
+          
+          if (copilotReadAloud && activeAgent?.voice_enabled !== false) {
+            handleCopilotSpeak(botMsgId, botResponseText)
+          }
+        }
+      }, 30)
+
+    } catch (err) {
+      console.error("Agent execution failed:", err)
+      const errorMsg = {
+        id: `msg-error-${Date.now()}`,
+        role: 'assistant',
+        content: "I'm sorry, I encountered an error executing this request. Please verify the backend connection.",
+        timestamp: new Date().toISOString()
+      }
+      setCopilotSessions(prev => prev.map(s => 
+        s.id === currentSession.id 
+          ? { ...s, messages: [...updatedMessages, errorMsg] } 
+          : s
+      ))
+      setCopilotStreaming(false)
+    }
   }
 
   function handleLogout() {
@@ -2237,6 +2384,23 @@ export default function Dashboard() {
                 {!isCollapsed && <span className="text-sm font-semibold">Saved Reports</span>}
               </button>
             )}
+
+            {!disableNav && (
+              <button
+                onClick={() => handleTabChange('agent-builder')}
+                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-left transition duration-200 ${
+                  isCollapsed ? 'lg:justify-center' : ''
+                } ${
+                  activeTab === 'agent-builder'
+                    ? 'bg-[var(--dash-active-bg)] text-[var(--dash-active-text)] border border-[var(--dash-active-border)] shadow-[var(--dash-active-shadow)] font-bold'
+                    : 'text-[var(--dash-text-secondary)] hover:text-[var(--dash-hover-text)] hover:bg-[var(--dash-hover-bg)]'
+                }`}
+                title="Agent Builder"
+              >
+                <Icons.Tools />
+                {!isCollapsed && <span className="text-sm font-semibold">Agent Builder</span>}
+              </button>
+            )}
           </nav>
         </div>
 
@@ -2316,9 +2480,9 @@ export default function Dashboard() {
       {/* Main Panel */}
       <main className={`flex-1 ${activeTab === 'home' ? 'h-full overflow-hidden flex flex-col p-3 lg:p-4 max-w-none space-y-3' : 'p-4 lg:py-6 lg:px-8 space-y-5 overflow-y-auto max-w-[1380px]'} mx-auto w-full`}>
         {/* Header Summary Row */}
-        <div className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-[var(--dash-border)] pb-3`}>
-          <div>
-            {activeTab !== 'home' && (
+        {activeTab !== 'home' && (
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-[var(--dash-border)] pb-3">
+            <div>
               <span className="text-xs uppercase tracking-widest text-[var(--dash-accent)] font-bold bg-[var(--dash-active-bg)] border border-[var(--dash-active-border)] px-3 py-1 rounded-full">
                 {activeTab === 'dashboard' && '📊 Executive Briefing'}
                 {activeTab === 'reports' && '📂 Assessment History'}
@@ -2329,107 +2493,64 @@ export default function Dashboard() {
                 {activeTab === 'tools' && '🛠️ Model Orchestration'}
                 {activeTab === 'plugins' && '🔌 Plugin Marketplace'}
                 {activeTab === 'settings' && '👤 User Profile'}
+                {activeTab === 'agent-builder' && '🛠️ Agent Builder'}
               </span>
-            )}
-            <h2 className="text-3xl font-extrabold text-[var(--dash-text-primary)] mt-2">
-              {activeTab === 'home' && 'AI Readiness Copilot'}
-              {activeTab === 'dashboard' && 'Dashboard'}
-              {activeTab === 'reports' && 'Saved Reports'}
-              {activeTab === 'portfolio' && (dashboardSubTab === 'strategy' ? 'Strategic Advisory Portfolio' : 'LLM Observatory')}
-              {activeTab === 'readiness' && 'AI Readiness Assessment Wizard'}
-              {activeTab === 'tasks' && 'Active Background Workflows'}
-              {activeTab === 'insights' && 'Industry Benchmark Analytics'}
-              {activeTab === 'tools' && 'Integrated Model Control'}
-              {activeTab === 'plugins' && 'Enterprise Plugin Store'}
-              {activeTab === 'settings' && 'Account Settings'}
-            </h2>
-            {activeTab === 'home' && (
-              <p className="text-xs text-[var(--dash-text-secondary)] mt-1 font-medium font-sans">
-                Assess, Plan, Govern and Scale Enterprise AI Adoption
-              </p>
-            )}
-            {activeTab === 'dashboard' && (
-              <p className="text-xs text-[var(--dash-text-secondary)] mt-1 font-medium font-sans">
-                Executive financial summary, investment health score, and ROI payback diagnostics.
-              </p>
-            )}
-            {activeTab === 'readiness' && (
-              <p className="text-xs text-[var(--dash-text-secondary)] mt-1 font-medium font-sans">
-                Take the 2-minute readiness survey to instantly recalculate and regenerate your strategic C-suite deliverables.
-              </p>
-            )}
-          </div>
-          <div className="flex items-center gap-3 text-xs font-sans">
-            {/* Dynamic Role Quick-Switcher - Always Visible */}
-            <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] p-1 rounded-xl flex items-center gap-2 hover:border-[var(--dash-accent)]/50 transition">
-              <span className="text-[var(--dash-text-secondary)] text-xs font-semibold px-2 shrink-0">C-Suite Focus:</span>
-              <select
-                value={user?.role || 'user'}
-                onChange={async (e) => {
-                  try {
-                    await updateUserRole(e.target.value);
-                  } catch (err) {
-                    console.error('Failed to quick-switch role:', err);
-                  }
-                }}
-                className="bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-lg px-2.5 py-1.5 text-xs font-bold text-[var(--dash-text-secondary)] focus:border-[var(--dash-accent)] focus:outline-none transition cursor-pointer hover:text-[var(--dash-text-primary)]"
-              >
-                <option value="user">General Enterprise</option>
-                <option value="CFO">CFO Cockpit 💸</option>
-                <option value="CIO/CTO">CIO / CTO / CISO ⚙️</option>
-                <option value="Healthcare CTO">Healthcare CTO 🏥</option>
-                <option value="Cybersecurity Leader">Cybersecurity Leader 🛡️</option>
-              </select>
+              <h2 className="text-3xl font-extrabold text-[var(--dash-text-primary)] mt-2">
+                {activeTab === 'dashboard' && 'Dashboard'}
+                {activeTab === 'reports' && 'Saved Reports'}
+                {activeTab === 'portfolio' && (dashboardSubTab === 'strategy' ? 'Strategic Advisory Portfolio' : 'LLM Observatory')}
+                {activeTab === 'readiness' && 'AI Readiness Assessment Wizard'}
+                {activeTab === 'tasks' && 'Active Background Workflows'}
+                {activeTab === 'insights' && 'Industry Benchmark Analytics'}
+                {activeTab === 'tools' && 'Integrated Model Control'}
+                {activeTab === 'plugins' && 'Enterprise Plugin Store'}
+                {activeTab === 'settings' && 'Account Settings'}
+                {activeTab === 'agent-builder' && 'Agent Builder & Governance'}
+              </h2>
+              {activeTab === 'dashboard' && (
+                <p className="text-xs text-[var(--dash-text-secondary)] mt-1 font-medium font-sans">
+                  Executive financial summary, investment health score, and ROI payback diagnostics.
+                </p>
+              )}
+              {activeTab === 'agent-builder' && (
+                <p className="text-xs text-[var(--dash-text-secondary)] mt-1 font-medium font-sans">
+                  Govern, build, and deploy custom C-suite AI readiness assistants with custom RAG knowledge bases.
+                </p>
+              )}
+              {activeTab === 'readiness' && (
+                <p className="text-xs text-[var(--dash-text-secondary)] mt-1 font-medium font-sans">
+                  Take the 2-minute readiness survey to instantly recalculate and regenerate your strategic C-suite deliverables.
+                </p>
+              )}
             </div>
-
-            {activeTab === 'home' ? (
-              <div className="flex items-center gap-2">
-                {/* New Chat Button in Top Toolbar */}
-                <button
-                  onClick={handleCopilotNewChat}
-                  className="bg-[var(--dash-newchat-bg)] hover:bg-[var(--dash-newchat-hover-bg)] text-[var(--dash-newchat-text)] hover:text-[var(--dash-newchat-hover-text)] text-xs font-bold px-3 py-1.5 rounded-xl transition duration-150 shadow-[var(--dash-newchat-shadow)] hover:scale-102 active:scale-98 focus:outline-none focus:ring-1 focus:ring-[var(--dash-accent)]"
-                  title="Start a new chat session"
-                >
-                  + New Chat
-                </button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-3">
-                {activeTab === 'portfolio' && (
-                  <div className="flex bg-[var(--dash-card-bg)] border border-[var(--dash-border)] p-1 rounded-xl items-center">
-                    <button
-                      onClick={() => setDashboardSubTab('strategy')}
-                      className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 flex items-center gap-1.5 ${
-                        dashboardSubTab === 'strategy'
-                          ? 'bg-[var(--dash-active-bg)] text-[var(--dash-active-text)] border border-[var(--dash-active-border)] shadow-[var(--dash-active-shadow)]'
-                          : 'border border-transparent text-[var(--dash-text-secondary)] hover:text-[var(--dash-text-primary)]'
-                      }`}
-                    >
-                      💎 Strategy
-                    </button>
-                    <button
-                      onClick={() => setDashboardSubTab('observability')}
-                      className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 flex items-center gap-1.5 ${
-                        dashboardSubTab === 'observability'
-                          ? 'bg-[var(--dash-active-bg)] text-[var(--dash-active-text)] border border-[var(--dash-active-border)] shadow-[var(--dash-active-shadow)]'
-                          : 'border border-transparent text-[var(--dash-text-secondary)] hover:text-[var(--dash-text-primary)] hover:bg-[var(--dash-hover-bg)]'
-                      }`}
-                    >
-                      📊 Observability Core
-                    </button>
-                  </div>
-                )}
-                <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] px-4 py-2 rounded-xl flex items-center gap-3">
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
-                  </span>
-                  <span className="text-[var(--dash-text-secondary)]">Security Gateways: <strong className="text-[var(--emerald)] font-semibold uppercase">Locked</strong></span>
+            <div className="flex items-center gap-3 text-xs font-sans">
+              {activeTab === 'portfolio' && (
+                <div className="flex bg-[var(--dash-card-bg)] border border-[var(--dash-border)] p-1 rounded-xl items-center">
+                  <button
+                    onClick={() => setDashboardSubTab('strategy')}
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 flex items-center gap-1.5 ${
+                      dashboardSubTab === 'strategy'
+                        ? 'bg-[var(--dash-active-bg)] text-[var(--dash-active-text)] border border-[var(--dash-active-border)] shadow-[var(--dash-active-shadow)]'
+                        : 'border border-transparent text-[var(--dash-text-secondary)] hover:text-[var(--dash-text-primary)]'
+                    }`}
+                  >
+                    💎 Strategy
+                  </button>
+                  <button
+                    onClick={() => setDashboardSubTab('observability')}
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 flex items-center gap-1.5 ${
+                      dashboardSubTab === 'observability'
+                        ? 'bg-[var(--dash-active-bg)] text-[var(--dash-active-text)] border border-[var(--dash-active-border)] shadow-[var(--dash-active-shadow)]'
+                        : 'border border-transparent text-[var(--dash-text-secondary)] hover:text-[var(--dash-text-primary)] hover:bg-[var(--dash-hover-bg)]'
+                    }`}
+                  >
+                    📊 Observability Core
+                  </button>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Dynamic Content Body based on selected Tab */}
         <div className={`flex flex-col ${activeTab === 'home' ? 'h-0 flex-grow overflow-hidden' : ''} w-full`}>
@@ -2442,16 +2563,26 @@ export default function Dashboard() {
                   copilotSidebarCollapsed ? 'md:w-16' : 'md:w-56'
                 }`}>
                   <div className="space-y-4 overflow-y-auto scrollbar-none flex-1 pr-1 font-sans">
-                    <div className="flex justify-between items-center pb-2 border-b border-[var(--dash-border)]">
+                    <div className="flex items-center justify-between pb-2 border-b border-[var(--dash-border)] gap-2">
                       {!copilotSidebarCollapsed && (
                         <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-wider animate-fade-in">Sessions</span>
                       )}
-                      <button
-                        onClick={() => setCopilotSidebarCollapsed(!copilotSidebarCollapsed)}
-                        className="p-1 rounded-lg border border-[var(--dash-border)] text-[var(--dash-text-secondary)] hover:text-[var(--dash-accent)] hover:bg-[var(--dash-hover-bg)] transition mx-auto focus:outline-none focus:ring-1 focus:ring-[var(--dash-accent)]"
-                        title={copilotSidebarCollapsed ? "Expand Sessions" : "Collapse Sessions"}
-                        aria-label={copilotSidebarCollapsed ? "Expand Sessions" : "Collapse Sessions"}
-                      >
+                      <div className="flex items-center gap-1.5 ml-auto">
+                        {!copilotSidebarCollapsed && (
+                          <button
+                            onClick={handleCopilotNewChat}
+                            className="bg-[var(--dash-newchat-bg)] hover:bg-[var(--dash-newchat-hover-bg)] text-[var(--dash-newchat-text)] hover:text-[var(--dash-newchat-hover-text)] text-[10px] font-bold px-2.5 py-1 rounded-lg transition duration-150 shadow-[var(--dash-newchat-shadow)] hover:scale-102 active:scale-98 focus:outline-none focus:ring-1 focus:ring-[var(--dash-accent)] shrink-0"
+                            title="Start a new chat session"
+                          >
+                            + New Chat
+                          </button>
+                        )}
+                        <button
+                          onClick={() => setCopilotSidebarCollapsed(!copilotSidebarCollapsed)}
+                          className="p-1 rounded-lg border border-[var(--dash-border)] text-[var(--dash-text-secondary)] hover:text-[var(--dash-accent)] hover:bg-[var(--dash-hover-bg)] transition focus:outline-none focus:ring-1 focus:ring-[var(--dash-accent)] shrink-0"
+                          title={copilotSidebarCollapsed ? "Expand Sessions" : "Collapse Sessions"}
+                          aria-label={copilotSidebarCollapsed ? "Expand Sessions" : "Collapse Sessions"}
+                        >
                         {copilotSidebarCollapsed ? (
                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3.5 h-3.5">
                             <polyline points="9 18 15 12 9 6" />
@@ -2515,6 +2646,7 @@ export default function Dashboard() {
                     )}
                   </div>
                 </div>
+              </div>
 
                 {/* Main Chat Workspace Area */}
                 <div 
@@ -2523,6 +2655,81 @@ export default function Dashboard() {
                   onDragLeave={handleDragLeave}
                   onDrop={handleDrop}
                 >
+                  {/* Top-Bar for Agent Picker */}
+                  <div className="flex items-center justify-between pb-3 border-b border-[var(--dash-border)]/40 mb-3 shrink-0">
+                    <div className="relative">
+                      <button
+                        onClick={() => setPickerOpen(prev => !prev)}
+                        className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-xl px-3 py-1.5 flex items-center gap-2 hover:border-[var(--dash-accent)]/50 transition cursor-pointer text-xs font-bold text-[var(--dash-text-primary)] focus:outline-none"
+                      >
+                        {activeAgent?.icon && activeAgent.icon.startsWith('data:image') ? (
+                          <div className="w-5 h-5 rounded overflow-hidden shrink-0 border border-slate-200">
+                            <img src={activeAgent.icon} alt={activeAgent.name} className="w-full h-full object-cover" />
+                          </div>
+                        ) : (
+                          <span className="w-5 h-5 rounded bg-[var(--dash-hover-bg)] text-[var(--dash-accent)] flex items-center justify-center shrink-0">
+                            <i className={`ti ${activeAgent?.icon || 'ti-robot'} text-sm`}></i>
+                          </span>
+                        )}
+                        <span>{activeAgent?.name || 'AI Readiness Copilot'}</span>
+                        <i className={`ti ti-chevron-down text-xs text-[var(--dash-text-secondary)] transition-transform duration-200 ${pickerOpen ? 'rotate-180' : ''}`}></i>
+                      </button>
+
+                      {pickerOpen && (
+                        <div className="absolute left-0 mt-1.5 w-64 bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-xl shadow-lg z-30 overflow-hidden text-xs font-sans border-[var(--dash-border)]">
+                          {/* Create AI Assistant Pinned at Top */}
+                          <div 
+                            onClick={() => {
+                              setPickerOpen(false)
+                              handleTabChange('agent-builder')
+                            }}
+                            className="px-4 py-3 border-b border-[var(--dash-border)] hover:bg-[var(--dash-hover-bg)] text-[var(--dash-accent)] flex items-center gap-2.5 cursor-pointer font-bold transition"
+                          >
+                            <i className="ti ti-plus text-sm"></i>
+                            <span>Create AI Assistant</span>
+                          </div>
+
+                          {/* List Title */}
+                          <div className="px-4 py-2 bg-[var(--dash-bg)] text-[10px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-wider">
+                            Your Assistants
+                          </div>
+
+                          {/* Assistants list */}
+                          <div className="max-h-60 overflow-y-auto">
+                            {allAgents.map((agent) => (
+                              <div
+                                key={agent.id}
+                                onClick={() => {
+                                  setActiveAgentId(agent.id)
+                                  setPickerOpen(false)
+                                }}
+                                className={`px-4 py-2.5 hover:bg-[var(--dash-hover-bg)] flex items-center justify-between cursor-pointer transition ${
+                                  agent.id === activeAgentId ? 'bg-[var(--dash-hover-bg)] font-bold text-[var(--dash-text-primary)]' : 'text-[var(--dash-text-secondary)]'
+                                }`}
+                              >
+                                <div className="flex items-center gap-2.5 truncate">
+                                  {agent.icon && agent.icon.startsWith('data:image') ? (
+                                    <div className="w-5 h-5 rounded overflow-hidden shrink-0 border border-slate-200">
+                                      <img src={agent.icon} alt={agent.name} className="w-full h-full object-cover" />
+                                    </div>
+                                  ) : (
+                                    <span className="w-5 h-5 rounded bg-[var(--dash-hover-bg)] text-[var(--dash-accent)] flex items-center justify-center shrink-0">
+                                      <i className={`ti ${agent.icon || 'ti-robot'} text-sm`}></i>
+                                    </span>
+                                  )}
+                                  <span className="truncate">{agent.name}</span>
+                                </div>
+                                {agent.id === activeAgentId && (
+                                  <i className="ti ti-check text-[var(--dash-accent)] text-sm"></i>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
                   {/* Drag-and-Drop Overlay */}
                   {isDragging && (
                     <div className="absolute inset-0 bg-[var(--dash-bg)]/90 backdrop-blur-md border-2 border-dashed border-[var(--dash-accent)]/50 rounded-2xl flex flex-col items-center justify-center z-[100] transition-all duration-200 animate-fade-in">
@@ -2549,51 +2756,24 @@ export default function Dashboard() {
                        <div className="space-y-6 max-w-xl mx-auto py-8 font-sans text-center flex flex-col justify-center items-center min-h-[70vh]">
                          <div className="space-y-2">
                            <h1 className="text-3xl font-extrabold text-[var(--dash-text-primary)] tracking-tight">
-                    {isCfo ? "Welcome to the CFO AI Cockpit." : (isCioCto ? "Welcome to the CIO/CTO AI Cockpit." : "Welcome back.")}
-                  </h1>
-                  <p className="text-xl font-bold text-[var(--dash-text-secondary)]">
-                    {isCfo 
-                      ? "Ready to analyze your AI Investment Health, cost optimization targets, and ROI payback timelines?" 
-                      : (isCioCto ? "Ready to analyze your tech stack integration, GraphRAG data architecture, and security compliance?" : "How can I help you today?")
-                    }
-                  </p>
+                             Hello, {getGreetingName()}.
+                           </h1>
+                           <p className="text-xl font-bold text-[var(--dash-text-secondary)]">
+                             I'm Pulsera, your {activeAgent?.name || 'AI Readiness Copilot'} assistant by MDxBlocks. How can I help you today?
+                           </p>
                          </div>
 
                          {/* Recommended Prompt Grid */}
                          <div className="space-y-4 max-w-md mx-auto text-left w-full mt-6">
                            <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-widest block text-center">Suggested Starter Actions</span>
                            <div className="grid grid-cols-2 gap-2.5">
-                             {(isCfo
-                        ? [
-                            'Calculate AI ROI & Payback',
-                            'Analyze Cost Optimization Savings',
-                            'Compare Multi-Cloud FinOps',
-                            'Explain AI Investment Health',
-                            'Review Blended Cooperative Rates'
-                          ]
-                        : (isCioCto
-                            ? [
-                                'Assess AI Security Gaps',
-                                'Explain HIPAA Compliance Status',
-                                'Review WatsonX Regulatory Vaults',
-                                'Build AI Ingestion Roadmap',
-                                'Explain AI Readiness Score'
-                              ]
-                            : [
-                                'Explain AI Readiness Score',
-                                'Identify AI Maturity Gaps',
-                                'Build AI Adoption Roadmap',
-                                'Assess AI Security Risks',
-                                'Calculate AI ROI'
-                              ]
-                          )
-                      ).map((prompt, idx) => (
+                             {getAgentStarters(activeAgent).map((prompt, idx) => (
                                <button
                                  key={idx}
                                  onClick={() => handleCopilotSend(prompt)}
                                  className="text-left bg-[var(--dash-card-bg)] hover:bg-[var(--dash-hover-bg)] border border-[var(--dash-border)] hover:border-[var(--dash-accent)]/35 p-3 rounded-xl text-[11px] text-[var(--dash-text-secondary)] hover:text-[var(--dash-text-primary)] transition duration-150 shadow-sm flex flex-col justify-between group focus:outline-none focus:ring-2 focus:ring-[var(--dash-accent)] min-h-[64px]"
                                  aria-label={`Select prompt: ${prompt}`}
-                                >
+                               >
                                  <span className="font-bold leading-snug">{prompt}</span>
                                  <span className="text-[var(--dash-accent)] font-extrabold text-right w-full text-xs opacity-60 group-hover:opacity-100 transition duration-150 mt-1.5">→</span>
                                </button>
@@ -2605,7 +2785,7 @@ export default function Dashboard() {
                          <div className="pt-6 border-t border-[var(--dash-border)]/40 w-full max-w-md mt-6">
                            <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-widest block mb-2">Ask anything about:</span>
                            <div className="flex flex-wrap justify-center gap-1.5 px-2">
-                             {(isCfo
+                             {(activeAgent?.role === 'cfo'
                                 ? [
                                     'AI ROI & Payback',
                                     'FinOps Optimization',
@@ -2624,16 +2804,16 @@ export default function Dashboard() {
                                     'Cloud Platforms',
                                     'Enterprise Transformation'
                                   ]
-                              ).map((cat) => (
+                             ).map((cat) => (
                                <button
-                                  key={cat}
-                                  onClick={() => handleCopilotSend(cat)}
-                                  className="text-[10px] font-semibold bg-[var(--dash-card-bg)] border border-[var(--dash-border)] px-2.5 py-1 rounded-lg text-[var(--dash-text-secondary)] hover:bg-[var(--dash-hover-bg)] hover:text-[var(--dash-accent)] hover:border-[var(--dash-accent)]/30 transition duration-150 cursor-pointer focus:outline-none active:scale-95"
-                                  title={`Ask about ${cat}`}
-                                  type="button"
-                                >
-                                  {cat}
-                                </button>
+                                 key={cat}
+                                 onClick={() => handleCopilotSend(cat)}
+                                 className="text-[10px] font-semibold bg-[var(--dash-card-bg)] border border-[var(--dash-border)] px-2.5 py-1 rounded-lg text-[var(--dash-text-secondary)] hover:bg-[var(--dash-hover-bg)] hover:text-[var(--dash-accent)] hover:border-[var(--dash-accent)]/30 transition duration-150 cursor-pointer focus:outline-none active:scale-95"
+                                 title={`Ask about ${cat}`}
+                                 type="button"
+                               >
+                                 {cat}
+                               </button>
                              ))}
                            </div>
                          </div>
@@ -2653,7 +2833,13 @@ export default function Dashboard() {
                             >
                               {isBot && (
                                 <div className="w-8 h-8 rounded-full overflow-hidden border border-[var(--dash-border)] shrink-0 shadow bg-[var(--dash-card-bg)] mt-1">
-                                  <img src="/assistant-avatar.jpg" alt="AI Avatar" className="w-full h-full object-cover" />
+                                  {activeAgent?.icon && activeAgent.icon.startsWith('data:image') ? (
+                                    <img src={activeAgent.icon} alt={activeAgent.name} className="w-full h-full object-cover" />
+                                  ) : (
+                                    <div className="w-full h-full bg-[var(--dash-hover-bg)] text-[var(--dash-accent)] flex items-center justify-center">
+                                      <i className={`ti ${activeAgent?.icon || 'ti-robot'} text-base`}></i>
+                                    </div>
+                                  )}
                                 </div>
                               )}
                               <div className={`flex flex-col space-y-1.5 ${msg.role === 'user' ? 'items-end' : 'items-start'} max-w-[85%] w-full`}>
@@ -2691,32 +2877,54 @@ export default function Dashboard() {
                                       {parseMarkdownToReact(msg.content)}
                                     </div>
                                     
+                                    {/* Cited Source References */}
+                                    {msg.retrieved_sources && msg.retrieved_sources.length > 0 && (
+                                      <div className="pt-2 border-t border-[var(--dash-border)]/40 mt-2.5 space-y-1 font-sans">
+                                        <span className="text-[9px] uppercase tracking-wider text-[var(--dash-text-secondary)] font-bold block">
+                                          Cited Sources
+                                        </span>
+                                        <div className="flex flex-wrap gap-1.5">
+                                          {msg.retrieved_sources.map((src, sidx) => (
+                                            <span
+                                              key={sidx}
+                                              className="inline-flex items-center gap-1 bg-[var(--dash-active-bg)] text-[var(--dash-accent)] border border-[var(--dash-active-border)] px-2 py-0.5 rounded text-[10px] font-medium"
+                                            >
+                                              <i className="ti ti-file-text text-[10px]"></i>
+                                              {src}
+                                            </span>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+
                                     {/* Read Aloud Trigger */}
                                     <div className="pt-2 border-t border-[var(--dash-border)] flex justify-between items-center mt-2">
                                       <span className="text-[9px] uppercase tracking-wider text-[var(--dash-text-secondary)] font-bold">
                                         Generated by {copilotModel}
                                       </span>
-                                      <button
-                                        onClick={() => handleCopilotSpeak(msg.id, msg.content)}
-                                        className={`p-1.5 rounded-lg border transition focus:outline-none focus:ring-2 focus:ring-[var(--dash-accent)] ${
-                                          copilotReadingId === msg.id
-                                            ? 'border-[var(--dash-accent)]/30 text-[var(--dash-accent)] bg-[var(--dash-active-bg)] shadow-sm'
-                                            : 'border-[var(--dash-border)] text-[var(--dash-text-secondary)] hover:text-[var(--dash-text-primary)] hover:bg-[var(--dash-hover-bg)]'
-                                        }`}
-                                        title="Read this analysis aloud"
-                                      >
-                                        {copilotReadingId === msg.id ? (
-                                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3 h-3 animate-pulse">
-                                            <line x1="1" y1="12" x2="23" y2="12" />
-                                            <path d="M12 2v20M8 5v14M16 5v14M4 9v6M20 9v6" />
-                                          </svg>
-                                        ) : (
-                                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3 h-3">
-                                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
-                                            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" />
-                                          </svg>
-                                        )}
-                                      </button>
+                                      {activeAgent?.voice_enabled !== false && (
+                                        <button
+                                          onClick={() => handleCopilotSpeak(msg.id, msg.content)}
+                                          className={`p-1.5 rounded-lg border transition focus:outline-none focus:ring-2 focus:ring-[var(--dash-accent)] ${
+                                            copilotReadingId === msg.id
+                                              ? 'border-[var(--dash-accent)]/30 text-[var(--dash-accent)] bg-[var(--dash-active-bg)] shadow-sm'
+                                              : 'border-[var(--dash-border)] text-[var(--dash-text-secondary)] hover:text-[var(--dash-text-primary)] hover:bg-[var(--dash-hover-bg)]'
+                                          }`}
+                                          title="Read this analysis aloud"
+                                        >
+                                          {copilotReadingId === msg.id ? (
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3 h-3 animate-pulse">
+                                              <line x1="1" y1="12" x2="23" y2="12" />
+                                              <path d="M12 2v20M8 5v14M16 5v14M4 9v6M20 9v6" />
+                                            </svg>
+                                          ) : (
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3 h-3">
+                                              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                                              <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" />
+                                            </svg>
+                                          )}
+                                        </button>
+                                      )}
                                     </div>
                                   </div>
                                 )}
@@ -2727,8 +2935,11 @@ export default function Dashboard() {
                                 <div className="mt-2.5 max-w-[95%] space-y-2 font-sans animate-fade-in">
                                   <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-widest block">Suggested Follow-Ups</span>
                                   <div className="flex flex-wrap gap-2">
-                                    {getFollowUpPromptsForResponse(
-                                      activeCopilotSession.messages.findLast(m => m.role === 'user')?.content || ''
+                                    {(msg.follow_ups && msg.follow_ups.length > 0
+                                      ? msg.follow_ups
+                                      : getFollowUpPromptsForResponse(
+                                          activeCopilotSession.messages.findLast(m => m.role === 'user')?.content || ''
+                                        )
                                     ).map((prompt, pidx) => (
                                       <button
                                         key={pidx}
@@ -2792,13 +3003,14 @@ export default function Dashboard() {
                         onChange={handleCopilotFileChange}
                         multiple
                         className="hidden"
+                        accept=".txt,.md,text/plain"
                       />
                       
                       {/* Attach Document (paperclip) Button */}
                       <button
                         onClick={() => fileInputRef.current?.click()}
                         className="p-1.5 rounded-lg text-[var(--dash-text-secondary)] hover:text-[var(--dash-accent)] hover:bg-[var(--dash-hover-bg)] focus:outline-none focus:ring-2 focus:ring-[var(--dash-accent)] transition shrink-0"
-                        title="Upload supporting documents (PDF, DOCX, XLSX, CSV, PPTX, TXT, PNG, JPG, JPEG)"
+                        title="Upload supporting plain-text documents (.txt, .md)"
                         aria-label="Upload supporting documents"
                       >
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
@@ -2807,18 +3019,36 @@ export default function Dashboard() {
                       </button>
 
                       {/* Mic Toggle Trigger */}
-                      <button
-                        onClick={toggleCopilotListening}
-                        className={`p-1.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--dash-accent)] transition duration-150 shrink-0 ${
-                          copilotListening
-                            ? 'text-[var(--rose)] bg-[var(--rose)]/10 shadow-sm border border-[var(--rose)]/20'
-                            : 'text-[var(--dash-text-secondary)] hover:text-[var(--dash-accent)] hover:bg-[var(--dash-hover-bg)]'
-                        }`}
-                        title={copilotListening ? 'Stop listening...' : 'Dictate a prompt'}
-                        aria-label={copilotListening ? 'Stop listening' : 'Dictate a prompt'}
-                      >
-                        <Icons.Mic />
-                      </button>
+                      {activeAgent?.voice_enabled !== false && (
+                        <button
+                          onClick={toggleCopilotListening}
+                          className={`p-1.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--dash-accent)] transition duration-150 shrink-0 ${
+                            copilotListening
+                              ? 'text-[var(--rose)] bg-[var(--rose)]/10 shadow-sm border border-[var(--rose)]/20'
+                              : 'text-[var(--dash-text-secondary)] hover:text-[var(--dash-accent)] hover:bg-[var(--dash-hover-bg)]'
+                          }`}
+                          title={copilotListening ? 'Stop listening...' : 'Dictate a prompt'}
+                          aria-label={copilotListening ? 'Stop listening' : 'Dictate a prompt'}
+                        >
+                          <Icons.Mic />
+                        </button>
+                      )}
+
+                      {/* Auto Read Aloud Toggle */}
+                      {activeAgent?.voice_enabled !== false && (
+                        <button
+                          onClick={() => setCopilotReadAloud(!copilotReadAloud)}
+                          className={`p-1.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--dash-accent)] transition duration-150 shrink-0 ${
+                            copilotReadAloud
+                              ? 'text-[var(--dash-accent)] bg-[var(--dash-active-bg)] border border-[var(--dash-accent)]/20 shadow-sm'
+                              : 'text-[var(--dash-text-secondary)] hover:text-[var(--dash-accent)] hover:bg-[var(--dash-hover-bg)]'
+                          }`}
+                          title={copilotReadAloud ? 'Auto Read Aloud: Enabled' : 'Auto Read Aloud: Disabled'}
+                          aria-label={copilotReadAloud ? 'Disable Auto Read Aloud' : 'Enable Auto Read Aloud'}
+                        >
+                          <i className={`ti ${copilotReadAloud ? 'ti-volume' : 'ti-volume-off'} text-base`}></i>
+                        </button>
+                      )}
 
                       {/* Text Input area */}
                       <input
@@ -2881,6 +3111,12 @@ export default function Dashboard() {
                           <polygon points="22 2 15 22 11 13 2 9 22 2" />
                         </svg>
                       </button>
+                    </div>
+                    
+                    {/* Plain-text helper note */}
+                    <div className="text-[10px] text-[var(--dash-text-secondary)]/75 max-w-[95%] ml-2 mr-auto md:ml-4 px-1.5 flex items-center gap-1 font-medium font-sans mt-1">
+                      <i className="ti ti-info-circle text-xs"></i>
+                      <span>Plain-text files for now (.txt, .md)</span>
                     </div>
                   </div>
                 </div>
@@ -4158,6 +4394,11 @@ export default function Dashboard() {
                   </button>
                 </div>
               </div>
+            )}
+
+            {/* TAB: AGENT BUILDER */}
+            {activeTab === 'agent-builder' && (
+              <AgentBuilder />
             )}
           </div>
 
