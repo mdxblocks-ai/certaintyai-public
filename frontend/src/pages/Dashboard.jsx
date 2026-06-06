@@ -2155,6 +2155,8 @@ export default function Dashboard() {
   const [latestReportHtml, setLatestReportHtml] = useState('')
   const [execSummary, setExecSummary] = useState('')
   const [previewAlert, setPreviewAlert] = useState(null)
+  const [selectedReportId, setSelectedReportId] = useState(null)
+  const [loadReportsOpen, setLoadReportsOpen] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -2165,16 +2167,17 @@ export default function Dashboard() {
     return () => { cancelled = true }
   }, [])
 
+  const activeReportId = selectedReportId || (reports && reports.length > 0 ? reports[0].id : null);
+
   useEffect(() => {
-    if (reports && reports.length > 0) {
-      const latestReport = reports[0]
-      api.get(`/report/${latestReport.id}/data`)
+    if (activeReportId) {
+      api.get(`/report/${activeReportId}/data`)
         .then((res) => {
           setLatestReportData(res.data)
         })
-        .catch((err) => console.error("Error fetching latest report data:", err))
+        .catch((err) => console.error("Error fetching report data:", err))
 
-      api.get(`/report/${latestReport.id}`)
+      api.get(`/report/${activeReportId}`)
         .then((res) => {
           setLatestReportHtml(res.data || '')
           const match = (res.data || '').match(/<p class="exec-summary-in-hero">([\s\S]*?)<\/p>/)
@@ -2186,7 +2189,7 @@ export default function Dashboard() {
           }
         })
         .catch((err) => {
-          console.error("Error fetching latest report html:", err)
+          console.error("Error fetching report html:", err)
           setLatestReportHtml('')
           setExecSummary('')
         })
@@ -2195,7 +2198,7 @@ export default function Dashboard() {
       setLatestReportHtml('')
       setExecSummary('')
     }
-  }, [reports])
+  }, [reports, selectedReportId])
 
   async function onPasswordSubmit(values) {
     setServerError('')
@@ -2740,24 +2743,33 @@ export default function Dashboard() {
                   {/* Top-Bar for Agent Picker */}
                   <div className="flex items-center justify-between pb-3 border-b border-[var(--dash-border)]/40 mb-3 shrink-0">
                     <div className="relative">
-                      <button
-                        onClick={() => setPickerOpen(prev => !prev)}
-                        className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-xl px-3 py-1.5 flex items-center gap-2 hover:border-[var(--dash-accent)]/50 transition cursor-pointer text-xs font-bold text-[var(--dash-text-primary)] focus:outline-none"
-                      >
-                        {activeAgent?.icon && activeAgent.icon.startsWith('data:image') ? (
-                          <div className="w-5 h-5 rounded overflow-hidden shrink-0 border border-slate-200">
-                            <img src={activeAgent.icon} alt={activeAgent.name} className="w-full h-full object-cover" />
-                          </div>
-                        ) : (
+                      {activeTab !== 'home' ? (
+                        <button
+                          onClick={() => setPickerOpen(prev => !prev)}
+                          className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-xl px-3 py-1.5 flex items-center gap-2 hover:border-[var(--dash-accent)]/50 transition cursor-pointer text-xs font-bold text-[var(--dash-text-primary)] focus:outline-none"
+                        >
+                          {activeAgent?.icon && activeAgent.icon.startsWith('data:image') ? (
+                            <div className="w-5 h-5 rounded overflow-hidden shrink-0 border border-slate-200">
+                              <img src={activeAgent.icon} alt={activeAgent.name} className="w-full h-full object-cover" />
+                            </div>
+                          ) : (
+                            <span className="w-5 h-5 rounded bg-[var(--dash-hover-bg)] text-[var(--dash-accent)] flex items-center justify-center shrink-0">
+                              <i className={`ti ${activeAgent?.icon || 'ti-robot'} text-sm`}></i>
+                            </span>
+                          )}
+                          <span>{activeAgent?.name || 'AI Readiness Copilot'}</span>
+                          <i className={`ti ti-chevron-down text-xs text-[var(--dash-text-secondary)] transition-transform duration-200 ${pickerOpen ? 'rotate-180' : ''}`}></i>
+                        </button>
+                      ) : (
+                        <div className="flex items-center gap-2 px-1 py-1.5 text-xs font-bold text-[var(--dash-text-primary)] font-sans select-none">
                           <span className="w-5 h-5 rounded bg-[var(--dash-hover-bg)] text-[var(--dash-accent)] flex items-center justify-center shrink-0">
-                            <i className={`ti ${activeAgent?.icon || 'ti-robot'} text-sm`}></i>
+                            <i className="ti ti-robot text-sm"></i>
                           </span>
-                        )}
-                        <span>{activeAgent?.name || 'AI Readiness Copilot'}</span>
-                        <i className={`ti ti-chevron-down text-xs text-[var(--dash-text-secondary)] transition-transform duration-200 ${pickerOpen ? 'rotate-180' : ''}`}></i>
-                      </button>
+                          <span>AI Readiness Copilot</span>
+                        </div>
+                      )}
 
-                      {pickerOpen && (
+                      {activeTab !== 'home' && pickerOpen && (
                         <div className="absolute left-0 mt-1.5 w-64 bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-xl shadow-lg z-30 overflow-hidden text-xs font-sans border-[var(--dash-border)]">
                           {/* Create AI Assistant Pinned at Top */}
                           <div 
@@ -2836,14 +2848,73 @@ export default function Dashboard() {
                     {(!activeCopilotSession || !activeCopilotSession.messages || activeCopilotSession.messages.length === 0) ? (
                       /* Enhanced Welcome Screen with Metrics & Journey */
                       <div className="max-w-4xl mx-auto py-6 px-4 space-y-6 font-sans w-full text-left">
-                        {/* Welcome Heading */}
-                        <div className="text-left w-full">
-                          <h1 className="text-2xl lg:text-3xl font-extrabold text-[var(--dash-text-primary)] tracking-tight">
-                            Welcome, {getGreetingName()}
-                          </h1>
-                          <p className="text-xs text-[var(--dash-text-secondary)] mt-1 font-medium">
-                            Here is your AI Readiness overview. Complete the assessment to see your scores and summary.
-                          </p>
+                        {/* Welcome Heading & Report Switcher */}
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full border-b border-[var(--dash-border)]/40 pb-4">
+                          <div className="text-left">
+                            <h1 className="text-2xl lg:text-3xl font-extrabold text-[var(--dash-text-primary)] tracking-tight font-sans">
+                              Welcome, {getGreetingName()}
+                            </h1>
+                            <p className="text-xs text-[var(--dash-text-secondary)] mt-1 font-medium font-sans">
+                              Here is your AI Readiness overview. Complete the assessment to see your scores and summary.
+                            </p>
+                          </div>
+                          
+                          {/* Load Reports Multi-Report Switcher */}
+                          {reports && reports.length > 0 && (
+                            <div className="relative shrink-0 select-none">
+                              <button
+                                onClick={() => setLoadReportsOpen(prev => !prev)}
+                                className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-xl px-4 py-2 flex items-center gap-2 hover:border-[var(--dash-accent)]/50 transition cursor-pointer text-xs font-bold text-[var(--dash-text-primary)] focus:outline-none shadow-sm font-sans"
+                              >
+                                <span>📊 Load Reports</span>
+                                <i className={`ti ti-chevron-down text-xs text-[var(--dash-text-secondary)] transition-transform duration-200 ${loadReportsOpen ? 'rotate-180' : ''}`}></i>
+                              </button>
+
+                              {loadReportsOpen && (
+                                <div className="absolute right-0 mt-1.5 w-72 bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-xl shadow-lg z-30 overflow-hidden text-xs font-sans border-[var(--dash-border)]">
+                                  <div className="px-4 py-2 bg-[var(--dash-bg)] text-[10px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-wider">
+                                    Select Assessment Report
+                                  </div>
+                                  <div className="max-h-60 overflow-y-auto divide-y divide-[var(--dash-border)]/40 font-sans">
+                                    {reports.map((r, index) => {
+                                      const isActive = activeReportId === r.id;
+                                      const dateStr = r.created_at ? new Date(r.created_at).toLocaleDateString(undefined, {
+                                        year: 'numeric',
+                                        month: 'short',
+                                        day: 'numeric',
+                                        hour: '2-digit',
+                                        minute: '2-digit'
+                                      }) : `Report #${r.id}`;
+                                      return (
+                                        <div
+                                          key={r.id}
+                                          onClick={() => {
+                                            setSelectedReportId(r.id);
+                                            setLoadReportsOpen(false);
+                                          }}
+                                          className={`px-4 py-2.5 hover:bg-[var(--dash-hover-bg)] flex flex-col cursor-pointer transition ${
+                                            isActive ? 'bg-[var(--dash-hover-bg)] font-bold text-[var(--dash-text-primary)] font-semibold' : 'text-[var(--dash-text-secondary)]'
+                                          }`}
+                                        >
+                                          <div className="flex items-center justify-between w-full">
+                                            <span className="font-semibold text-xs truncate">
+                                              Report ID: {r.id} {index === 0 && <span className="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded bg-[var(--dash-active-bg)] text-[var(--dash-accent)] border border-[var(--dash-active-border)] ml-1">Latest</span>}
+                                            </span>
+                                            {isActive && (
+                                              <span className="text-[var(--dash-accent)] text-[10px] font-extrabold">● Active</span>
+                                            )}
+                                          </div>
+                                          <span className="text-[10px] text-[var(--dash-text-secondary)] mt-1">
+                                            {dateStr}
+                                          </span>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
 
                         {/* KPI Cards Grid */}
@@ -2926,6 +2997,73 @@ export default function Dashboard() {
                             </div>
                           )}
                         </div>
+
+                        {/* AI Maturity Strip */}
+                        {(() => {
+                          const scoreVal = latestReportData?.scores?.total_score;
+                          let activeStage = 0;
+                          if (typeof scoreVal === 'number') {
+                            if (scoreVal >= 0 && scoreVal <= 39) activeStage = 1;
+                            else if (scoreVal >= 40 && scoreVal <= 74) activeStage = 2;
+                            else if (scoreVal >= 75 && scoreVal <= 100) activeStage = 3;
+                          }
+                          const stages = [
+                            { num: 1, name: 'FOUNDATIONAL', band: '0–39' },
+                            { num: 2, name: 'PILOTING & GOVERNANCE', band: '40–74' },
+                            { num: 3, name: 'SCALING ENTERPRISE AI', band: '75–100' }
+                          ];
+                          return (
+                            <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-5 space-y-4 w-full shadow-sm text-left font-sans">
+                              <div className="flex justify-between items-center w-full">
+                                <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-widest block">
+                                  Your AI Maturity
+                                </span>
+                                {activeStage > 0 ? (
+                                  <span className="text-[10px] font-bold text-[var(--dash-accent)] uppercase bg-[var(--dash-active-bg)] border border-[var(--dash-active-border)] px-2.5 py-0.5 rounded-lg shadow-sm">
+                                    Stage {activeStage} of 3
+                                  </span>
+                                ) : (
+                                  <span className="text-[10px] text-[var(--dash-text-secondary)] font-medium">
+                                    Complete the assessment to see your maturity stage
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-2 relative">
+                                {stages.map((stage, idx) => {
+                                  const isActive = activeStage === stage.num;
+                                  return (
+                                    <div key={stage.num} className="flex-1 flex flex-col md:flex-row items-center gap-2 relative w-full">
+                                      <div className={`w-full rounded-xl p-3 border transition duration-150 text-center flex flex-col justify-center items-center ${
+                                        isActive 
+                                          ? 'bg-[var(--dash-active-bg)] border-[var(--dash-active-border)] text-[var(--dash-active-text)] shadow-sm'
+                                          : 'bg-[var(--dash-bg)]/40 border-[var(--dash-border)]/70 opacity-50 text-[var(--dash-text-secondary)]'
+                                      }`}>
+                                        <div className="flex items-center gap-2">
+                                          <span className="text-[11px] font-bold tracking-wider">{stage.name}</span>
+                                          {isActive && (
+                                            <span className="text-[9px] font-extrabold uppercase bg-[var(--dash-accent)]/20 border border-[var(--dash-accent)] text-[var(--dash-accent)] px-1.5 py-0.5 rounded">
+                                              Current
+                                            </span>
+                                          )}
+                                        </div>
+                                        <span className="text-[10px] font-mono mt-1 font-semibold block">Band: {stage.band}</span>
+                                      </div>
+                                      
+                                      {idx < 2 && (
+                                        <div className={`hidden md:block w-8 h-[2px] shrink-0 ${
+                                          activeStage > 0 && activeStage > stage.num
+                                            ? 'bg-[var(--dash-accent)]/40'
+                                            : 'bg-[var(--dash-border)]/40'
+                                        }`} />
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        })()}
 
                         {/* AI Journey Panel */}
                         <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-5 space-y-4 w-full shadow-sm">
