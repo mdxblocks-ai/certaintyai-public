@@ -11,6 +11,17 @@ const SHOW_AI_READINESS_NAV = false;
 
 // Lucide-like custom inline SVGs for premium look & feel
 const Icons = {
+  ControlTower: () => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5">
+      <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+    </svg>
+  ),
+  Integrations: () => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5">
+      <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M9 16h6M12 12v6" />
+      <circle cx="12" cy="6" r="4" />
+    </svg>
+  ),
   Home: () => (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5">
       <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
@@ -2141,6 +2152,9 @@ export default function Dashboard() {
   const [reports, setReports] = useState([])
   const [reportsLoading, setReportsLoading] = useState(true)
   const [latestReportData, setLatestReportData] = useState(null)
+  const [latestReportHtml, setLatestReportHtml] = useState('')
+  const [execSummary, setExecSummary] = useState('')
+  const [previewAlert, setPreviewAlert] = useState(null)
 
   useEffect(() => {
     let cancelled = false
@@ -2159,6 +2173,27 @@ export default function Dashboard() {
           setLatestReportData(res.data)
         })
         .catch((err) => console.error("Error fetching latest report data:", err))
+
+      api.get(`/report/${latestReport.id}`)
+        .then((res) => {
+          setLatestReportHtml(res.data || '')
+          const match = (res.data || '').match(/<p class="exec-summary-in-hero">([\s\S]*?)<\/p>/)
+          if (match && match[1]) {
+            const text = match[1].replace(/<[^>]*>/g, '').trim()
+            setExecSummary(text)
+          } else {
+            setExecSummary('')
+          }
+        })
+        .catch((err) => {
+          console.error("Error fetching latest report html:", err)
+          setLatestReportHtml('')
+          setExecSummary('')
+        })
+    } else {
+      setLatestReportData(null)
+      setLatestReportHtml('')
+      setExecSummary('')
     }
   }, [reports])
 
@@ -2400,6 +2435,40 @@ export default function Dashboard() {
                 {!isCollapsed && <span className="text-sm font-semibold">Agent Builder</span>}
               </button>
             )}
+
+            {!disableNav && (
+              <button
+                onClick={() => handleTabChange('control-tower')}
+                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-left transition duration-200 ${
+                  isCollapsed ? 'lg:justify-center' : ''
+                } ${
+                  activeTab === 'control-tower'
+                    ? 'bg-[var(--dash-active-bg)] text-[var(--dash-active-text)] border border-[var(--dash-active-border)] shadow-[var(--dash-active-shadow)] font-bold'
+                    : 'text-[var(--dash-text-secondary)] hover:text-[var(--dash-hover-text)] hover:bg-[var(--dash-hover-bg)]'
+                }`}
+                title="Control Tower"
+              >
+                <Icons.ControlTower />
+                {!isCollapsed && <span className="text-sm font-semibold">Control Tower</span>}
+              </button>
+            )}
+
+            {!disableNav && (
+              <button
+                onClick={() => handleTabChange('integrations')}
+                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-left transition duration-200 ${
+                  isCollapsed ? 'lg:justify-center' : ''
+                } ${
+                  activeTab === 'integrations'
+                    ? 'bg-[var(--dash-active-bg)] text-[var(--dash-active-text)] border border-[var(--dash-active-border)] shadow-[var(--dash-active-shadow)] font-bold'
+                    : 'text-[var(--dash-text-secondary)] hover:text-[var(--dash-hover-text)] hover:bg-[var(--dash-hover-bg)]'
+                }`}
+                title="Integrations"
+              >
+                <Icons.Integrations />
+                {!isCollapsed && <span className="text-sm font-semibold">Integrations</span>}
+              </button>
+            )}
           </nav>
         </div>
 
@@ -2493,6 +2562,8 @@ export default function Dashboard() {
                 {activeTab === 'plugins' && '🔌 Plugin Marketplace'}
                 {activeTab === 'settings' && '👤 User Profile'}
                 {activeTab === 'agent-builder' && '🛠️ Agent Builder'}
+                {activeTab === 'control-tower' && '🏰 Control Tower'}
+                {activeTab === 'integrations' && '🔌 Integrations'}
               </span>
               <h2 className="text-3xl font-extrabold text-[var(--dash-text-primary)] mt-2">
                 {activeTab === 'dashboard' && 'Dashboard'}
@@ -2505,10 +2576,22 @@ export default function Dashboard() {
                 {activeTab === 'plugins' && 'Enterprise Plugin Store'}
                 {activeTab === 'settings' && 'Account Settings'}
                 {activeTab === 'agent-builder' && 'Agent Builder & Governance'}
+                {activeTab === 'control-tower' && 'AI Control Tower'}
+                {activeTab === 'integrations' && 'System Integrations'}
               </h2>
               {activeTab === 'dashboard' && (
                 <p className="text-xs text-[var(--dash-text-secondary)] mt-1 font-medium font-sans">
                   Executive financial summary, investment health score, and ROI payback diagnostics.
+                </p>
+              )}
+              {activeTab === 'control-tower' && (
+                <p className="text-xs text-[var(--dash-text-secondary)] mt-1 font-medium font-sans">
+                  Preview Mode · Enterprise live AI monitoring, FinOps, and policy compliance controls.
+                </p>
+              )}
+              {activeTab === 'integrations' && (
+                <p className="text-xs text-[var(--dash-text-secondary)] mt-1 font-medium font-sans">
+                  Connect third-party enterprise platforms to feed live data into CertaintyAI.
                 </p>
               )}
               {activeTab === 'agent-builder' && (
@@ -2749,74 +2832,217 @@ export default function Dashboard() {
                   )}
 
                   {/* Scrollable Conversation Container / Welcome Screen */}
-                  <div className="flex-1 overflow-y-auto space-y-6 pr-1 pb-4">
+                  <div className="flex-grow overflow-y-auto space-y-6 pr-1 pb-4">
                     {(!activeCopilotSession || !activeCopilotSession.messages || activeCopilotSession.messages.length === 0) ? (
-                      /* Welcome Screen with Prompts */
-                       <div className="space-y-6 max-w-xl mx-auto py-8 font-sans text-center flex flex-col justify-center items-center min-h-[70vh]">
-                         <div className="space-y-2">
-                           <h1 className="text-3xl font-extrabold text-[var(--dash-text-primary)] tracking-tight">
-                             Hello, {getGreetingName()}.
-                           </h1>
-                           <p className="text-xl font-bold text-[var(--dash-text-secondary)]">
-                             I'm Pulsera, your {activeAgent?.name || 'AI Readiness Copilot'} assistant by MDxBlocks. How can I help you today?
-                           </p>
-                         </div>
+                      /* Enhanced Welcome Screen with Metrics & Journey */
+                      <div className="max-w-4xl mx-auto py-6 px-4 space-y-6 font-sans w-full text-left">
+                        {/* Welcome Heading */}
+                        <div className="text-left w-full">
+                          <h1 className="text-2xl lg:text-3xl font-extrabold text-[var(--dash-text-primary)] tracking-tight">
+                            Welcome, {getGreetingName()}
+                          </h1>
+                          <p className="text-xs text-[var(--dash-text-secondary)] mt-1 font-medium">
+                            Here is your AI Readiness overview. Complete the assessment to see your scores and summary.
+                          </p>
+                        </div>
 
-                         {/* Recommended Prompt Grid */}
-                         <div className="space-y-4 max-w-md mx-auto text-left w-full mt-6">
-                           <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-widest block text-center">Suggested Starter Actions</span>
-                           <div className="grid grid-cols-2 gap-2.5">
-                             {getAgentStarters(activeAgent).map((prompt, idx) => (
-                               <button
-                                 key={idx}
-                                 onClick={() => handleCopilotSend(prompt)}
-                                 className="text-left bg-[var(--dash-card-bg)] hover:bg-[var(--dash-hover-bg)] border border-[var(--dash-border)] hover:border-[var(--dash-accent)]/35 p-3 rounded-xl text-[11px] text-[var(--dash-text-secondary)] hover:text-[var(--dash-text-primary)] transition duration-150 shadow-sm flex flex-col justify-between group focus:outline-none focus:ring-2 focus:ring-[var(--dash-accent)] min-h-[64px]"
-                                 aria-label={`Select prompt: ${prompt}`}
-                               >
-                                 <span className="font-bold leading-snug">{prompt}</span>
-                                 <span className="text-[var(--dash-accent)] font-extrabold text-right w-full text-xs opacity-60 group-hover:opacity-100 transition duration-150 mt-1.5">→</span>
-                               </button>
-                             ))}
-                           </div>
-                         </div>
+                        {/* KPI Cards Grid */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
+                          {/* Card 1: AI Readiness Score */}
+                          <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-5 flex flex-col justify-between h-32 text-left shadow-sm">
+                            <div className="flex justify-between items-start">
+                              <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-wider">AI Readiness Score</span>
+                              <span className="text-xs">🛡️</span>
+                            </div>
+                            <div className="my-2">
+                              <span className="text-3xl font-extrabold text-[var(--dash-text-primary)]">
+                                {latestReportData ? `${latestReportData.scores?.total_score}/100` : '—'}
+                              </span>
+                            </div>
+                            <span className="text-[9px] text-[var(--dash-text-secondary)] font-medium truncate">
+                              {latestReportData ? 'Based on latest assessment' : 'Complete assessment to unlock'}
+                            </span>
+                          </div>
 
-                         {/* Categories hint block */}
-                         <div className="pt-6 border-t border-[var(--dash-border)]/40 w-full max-w-md mt-6">
-                           <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-widest block mb-2">Ask anything about:</span>
-                           <div className="flex flex-wrap justify-center gap-1.5 px-2">
-                             {(activeAgent?.role === 'cfo'
-                                ? [
-                                    'AI ROI & Payback',
-                                    'FinOps Optimization',
-                                    'Blended Cooperative Rates',
-                                    'AI Investment Health',
-                                    'Financial Readiness',
-                                    'Commercial Risk'
-                                  ]
-                                : [
-                                    'AI Readiness',
-                                    'AI Governance',
-                                    'AI Security',
-                                    'AI Compliance',
-                                    'AI Architecture',
-                                    'Agentic AI',
-                                    'Cloud Platforms',
-                                    'Enterprise Transformation'
-                                  ]
-                             ).map((cat) => (
-                               <button
-                                 key={cat}
-                                 onClick={() => handleCopilotSend(cat)}
-                                 className="text-[10px] font-semibold bg-[var(--dash-card-bg)] border border-[var(--dash-border)] px-2.5 py-1 rounded-lg text-[var(--dash-text-secondary)] hover:bg-[var(--dash-hover-bg)] hover:text-[var(--dash-accent)] hover:border-[var(--dash-accent)]/30 transition duration-150 cursor-pointer focus:outline-none active:scale-95"
-                                 title={`Ask about ${cat}`}
-                                 type="button"
-                               >
-                                 {cat}
-                               </button>
-                             ))}
-                           </div>
-                         </div>
-                       </div>
+                          {/* Card 2: Current Maturity */}
+                          <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-5 flex flex-col justify-between h-32 text-left shadow-sm">
+                            <div className="flex justify-between items-start">
+                              <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-wider">Maturity Level</span>
+                              <span className="text-xs">📈</span>
+                            </div>
+                            <div className="my-2">
+                              <span className={`text-[13px] sm:text-sm font-extrabold text-[var(--dash-text-primary)] leading-tight block ${!latestReportData ? 'text-3xl font-extrabold' : ''}`}>
+                                {latestReportData ? latestReportData.scores?.maturity_tier : '—'}
+                              </span>
+                            </div>
+                            <span className="text-[9px] text-[var(--dash-text-secondary)] font-medium truncate block">
+                              {latestReportData ? (latestReportData.scores?.maturity_tagline || 'Developing capability') : 'Complete assessment to unlock'}
+                            </span>
+                          </div>
+
+                          {/* Card 3: Potential Annual Savings */}
+                          <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-5 flex flex-col justify-between h-32 text-left shadow-sm">
+                            <div className="flex justify-between items-start">
+                              <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-wider">Potential Savings</span>
+                              <span className="text-xs">💰</span>
+                            </div>
+                            <div className="my-2">
+                              <span className="text-3xl font-extrabold text-[var(--dash-text-primary)]">
+                                —
+                              </span>
+                            </div>
+                            <span className="text-[9px] text-[var(--dash-text-secondary)] font-medium">
+                              Preview · Available after assessment
+                            </span>
+                          </div>
+
+                          {/* Card 4: Priority Projects */}
+                          <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-5 flex flex-col justify-between h-32 text-left shadow-sm">
+                            <div className="flex justify-between items-start">
+                              <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-wider">Priority Projects</span>
+                              <span className="text-xs">📋</span>
+                            </div>
+                            <div className="my-2">
+                              <span className="text-3xl font-extrabold text-[var(--dash-text-primary)]">
+                                —
+                              </span>
+                            </div>
+                            <span className="text-[9px] text-[var(--dash-text-secondary)] font-medium">
+                              Preview · Available after assessment
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Executive Summary Card */}
+                        <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-5 space-y-3 w-full text-left shadow-sm">
+                          <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-widest block font-sans">Executive Summary</span>
+                          {execSummary ? (
+                            <p className="text-xs text-[var(--dash-text-primary)] leading-relaxed italic border-l-2 border-[var(--dash-accent)]/50 pl-4 font-semibold font-sans">
+                              "{execSummary}"
+                            </p>
+                          ) : (
+                            <div className="text-xs text-[var(--dash-text-secondary)] py-3 text-center border-2 border-dashed border-[var(--dash-border)] rounded-xl font-medium">
+                              Complete your assessment to generate a customized C-suite executive summary.
+                            </div>
+                          )}
+                        </div>
+
+                        {/* AI Journey Panel */}
+                        <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-5 space-y-4 w-full shadow-sm">
+                          <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-widest block text-left">AI Journey Roadmap</span>
+                          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-2">
+                            {[
+                              { label: 'Assessment Completed', done: !!latestReportData, roadmap: false },
+                              { label: 'Executive Report Generated', done: !!latestReportData, roadmap: false },
+                              { label: 'Connect Systems', done: false, roadmap: true },
+                              { label: 'Configure Governance', done: false, roadmap: true },
+                              { label: 'Deploy Agents', done: false, roadmap: true },
+                              { label: 'Activate Control Tower', done: false, roadmap: true }
+                            ].map((step, idx, arr) => (
+                              <div key={idx} className="flex-1 flex flex-col md:flex-row items-start md:items-center gap-2 relative">
+                                <div className="flex items-center gap-2">
+                                  {step.done ? (
+                                    <span className="w-5 h-5 rounded-full bg-[var(--emerald)]/20 border border-[var(--emerald)]/40 text-[var(--emerald)] flex items-center justify-center text-[10px] font-extrabold font-sans">
+                                      ✓
+                                    </span>
+                                  ) : (
+                                    <span className="w-5 h-5 rounded-full bg-transparent border-2 border-[var(--dash-border)] text-[var(--dash-text-secondary)] flex items-center justify-center text-[10px] font-extrabold font-sans">
+                                      ○
+                                    </span>
+                                  )}
+                                  <span className={`text-[11px] font-bold ${step.done ? 'text-[var(--dash-text-primary)]' : 'text-[var(--dash-text-secondary)]'}`}>
+                                    {step.label}
+                                  </span>
+                                </div>
+                                {idx < arr.length - 1 && (
+                                  <div className="hidden md:block flex-1 h-[1px] bg-[var(--dash-border)] mx-4 min-w-[20px]" />
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Recommended Next Action Card */}
+                        <div className="bg-gradient-to-br from-[var(--dash-card-bg)] to-[var(--dash-hover-bg)] border-2 border-[var(--dash-accent)]/30 rounded-2xl p-6 space-y-4 w-full shadow-md relative overflow-hidden group">
+                          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[var(--dash-accent)]/5 to-transparent rounded-bl-full pointer-events-none"></div>
+                          
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div className="space-y-1">
+                              <span className="text-[10px] font-bold text-[var(--dash-accent)] uppercase tracking-wider bg-[var(--dash-active-bg)] border border-[var(--dash-active-border)] px-2.5 py-0.5 rounded-full">
+                                Recommended Next Action
+                              </span>
+                              <h3 className="text-lg font-bold text-[var(--dash-text-primary)] mt-1">Connect Gemini Endpoint</h3>
+                              <p className="text-xs text-[var(--dash-text-secondary)] leading-relaxed max-w-lg">
+                                Unlock real-time monitoring and autonomous agent orchestration by linking your Google Vertex AI or Gemini API key.
+                              </p>
+                            </div>
+                            <div className="flex gap-2 shrink-0">
+                              <button 
+                                onClick={() => setPreviewAlert({ 
+                                  title: 'Gemini Endpoint Preview', 
+                                  message: 'Gemini integration is currently in Preview Mode. Full connection will be available in a future release.' 
+                                })}
+                                className="px-4 py-2 bg-[var(--dash-accent)] hover:bg-[var(--dash-accent-hover)] text-xs font-bold rounded-xl transition duration-150 text-[var(--dash-newchat-text)] hover:text-[var(--dash-newchat-hover-text)] shadow-sm cursor-pointer"
+                              >
+                                Connect Now (Coming Soon)
+                              </button>
+                              <button 
+                                onClick={() => handleCopilotSend("Tell me about connecting Gemini and what capabilities it unlocks")}
+                                className="px-4 py-2 bg-[var(--dash-card-bg)] hover:bg-[var(--dash-hover-bg)] text-xs font-bold rounded-xl border border-[var(--dash-border)] text-[var(--dash-text-primary)] transition duration-150 cursor-pointer"
+                              >
+                                Learn More
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="pt-4 border-t border-[var(--dash-border)]/50">
+                            <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-wider block mb-2">Capabilities you will unlock:</span>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                              {[
+                                { title: 'AI FinOps', desc: 'Real-time cost tracing and budget ceilings' },
+                                { title: 'Model Recommendations', desc: 'Predictive multi-cloud workload routing' },
+                                { title: 'Agent Orchestration', desc: 'Deploy task-specific C-suite assistants' },
+                                { title: 'Agent-to-Agent (A2A)', desc: 'Future cross-agent coordination protocols' }
+                              ].map((feat, i) => (
+                                <div key={i} className="bg-[var(--dash-bg)]/40 border border-[var(--dash-border)] rounded-xl p-3 space-y-1">
+                                  <span className="text-xs font-bold text-[var(--dash-text-primary)] block">
+                                    {feat.title}
+                                  </span>
+                                  <span className="text-[10px] text-[var(--dash-text-secondary)] leading-tight block">
+                                    {feat.desc}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Suggested Actions (prompts feeding the existing chat) */}
+                        <div className="space-y-3 w-full">
+                          <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-widest block text-left">Suggested Executive Actions</span>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
+                            {[
+                              "Explain My Readiness Score",
+                              "Show Governance Gaps",
+                              "Generate AI Roadmap",
+                              "Estimate Business Value",
+                              "Recommend AI Priorities",
+                              "Prepare Executive Summary",
+                              "Create Governance Plan",
+                              "Build AI Control Tower Strategy"
+                            ].map((prompt) => (
+                              <button
+                                key={prompt}
+                                onClick={() => handleCopilotSend(prompt)}
+                                className="text-left bg-[var(--dash-card-bg)] hover:bg-[var(--dash-hover-bg)] border border-[var(--dash-border)] hover:border-[var(--dash-accent)]/35 p-3 rounded-xl text-xs text-[var(--dash-text-secondary)] hover:text-[var(--dash-text-primary)] transition duration-150 shadow-sm flex flex-col justify-between group focus:outline-none focus:ring-2 focus:ring-[var(--dash-accent)] min-h-[56px] w-full cursor-pointer"
+                              >
+                                <span className="font-bold leading-snug">{prompt}</span>
+                                <span className="text-[var(--dash-accent)] font-extrabold text-right w-full text-xs opacity-60 group-hover:opacity-100 transition duration-150 mt-1">→</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
                     ) : (
                       /* Conversation History Bubbles */
                        <div className="space-y-4 max-w-[95%] ml-2 mr-auto md:ml-4">
@@ -4399,6 +4625,98 @@ export default function Dashboard() {
             {activeTab === 'agent-builder' && (
               <AgentBuilder />
             )}
+
+            {/* TAB: CONTROL TOWER */}
+            {activeTab === 'control-tower' && (
+              <div className="space-y-6 animate-fade-in w-full text-left">
+                {/* Alert/Message block */}
+                <div className="bg-[var(--dash-active-bg)] border border-[var(--dash-active-border)] rounded-2xl p-6 text-sm text-[var(--dash-text-primary)] space-y-2">
+                  <div className="flex items-center gap-2 font-bold text-[var(--dash-accent)] text-base">
+                    <span>🏰 Control Tower Preview Mode</span>
+                  </div>
+                  <p className="text-xs text-[var(--dash-text-secondary)] leading-relaxed">
+                    Connect enterprise systems to activate live AI Governance, AI FinOps, Data Trust, AgentOps, and Business Value monitoring.
+                  </p>
+                </div>
+
+                {/* Empty State Cards Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
+                  {[
+                    { label: 'Active Agents', val: '—', desc: 'Active autonomous agent workloads' },
+                    { label: 'Live AI Spend', val: '—', desc: 'Cumulative token and inference cost' },
+                    { label: 'Compliance Events', val: '—', desc: 'Regulatory policy violations or blocks' },
+                    { label: 'Data Lineage', val: '—', desc: 'Sovereign data provenance chains' }
+                  ].map((card, i) => (
+                    <div key={i} className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-6 flex flex-col justify-between h-36 shadow-sm">
+                      <span className="text-[10px] font-bold tracking-widest text-[var(--dash-text-secondary)] uppercase">
+                        {card.label}
+                      </span>
+                      <span className="text-4xl font-extrabold text-[var(--dash-text-primary)] py-2">
+                        {card.val}
+                      </span>
+                      <span className="text-[10px] text-[var(--dash-text-secondary)] font-medium">
+                        {card.desc}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* TAB: INTEGRATIONS */}
+            {activeTab === 'integrations' && (
+              <div className="space-y-6 animate-fade-in w-full text-left">
+                <div className="bg-[var(--dash-active-bg)] border border-[var(--dash-active-border)] rounded-2xl p-6 text-sm text-[var(--dash-text-primary)] space-y-2">
+                  <div className="flex items-center gap-2 font-bold text-[var(--dash-accent)] text-base">
+                    <span>🔌 Available Connectors</span>
+                  </div>
+                  <p className="text-xs text-[var(--dash-text-secondary)] leading-relaxed">
+                    Choose from our suite of pre-built connector adapters to link your data warehouse, collaboration workspace, or CRM system to CertaintyAI's secure ontology engine.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 w-full">
+                  {[
+                    'Gemini', 'Microsoft 355', 'Azure OpenAI', 'ServiceNow', 'Snowflake', 
+                    'Databricks', 'Salesforce', 'Google Workspace', 'SharePoint', 'Jira', 'Confluence'
+                  ].map((cName) => (
+                    <div key={cName} className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-5 flex flex-col justify-between space-y-4 hover:border-[var(--dash-accent)]/30 transition duration-150 shadow-sm">
+                      <div>
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-bold text-sm text-[var(--dash-text-primary)]">{cName}</h4>
+                          <span className="text-[9px] uppercase font-bold px-2 py-0.5 rounded-full bg-[var(--dash-hover-bg)] text-[var(--dash-text-secondary)] border border-[var(--dash-border)]">
+                            Not Connected
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-[var(--dash-text-secondary)] mt-2 leading-relaxed">
+                          Synchronize resources, schemas, and credentials with CertaintyAI security envelopes.
+                        </p>
+                      </div>
+
+                      <div className="pt-2 border-t border-[var(--dash-border)]/50 space-y-2">
+                        <div className="flex justify-between text-[9px] text-[var(--dash-text-secondary)]">
+                          <span>Last Sync</span>
+                          <span className="font-mono font-bold">—</span>
+                        </div>
+                        <div className="flex justify-between text-[9px] text-[var(--dash-text-secondary)]">
+                          <span>Permissions</span>
+                          <span className="font-bold">Read-Only</span>
+                        </div>
+                        <button 
+                          onClick={() => setPreviewAlert({
+                            title: `${cName} Connector Preview`,
+                            message: 'System integrations are currently in Preview Mode. Live connection will be enabled in a future release.'
+                          })}
+                          className="w-full bg-[var(--dash-hover-bg)] text-[var(--dash-text-primary)] border border-[var(--dash-border)] hover:bg-[var(--dash-active-bg)] hover:text-[var(--dash-active-text)] hover:border-[var(--dash-active-border)] text-xs font-bold py-1.5 rounded-xl transition duration-150 mt-2 cursor-pointer"
+                        >
+                          Connect (Preview)
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Voice Agent AI Assistant Widget in Right Column */}
@@ -4907,6 +5225,27 @@ export default function Dashboard() {
             </div>
           </div>
         )}
+        
+        {previewAlert && (
+          <div className="fixed bottom-4 right-4 z-50 bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-4 shadow-xl max-w-sm font-sans animate-fade-in">
+            <div className="flex items-start justify-between gap-3">
+              <div className="space-y-1">
+                <h4 className="text-xs font-bold text-[var(--dash-text-primary)] uppercase tracking-wider">
+                  {previewAlert.title}
+                </h4>
+                <p className="text-[11px] text-[var(--dash-text-secondary)] leading-relaxed">
+                  {previewAlert.message}
+                </p>
+              </div>
+              <button 
+                onClick={() => setPreviewAlert(null)}
+                className="text-[var(--dash-text-secondary)] hover:text-[var(--dash-text-primary)] font-bold text-sm cursor-pointer"
+              >
+                ×
+              </button>
+            </div>
+          </div>
+        )}
       </div>
-    )
-  }
+  )
+}
