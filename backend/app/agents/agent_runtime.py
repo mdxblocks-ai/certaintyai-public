@@ -1,4 +1,4 @@
-"""Agent Execution Runtime and RAG Pipeline."""
+import re
 import json
 import logging
 from datetime import datetime, timezone
@@ -9,6 +9,159 @@ from ..config import settings
 from .llm_client import complete_json, LLMError
 
 logger = logging.getLogger(__name__)
+
+def close_braces(s: str) -> str:
+    s = s.strip()
+    if not s.startswith('{') and not s.startswith('['):
+        idx_brace = s.find('{')
+        idx_bracket = s.find('[')
+        if idx_brace != -1 and (idx_bracket == -1 or idx_brace < idx_bracket):
+            s = s[idx_brace:]
+        elif idx_bracket != -1:
+            s = s[idx_bracket:]
+    
+    in_string = False
+    escape = False
+    stack = []
+    repaired_chars = []
+    
+    for c in s:
+        if escape:
+            repaired_chars.append(c)
+            escape = False
+            continue
+        if c == '\\':
+            repaired_chars.append(c)
+            escape = True
+            continue
+        if c == '"':
+            in_string = not in_string
+            repaired_chars.append(c)
+            continue
+        if not in_string:
+            if c in ('{', '['):
+                stack.append(c)
+            elif c in ('}', ']'):
+                if stack:
+                    top = stack[-1]
+                    if (c == '}' and top == '{') or (c == ']' and top == '['):
+                        stack.pop()
+        repaired_chars.append(c)
+    
+    repaired = "".join(repaired_chars)
+    if in_string:
+        repaired += '"'
+    while stack:
+        top = stack.pop()
+        if top == '{':
+            repaired += '}'
+        elif top == '[':
+            repaired += ']'
+    return repaired
+
+def extract_json_fields_via_regex(text: str) -> dict:
+    fields = {"thought": None, "tool_call": None, "final_answer": None}
+    
+    thought_match = re.search(r'"thought"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"', text, re.DOTALL | re.IGNORECASE)
+    if thought_match:
+        try:
+            fields["thought"] = json.loads('"' + thought_match.group(1) + '"')
+        except Exception:
+            fields["thought"] = thought_match.group(1)
+    
+    answer_match = re.search(r'"final_answer"\s*:\s*"([^"\\]*(?:\\.[^"\\]*)*)"', text, re.DOTALL | re.IGNORECASE)
+    if answer_match:
+        try:
+            fields["final_answer"] = json.loads('"' + answer_match.group(1) + '"')
+        except Exception:
+            fields["final_answer"] = answer_match.group(1)
+    else:
+        truncated_answer_match = re.search(r'"final_answer"\s*:\s*"([^"]*)$', text, re.DOTALL | re.IGNORECASE)
+        if truncated_answer_match:
+            fields["final_answer"] = truncated_answer_match.group(1).strip()
+
+    tool_match = re.search(r'"tool_call"\s*:\s*(\{.*?\})', text, re.DOTALL | re.IGNORECASE)
+    if tool_match:
+        try:
+            tool_json_str = close_braces(tool_match.group(1))
+            fields["tool_call"] = json.loads(tool_json_str)
+        except Exception:
+            pass
+            
+    return fields
+
+def parse_tolerant_agent_step(raw_response: str) -> dict:
+    clean_text = raw_response.strip()
+    if clean_text.startswith("```"):
+        lines = clean_text.split("\n")
+        if lines[0].startswith("```"):
+            lines = lines[1:]
+        if lines and lines[-1].strip() == "```":
+            lines = lines[:-1]
+        clean_text = "\n".join(lines).strip()
+
+    try:
+        return json.loads(clean_text)
+    except Exception:
+        pass
+
+    try:
+        repaired = close_braces(clean_text)
+        return json.loads(repaired)
+    except Exception:
+        pass
+
+    try:
+        fields = extract_json_fields_via_regex(clean_text)
+        if fields["thought"] or fields["final_answer"] or fields["tool_call"]:
+            parsed = {}
+            if fields["thought"] is not None:
+                parsed["thought"] = fields["thought"]
+            if fields["final_answer"] is not None:
+                parsed["final_answer"] = fields["final_answer"]
+            if fields["tool_call"] is not None:
+                parsed["tool_call"] = fields["tool_call"]
+            return parsed
+    except Exception:
+        pass
+
+    return {
+        "thought": "Fell back to raw response parsing due to malformed JSON.",
+        "final_answer": raw_response
+    }
+
+def parse_tolerant_questions(raw_response: str) -> list[str]:
+    try:
+        repaired = close_braces(raw_response)
+        parsed = json.loads(repaired)
+        if isinstance(parsed, list):
+            return [str(q) for q in parsed]
+    except Exception:
+        pass
+
+    questions = []
+    try:
+        candidates = re.findall(r'"([^"\\]*(?:\\.[^"\\]*)*)"', raw_response)
+        for c in candidates:
+            c_clean = c.strip()
+            if len(c_clean) > 5 and (c_clean.endswith('?') or any(kw in c_clean.lower() for kw in ['how', 'what', 'why', 'explain', 'show', 'compare', 'analyze'])):
+                questions.append(c_clean)
+    except Exception:
+        pass
+
+    if len(questions) >= 2:
+        return questions
+
+    try:
+        lines = raw_response.split('\n')
+        for line in lines:
+            line_clean = line.strip().lstrip('0123456789.-*• ')
+            if len(line_clean) > 5 and line_clean.endswith('?'):
+                questions.append(line_clean)
+    except Exception:
+        pass
+
+    return questions
 
 
 def retrieve_rag_context(db: Session, agent_id: int, query_text: str, limit: int = 3) -> list[str]:
@@ -148,7 +301,11 @@ def generate_dynamic_follow_ups(agent_role: str, history: list[dict], last_answe
         )
 
         raw_response = complete_json(system_prompt=system_prompt, user_message=user_message, max_tokens=250)
-        questions = json.loads(raw_response)
+        try:
+            questions = json.loads(raw_response)
+        except Exception:
+            logger.warning("Failed to parse dynamic follow-up questions JSON. Raw: %s", raw_response)
+            questions = parse_tolerant_questions(raw_response)
         if isinstance(questions, list) and len(questions) >= 2:
             return [str(q) for q in questions[:3]]
     except Exception as exc:
@@ -252,16 +409,19 @@ def run_agent_loop(
                     resp_json = json.loads(raw_response)
                 except Exception:
                     logger.warning("Agent %s: failed to parse JSON response. Raw: %s", agent.name, raw_response)
-                    steps.append({
-                        "step": current_step,
-                        "type": "error",
-                        "detail": "Failed to parse JSON response from LLM",
-                        "tool": None,
-                        "tokens": 0
-                    })
-                    status = "failed"
-                    outcome = f"Execution failed at step {current_step} due to malformed LLM response."
-                    break
+                    try:
+                        resp_json = parse_tolerant_agent_step(raw_response)
+                    except Exception as fallback_exc:
+                        logger.warning("Agent %s: tolerant parse also failed: %s", agent.name, fallback_exc)
+                        resp_json = {
+                            "thought": "Fell back to raw text parsing.",
+                            "final_answer": raw_response
+                        }
+                    if not isinstance(resp_json, dict):
+                        resp_json = {
+                            "thought": "Fell back to raw text parsing.",
+                            "final_answer": str(resp_json)
+                        }
                 
                 thought = resp_json.get("thought", "")
                 tool_call = resp_json.get("tool_call")
