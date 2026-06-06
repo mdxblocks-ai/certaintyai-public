@@ -1,4 +1,15 @@
 """FastAPI application entrypoint for CertaintyAI."""
+import warnings
+# Suppress noisy SequentialAgent deprecation, experimental, and cryptography warnings (Task D)
+warnings.filterwarnings("ignore", category=UserWarning)
+warnings.filterwarnings("ignore", category=DeprecationWarning)
+try:
+    from google.adk.utils.experimental import ADKExperimentalWarning
+    warnings.filterwarnings("ignore", category=ADKExperimentalWarning)
+except Exception:
+    pass
+warnings.filterwarnings("ignore", message=".*cryptography.*")
+
 import logging
 from contextlib import asynccontextmanager
 
