@@ -34,6 +34,7 @@ from app.agents.adk_pipeline import ProducerInsightsAgent, get_insights_instruct
 
 # Instantiate the insights agent
 gemini_model = Gemini(model=settings.vertex_model or "gemini-2.0-flash")
+from pathlib import Path
 insights_agent = ProducerInsightsAgent(
     name="insights",
     description="LLM-based strategic insights generator",
@@ -41,6 +42,8 @@ insights_agent = ProducerInsightsAgent(
     instruction="Generate strategic, role-aware AI-readiness insights from assessment scores, frameworks, and gap analysis.",
     output_key="insights"
 )
+insights_agent._adk_origin_app_name = "insights"
+insights_agent._adk_origin_path = Path(__file__).resolve().parent
 
 # Produce ASGI Starlette application
 app = to_a2a(
