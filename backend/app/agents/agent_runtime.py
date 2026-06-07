@@ -1,6 +1,7 @@
 import re
 import json
 import logging
+from typing import Optional
 from datetime import datetime, timezone
 from sqlalchemy.orm import Session
 from ..models import Agent, AgentDocument, AgentDocumentChunk, AgentRun
