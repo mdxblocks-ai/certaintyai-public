@@ -828,7 +828,7 @@ export default function Dashboard() {
   const [allAgents, setAllAgents] = useState([])
   const [activeAgentId, setActiveAgentId] = useState(0)
   const [pickerOpen, setPickerOpen] = useState(false)
-  const [copilotReadAloud, setCopilotReadAloud] = useState(true)
+  const [copilotReadAloud, setCopilotReadAloud] = useState(false)
 
   // Get greeting name helper
   const getGreetingName = () => {
@@ -988,6 +988,9 @@ export default function Dashboard() {
   }
 
   const handleCopilotSpeak = (messageId, text) => {
+    const hasSpeech = typeof window !== 'undefined' && window.speechSynthesis && typeof SpeechSynthesisUtterance !== 'undefined';
+    if (!hasSpeech) return;
+
     if (copilotReadingId === messageId) {
       window.speechSynthesis.cancel()
       setCopilotReadingId(null)
@@ -1401,7 +1404,7 @@ export default function Dashboard() {
 
   // --- Voice Agent State & Logic ---
   const [isListening, setIsListening] = useState(false)
-  const [voiceEnabled, setVoiceEnabled] = useState(true)
+  const [voiceEnabled, setVoiceEnabled] = useState(false)
   const [agentText, setAgentText] = useState('Welcome back! I am your co-brand AI strategist. How can I help optimize your multi-cloud LLM architecture today?')
 
   // Smooth scroll to keep latest transcript visible
@@ -1571,6 +1574,9 @@ export default function Dashboard() {
   // Web Speech API Voice synthesis setup
   const speakText = (text) => {
     if (!voiceEnabled || !voiceAssistantOpen) return
+    const hasSpeech = typeof window !== 'undefined' && window.speechSynthesis && typeof SpeechSynthesisUtterance !== 'undefined';
+    if (!hasSpeech) return;
+
     window.speechSynthesis.cancel() // stop any current speech
     const utterance = new SpeechSynthesisUtterance(text)
     utterance.onstart = () => setAgentState('speaking')
@@ -1634,7 +1640,9 @@ export default function Dashboard() {
   // Stop audio immediately when the voice assistant is closed/minimized or hidden
   useEffect(() => {
     if (!voiceAssistantOpen) {
-      window.speechSynthesis.cancel()
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.cancel()
+      }
       setAgentState('idle')
       setIsListening(false)
       setIsAudioPaused(false)
@@ -1653,7 +1661,9 @@ export default function Dashboard() {
   // Global listeners to clean up audio playback on tab change or page unload
   useEffect(() => {
     const handleTabOrPageCleanup = () => {
-      window.speechSynthesis.cancel()
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.cancel()
+      }
       setAgentState('idle')
       setIsListening(false)
       setIsAudioPaused(false)
@@ -1732,7 +1742,7 @@ export default function Dashboard() {
 
       rec.onresult = (event) => {
         // Smart Interruption: If AI is actively speaking and user starts speaking, instantly cancel AI audio
-        if (window.speechSynthesis.speaking) {
+        if (typeof window !== 'undefined' && window.speechSynthesis && window.speechSynthesis.speaking) {
           window.speechSynthesis.cancel()
           setAgentState('listening')
           setIsAudioPaused(false)
@@ -1829,7 +1839,9 @@ export default function Dashboard() {
   // Handle tab change: reset voice agent welcome text, and stop any active speech synthesis/listening
   useEffect(() => {
     // 1. Interrupt active voice playback & recording
-    window.speechSynthesis.cancel()
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.cancel()
+    }
     setAgentState('idle')
     setIsListening(false)
     setIsAudioPaused(false)
@@ -1959,7 +1971,9 @@ export default function Dashboard() {
   const toggleListening = () => {
     // Smart Interruption: If AI is actively speaking, immediately cancel speech, reset audio states, and open microphone
     if (agentState === 'speaking') {
-      window.speechSynthesis.cancel()
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.cancel()
+      }
       setIsAudioPaused(false)
       setAgentState('idle')
     }
@@ -1989,6 +2003,9 @@ export default function Dashboard() {
   // Speak dynamic streaming chunks/sentences sequentially using standard voice queueing
   const speakTextStreamingChunk = (text) => {
     if (!voiceEnabled || !voiceAssistantOpen) return
+    const hasSpeech = typeof window !== 'undefined' && window.speechSynthesis && typeof SpeechSynthesisUtterance !== 'undefined';
+    if (!hasSpeech) return;
+
     const plainText = text.replace(/[#*`\-]/g, '') // remove basic markdown chars
     const utterance = new SpeechSynthesisUtterance(plainText)
     
@@ -2059,7 +2076,9 @@ export default function Dashboard() {
   const handleAgentQuery = (text) => {
     setAgentState('searching')
     setAgentText('Analyzing telemetry across OpenAI, Anthropic, Gemini, Azure OpenAI, and Snowflake Cortex...')
-    window.speechSynthesis.cancel() // Stop any ongoing playback before starting a new run
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.cancel() // Stop any ongoing playback before starting a new run
+    }
 
     setTimeout(() => {
       let fullResponse = ''
@@ -5145,7 +5164,9 @@ export default function Dashboard() {
                   <button
                     onClick={() => {
                       setVoiceEnabled(!voiceEnabled)
-                      if (voiceEnabled) window.speechSynthesis.cancel()
+                      if (voiceEnabled && typeof window !== 'undefined' && window.speechSynthesis) {
+                        window.speechSynthesis.cancel()
+                      }
                     }}
                     className={`p-1.5 rounded-lg border transition ${
                       voiceEnabled 
@@ -5287,7 +5308,9 @@ export default function Dashboard() {
                 <button
                   onClick={() => {
                     setVoiceEnabled(!voiceEnabled)
-                    if (voiceEnabled) window.speechSynthesis.cancel()
+                    if (voiceEnabled && typeof window !== 'undefined' && window.speechSynthesis) {
+                      window.speechSynthesis.cancel()
+                    }
                   }}
                   className={`p-1.5 rounded-lg border transition ${
                     voiceEnabled 

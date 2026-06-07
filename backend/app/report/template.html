@@ -738,24 +738,52 @@
         <div class="financial-snapshot-card">
           <h4 style="font-size: 8.5px; text-transform: uppercase; color: var(--accent); letter-spacing: 0.12em; margin-bottom: 6px; font-weight: 700;">💰 Financial Impact Snapshot</h4>
           <div style="display: flex; flex-direction: column; gap: 6px;">
-            <div class="financial-snapshot-row">
+            <div class="financial-snapshot-row" style="display: flex; justify-content: space-between; align-items: center;">
               <span style="font-size: 10px; color: var(--muted); font-weight: 500;">Current AI Spend</span>
-              <strong style="font-size: 12px; color: var(--text-heading);">${{ scores.finops.monthly_spend | int }}/mo</strong>
+              <strong style="font-size: 12px; color: var(--text-heading);">
+                {% if scores.finops and scores.finops.monthly_spend and scores.finops.monthly_spend > 0 %}
+                ${{ scores.finops.monthly_spend | int }}/mo
+                {% else %}
+                —
+                {% endif %}
+              </strong>
             </div>
-            <div class="financial-snapshot-row">
+            {% if not scores.finops or not scores.finops.monthly_spend or scores.finops.monthly_spend == 0 %}
+            <div style="font-size: 8px; color: var(--muted); text-align: right; margin-top: -4px; margin-bottom: 2px;">
+              Not computed — connect spend data
+            </div>
+            {% endif %}
+            <div class="financial-snapshot-row" style="display: flex; justify-content: space-between; align-items: center;">
               <span style="font-size: 10px; color: var(--muted); font-weight: 500;">Potential Annual Savings (Target)</span>
-              <strong style="font-size: 12px; color: var(--emerald);">${{ ((scores.finops.monthly_spend - (scores.finops.monthly_spend * 0.375)) * 12) | int }}/yr</strong>
+              <strong style="font-size: 12px; color: var(--emerald);">
+                {% if scores.finops and scores.finops.monthly_spend and scores.finops.monthly_spend > 0 %}
+                ${{ ((scores.finops.monthly_spend - (scores.finops.monthly_spend * 0.375)) * 12) | int }}/yr
+                {% else %}
+                —
+                {% endif %}
+              </strong>
             </div>
-            <div class="financial-snapshot-row">
+            {% if not scores.finops or not scores.finops.monthly_spend or scores.finops.monthly_spend == 0 %}
+            <div style="font-size: 8px; color: var(--muted); text-align: right; margin-top: -4px; margin-bottom: 2px;">
+              Not computed — connect spend data
+            </div>
+            {% endif %}
+            <div class="financial-snapshot-row" style="display: flex; justify-content: space-between; align-items: center;">
               <span style="font-size: 10px; color: var(--muted); font-weight: 500;">ROI Opportunity</span>
-              <strong style="font-size: 11px; color: var(--accent-2); text-transform: uppercase;">HIGH</strong>
+              <strong style="font-size: 11px; color: var(--accent-2); text-transform: uppercase;">—</strong>
             </div>
-            <div class="financial-snapshot-row">
-              <span style="font-size: 10px; color: var(--muted); font-weight: 500;">Payback Period (Illustrative)</span>
-              <strong style="font-size: 12px; color: var(--amber);">3.2 Months</strong>
+            <div style="font-size: 8px; color: var(--muted); text-align: right; margin-top: -4px; margin-bottom: 2px;">
+              Roadmap — requires connected enterprise data
+            </div>
+            <div class="financial-snapshot-row" style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 10px; color: var(--muted); font-weight: 500;">Payback Period</span>
+              <strong style="font-size: 12px; color: var(--amber);">—</strong>
+            </div>
+            <div style="font-size: 8px; color: var(--muted); text-align: right; margin-top: -4px; margin-bottom: 2px;">
+              Roadmap — requires connected enterprise data
             </div>
             <div style="font-size: 7.5px; line-height: 1.25; color: var(--subtle); margin-top: 2px;">
-              * Figures are illustrative mid-market benchmarks, not calculated from the client's environment.
+              * Connect spend and enterprise data to compute savings, ROI opportunity, and payback period.
             </div>
           </div>
         </div>
@@ -793,9 +821,14 @@
           </div>
         {% endif %}
           <div class="sub-info" style="font-size: 10px; line-height: 1.35;">
-            • Overspending on premium models<br/>
-            • Missing governance controls<br/>
-            • No ROI measurement
+            {% if (scores.finops and scores.finops.monthly_spend and scores.finops.monthly_spend > 0) or (scores.sub_scores.oversight and scores.sub_scores.oversight < 60) or (scores.sub_scores.data and scores.sub_scores.data < 60) or (scores.sub_scores.rag and scores.sub_scores.rag < 60) %}
+              {% if scores.finops and scores.finops.monthly_spend and scores.finops.monthly_spend > 0 %}• Overspending on premium models<br/>{% endif %}
+              {% if scores.sub_scores.oversight and scores.sub_scores.oversight < 60 %}• Missing governance controls<br/>{% endif %}
+              {% if scores.sub_scores.data and scores.sub_scores.data < 60 %}• Data standardization gaps<br/>{% endif %}
+              {% if scores.sub_scores.rag and scores.sub_scores.rag < 60 %}• RAG architecture gaps<br/>{% endif %}
+            {% else %}
+              • System integration required for diagnostics
+            {% endif %}
           </div>
         </div>
 
@@ -803,34 +836,40 @@
         <div class="cfo-tile accent-saving">
           <div>
             <div class="lbl">Annual Savings (Target)</div>
+            {% if scores.finops and scores.finops.monthly_spend and scores.finops.monthly_spend > 0 %}
             <div class="val" style="color: var(--accent);">${{ ((scores.finops.monthly_spend - (scores.finops.monthly_spend * 0.375)) * 12) | int }}</div>
             <div style="font-size: 9px; font-weight: 600; color: var(--accent); margin-top: 2px;">On ${{ scores.finops.monthly_spend | int }}/mo spend</div>
+            <div class="sub-info">Roadmap — requires connected enterprise data</div>
+            {% else %}
+            <div class="val" style="color: var(--accent);">—</div>
+            <div style="font-size: 9px; font-weight: 600; color: var(--accent); margin-top: 2px;">Not computed — connect spend data</div>
+            <div class="sub-info">Connect spend data to calculate target savings.</div>
+            {% endif %}
           </div>
-          <div class="sub-info">62.5% monthly reduction via smart model routing (Target).</div>
         </div>
 
         <!-- Cost Reduction -->
         <div class="cfo-tile accent-reduction">
           <div>
             <div class="lbl">Target Cost Reduction</div>
-            <div class="val" style="color: var(--emerald);">62.5%</div>
-            <div style="font-size: 9px; font-weight: 600; color: var(--emerald); margin-top: 2px;">Illustrative benchmark</div>
+            <div class="val" style="color: var(--emerald);">—</div>
+            <div style="font-size: 9px; font-weight: 600; color: var(--emerald); margin-top: 2px;">Roadmap — requires connected enterprise data</div>
           </div>
-          <div class="sub-info">Typical savings migrating 95% of basic tasks to standard configs.*</div>
+          <div class="sub-info">Typical savings subject to enterprise deployment details.*</div>
         </div>
 
         <!-- AI Risk Exposure -->
         <div class="cfo-tile accent-risk">
           <div>
             <div class="lbl">AI Risk Exposure</div>
-            <div class="val" style="color: var(--rose);">HIGH</div>
-            <div style="font-size: 9px; font-weight: 700; color: var(--rose); text-transform: uppercase; margin-top: 2px;">Action Required</div>
+            <div class="val" style="color: var(--rose);">—</div>
+            <div style="font-size: 9px; font-weight: 700; color: var(--rose); text-transform: uppercase; margin-top: 2px;">Roadmap — requires connected enterprise data</div>
           </div>
           <div class="sub-info">Ad-hoc oversight workflows expose the firm to compliance gaps.</div>
         </div>
       </div>
       <div style="font-size: 8px; color: var(--subtle); margin-top: 6px; padding-left: 4px;">
-        * AI Cost and Payback figures are illustrative mid-market target benchmarks, not computed from your live workloads.
+        * Connect spend and enterprise data to compute savings, ROI opportunity, and payback period.
       </div>
 
       <!-- Collapsible Financial Details -->
@@ -853,23 +892,29 @@
           <tbody>
             <tr style="border-bottom: 1px solid var(--border); background: rgba(255,255,255,0.01);">
               <td style="padding: 10px; font-weight: 600; color: var(--text-heading);">Annual Savings</td>
-              <td style="padding: 10px; text-align: right; color: var(--accent); font-weight: 800; font-size: 14.5px;">${{ ((scores.finops.monthly_spend - (scores.finops.monthly_spend * 0.375)) * 12) | int }}</td>
+              <td style="padding: 10px; text-align: right; color: var(--accent); font-weight: 800; font-size: 14.5px;">
+                {% if scores.finops and scores.finops.monthly_spend and scores.finops.monthly_spend > 0 %}
+                ${{ ((scores.finops.monthly_spend - (scores.finops.monthly_spend * 0.375)) * 12) | int }}
+                {% else %}
+                — <span style="font-size: 10px; color: var(--muted); font-weight: normal;">(Not computed — connect spend data)</span>
+                {% endif %}
+              </td>
             </tr>
             <tr style="border-bottom: 1px solid var(--border);">
               <td style="padding: 10px; font-weight: 600; color: var(--text-heading);">Cost Reduction</td>
-              <td style="padding: 10px; text-align: right; color: var(--emerald); font-weight: 700;">62.5%</td>
+              <td style="padding: 10px; text-align: right; color: var(--emerald); font-weight: 700; font-size: 11.5px;">Roadmap — requires connected enterprise data</td>
             </tr>
             <tr style="border-bottom: 1px solid var(--border); background: rgba(255,255,255,0.01);">
               <td style="padding: 10px; font-weight: 600; color: var(--text-heading);">Audit Cost Reduction</td>
-              <td style="padding: 10px; text-align: right; color: var(--accent-2); font-weight: 700;">Up to 60%</td>
+              <td style="padding: 10px; text-align: right; color: var(--accent-2); font-weight: 700; font-size: 11.5px;">Roadmap — requires connected enterprise data</td>
             </tr>
             <tr style="border-bottom: 1px solid var(--border);">
               <td style="padding: 10px; font-weight: 600; color: var(--text-heading);">Productivity Improvement</td>
-              <td style="padding: 10px; text-align: right; color: var(--amber); font-weight: 700;">15% - 25%</td>
+              <td style="padding: 10px; text-align: right; color: var(--amber); font-weight: 700; font-size: 11.5px;">Roadmap — requires connected enterprise data</td>
             </tr>
             <tr style="background: rgba(255,255,255,0.01);">
               <td style="padding: 10px; font-weight: 600; color: var(--text-heading);">AI Risk Exposure</td>
-              <td style="padding: 10px; text-align: right; color: var(--rose); font-weight: 750;">High Risk (Action Needed)</td>
+              <td style="padding: 10px; text-align: right; color: var(--rose); font-weight: 750; font-size: 11.5px;">Roadmap — requires connected enterprise data</td>
             </tr>
           </tbody>
         </table>
@@ -884,7 +929,13 @@
             <div class="spend-donut">
               <div class="spend-donut-inner">
                 <div class="total-label">Total Spend</div>
-                <div class="total-val">${{ scores.finops.monthly_spend | int }}/mo</div>
+                <div class="total-val">
+                  {% if scores.finops and scores.finops.monthly_spend and scores.finops.monthly_spend > 0 %}
+                  ${{ scores.finops.monthly_spend | int }}/mo
+                  {% else %}
+                  —<br/><span style="font-size: 8px; color: var(--muted); font-weight: normal; text-transform: none;">Not computed — connect spend data</span>
+                  {% endif %}
+                </div>
               </div>
             </div>
             <div class="spend-legend">
@@ -963,12 +1014,18 @@
               <div class="timeline-step milestone">
                 <div class="timeline-node" style="font-weight: bold; color: var(--accent-2); font-size: 9px; display:flex; align-items:center; justify-content:center;">★</div>
                 <div class="step-mo" style="color: var(--accent-2);">Month 12</div>
-                <div class="step-lbl" style="color: var(--text-heading); font-weight: 700;">${{ ((scores.finops.monthly_spend * 0.625) * 12) | int }} Net Savings</div>
+                <div class="step-lbl" style="color: var(--text-heading); font-weight: 700;">
+                  {% if scores.finops and scores.finops.monthly_spend and scores.finops.monthly_spend > 0 %}
+                  ${{ ((scores.finops.monthly_spend * 0.625) * 12) | int }} Net Savings
+                  {% else %}
+                  — Net Savings<br/><span style="font-size: 8px; color: var(--muted); font-weight: normal;">Not computed — connect spend data</span>
+                  {% endif %}
+                </div>
               </div>
             </div>
           </div>
           <div style="font-size: 10px; color: var(--muted); margin-top: 10px; text-align: center; border-top: 1px solid var(--border); padding-top: 8px; line-height: 1.35;">
-            📈 <strong>Illustrative Payback Analysis:</strong> Target payback achieved in <strong>3.2 Months</strong> (Illustrative mid-market benchmark; actual payback is subject to deployment parameters and not computed from your environment).
+            📈 <strong>Roadmap Analysis:</strong> Roadmap — requires connected enterprise data
           </div>
         </div>
       </div>
@@ -1075,24 +1132,40 @@
           <div class="stat-tile" style="padding: 12px; margin-bottom: 2px;">
             <div class="lbl">Current Spend Profile</div>
             <div style="font-size: 20px; font-weight: 700; color: var(--text-heading); font-variant-numeric: tabular-nums;">
+              {% if scores.finops and scores.finops.monthly_spend and scores.finops.monthly_spend > 0 %}
               ${{ scores.finops.monthly_spend | int }}<span style="font-size: 11px; color: var(--muted); font-weight: 450;"> / mo</span>
+              {% else %}
+              —<br/><span style="font-size: 8px; color: var(--muted); font-weight: normal;">Not computed — connect spend data</span>
+              {% endif %}
             </div>
           </div>
           <div class="stat-tile" style="padding: 12px; margin-bottom: 2px; border-color: rgba(52, 211, 153, 0.35); background: linear-gradient(135deg, rgba(52, 211, 153, 0.08), var(--panel-2));">
             <div class="lbl" style="color: var(--emerald);">CertaintyAI Optimized Spend</div>
             <div style="font-size: 20px; font-weight: 700; color: var(--emerald); font-variant-numeric: tabular-nums;">
+              {% if scores.finops and scores.finops.monthly_spend and scores.finops.monthly_spend > 0 %}
               ${{ (scores.finops.monthly_spend * 0.375) | int }}<span style="font-size: 11px; color: var(--emerald); font-weight: 450;"> / mo</span>
+              {% else %}
+              —<br/><span style="font-size: 8px; color: var(--muted); font-weight: normal;">Not computed — connect spend data</span>
+              {% endif %}
             </div>
-            <div style="font-size: 10px; color: var(--emerald); font-weight: 500; margin-top: 4px;">62.5% Monthly Cost Reduction</div>
+            {% if scores.finops and scores.finops.monthly_spend and scores.finops.monthly_spend > 0 %}
+            <div style="font-size: 10px; color: var(--emerald); font-weight: 500; margin-top: 4px;">Roadmap — requires connected enterprise data</div>
+            {% endif %}
           </div>
           <div class="stat-tile" style="padding: 12px; border-color: rgba(34,211,238,0.35); background: linear-gradient(135deg, rgba(34,211,238,0.08), var(--panel-2));">
             <div class="lbl" style="color: var(--accent);">Target Annual Savings</div>
             <div style="font-size: 24px; font-weight: 800; color: var(--accent); font-variant-numeric: tabular-nums;">
+              {% if scores.finops and scores.finops.monthly_spend and scores.finops.monthly_spend > 0 %}
               ${{ ((scores.finops.monthly_spend - (scores.finops.monthly_spend * 0.375)) * 12) | int }}<span style="font-size: 12px; color: var(--accent); font-weight: 450;"> / yr</span>
+              {% else %}
+              —<br/><span style="font-size: 8px; color: var(--muted); font-weight: normal;">Not computed — connect spend data</span>
+              {% endif %}
             </div>
+            {% if scores.finops and scores.finops.monthly_spend and scores.finops.monthly_spend > 0 %}
             <div style="font-size: 8.5px; color: var(--accent); font-weight: 500; margin-top: 4px; line-height: 1.2;">
               ${{ ((scores.finops.monthly_spend * 0.625) * 12) | int }}/yr saved on ${{ scores.finops.monthly_spend | int }}/mo spend (Illustrative Target)*
             </div>
+            {% endif %}
           </div>
         </div>
       </div>
