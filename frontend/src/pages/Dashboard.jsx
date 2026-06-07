@@ -2415,10 +2415,10 @@ export default function Dashboard() {
                     ? 'bg-[var(--dash-active-bg)] text-[var(--dash-active-text)] border border-[var(--dash-active-border)] shadow-[var(--dash-active-shadow)] font-bold'
                     : 'text-[var(--dash-text-secondary)] hover:text-[var(--dash-hover-text)] hover:bg-[var(--dash-hover-bg)]'
                 }`}
-                title="Saved Reports"
+                title="Reports"
               >
                 <Icons.Reports />
-                {!isCollapsed && <span className="text-sm font-semibold">Saved Reports</span>}
+                {!isCollapsed && <span className="text-sm font-semibold">Reports</span>}
               </button>
             )}
 
@@ -2653,15 +2653,6 @@ export default function Dashboard() {
                         <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-wider animate-fade-in">Sessions</span>
                       )}
                       <div className="flex items-center gap-1.5 ml-auto">
-                        {!copilotSidebarCollapsed && (
-                          <button
-                            onClick={handleCopilotNewChat}
-                            className="bg-[var(--dash-newchat-bg)] hover:bg-[var(--dash-newchat-hover-bg)] text-[var(--dash-newchat-text)] hover:text-[var(--dash-newchat-hover-text)] text-[10px] font-bold px-2.5 py-1 rounded-lg transition duration-150 shadow-[var(--dash-newchat-shadow)] hover:scale-102 active:scale-98 focus:outline-none focus:ring-1 focus:ring-[var(--dash-accent)] shrink-0"
-                            title="Start a new chat session"
-                          >
-                            + New Chat
-                          </button>
-                        )}
                         <button
                           onClick={() => setCopilotSidebarCollapsed(!copilotSidebarCollapsed)}
                           className="p-1 rounded-lg border border-[var(--dash-border)] text-[var(--dash-text-secondary)] hover:text-[var(--dash-accent)] hover:bg-[var(--dash-hover-bg)] transition focus:outline-none focus:ring-1 focus:ring-[var(--dash-accent)] shrink-0"
@@ -2844,10 +2835,10 @@ export default function Dashboard() {
                   )}
 
                   {/* Scrollable Conversation Container / Welcome Screen */}
-                  <div className="flex-grow overflow-y-auto space-y-6 pr-1 pb-4">
+                  <div className="flex-grow min-h-0 overflow-y-auto space-y-6 pr-1 pb-4">
                     {(!activeCopilotSession || !activeCopilotSession.messages || activeCopilotSession.messages.length === 0) ? (
-                      /* Enhanced Welcome Screen with Metrics & Journey */
-                      <div className="max-w-4xl mx-auto py-6 px-4 space-y-6 font-sans w-full text-left">
+                      /* Enhanced Welcome Screen - Header and Report Selector Only */
+                      <div className="max-w-2xl mx-auto pt-2 pb-6 px-4 space-y-5 font-sans w-full text-left">
                         {/* Welcome Heading & Report Switcher */}
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full border-b border-[var(--dash-border)]/40 pb-4">
                           <div className="text-left">
@@ -2859,33 +2850,8 @@ export default function Dashboard() {
                             </p>
                           </div>
                           
-                          {/* Controls Row: View Roadmap, Ask CertaintyAI, Load Reports */}
+                          {/* Controls Row: Load Reports */}
                           <div className="flex flex-wrap items-center gap-3 shrink-0 select-none">
-                            <button
-                              onClick={() => {
-                                const el = document.getElementById('ai-journey-roadmap');
-                                if (el) {
-                                  el.scrollIntoView({ behavior: 'smooth' });
-                                }
-                              }}
-                              className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-xl px-4 py-2 hover:border-[var(--dash-accent)]/50 transition cursor-pointer text-xs font-bold text-[var(--dash-text-primary)] focus:outline-none shadow-sm font-sans"
-                            >
-                              📍 View Roadmap
-                            </button>
-
-                            <button
-                              onClick={() => {
-                                const inputEl = document.querySelector('input[aria-label="Chat input message"]');
-                                if (inputEl) {
-                                  inputEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                  inputEl.focus();
-                                }
-                              }}
-                              className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-xl px-4 py-2 hover:border-[var(--dash-accent)]/50 transition cursor-pointer text-xs font-bold text-[var(--dash-text-primary)] focus:outline-none shadow-sm font-sans"
-                            >
-                              💬 Ask CertaintyAI
-                            </button>
-
                             {reports && reports.length > 0 && (
                               <div className="relative">
                                 <button
@@ -2941,244 +2907,6 @@ export default function Dashboard() {
                                 )}
                               </div>
                             )}
-                          </div>
-                        </div>
-
-                        {/* KPI Cards Grid */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
-                          {/* Card 1: AI Readiness Score */}
-                          <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-5 flex flex-col justify-between h-32 text-left shadow-sm">
-                            <div className="flex justify-between items-start">
-                              <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-wider">AI Readiness Score</span>
-                              <span className="text-xs">🛡️</span>
-                            </div>
-                            <div className="my-2">
-                              <span className="text-3xl font-extrabold text-[var(--dash-text-primary)]">
-                                {latestReportData ? `${latestReportData.scores?.total_score}/100` : '—'}
-                              </span>
-                            </div>
-                            <span className="text-[9px] text-[var(--dash-text-secondary)] font-medium truncate">
-                              {latestReportData ? 'Based on latest assessment' : 'Complete assessment to unlock'}
-                            </span>
-                          </div>
-
-                          {/* Card 2: Current Maturity */}
-                          <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-5 flex flex-col justify-between h-32 text-left shadow-sm">
-                            <div className="flex justify-between items-start">
-                              <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-wider">Maturity Level</span>
-                              <span className="text-xs">📈</span>
-                            </div>
-                            <div className="my-2">
-                              <span className={`text-[13px] sm:text-sm font-extrabold text-[var(--dash-text-primary)] leading-tight block ${!latestReportData ? 'text-3xl font-extrabold' : ''}`}>
-                                {latestReportData ? latestReportData.scores?.maturity_tier : '—'}
-                              </span>
-                            </div>
-                            <span className="text-[9px] text-[var(--dash-text-secondary)] font-medium truncate block">
-                              {latestReportData ? (latestReportData.scores?.maturity_tagline || 'Developing capability') : 'Complete assessment to unlock'}
-                            </span>
-                          </div>
-
-                          {/* Card 3: Potential Annual Savings */}
-                          <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-5 flex flex-col justify-between h-32 text-left shadow-sm">
-                            <div className="flex justify-between items-start">
-                              <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-wider">Potential Savings</span>
-                              <span className="text-xs">💰</span>
-                            </div>
-                            <div className="my-2">
-                              <span className="text-3xl font-extrabold text-[var(--dash-text-primary)]">
-                                —
-                              </span>
-                            </div>
-                            <span className="text-[9px] text-[var(--dash-text-secondary)] font-medium">
-                              Preview · Available after assessment
-                            </span>
-                          </div>
-
-                          {/* Card 4: Priority Projects */}
-                          <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-5 flex flex-col justify-between h-32 text-left shadow-sm">
-                            <div className="flex justify-between items-start">
-                              <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-wider">Priority Projects</span>
-                              <span className="text-xs">📋</span>
-                            </div>
-                            <div className="my-2">
-                              <span className="text-3xl font-extrabold text-[var(--dash-text-primary)]">
-                                —
-                              </span>
-                            </div>
-                            <span className="text-[9px] text-[var(--dash-text-secondary)] font-medium">
-                              Preview · Available after assessment
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Executive Summary Card */}
-                        <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-5 space-y-3 w-full text-left shadow-sm">
-                          <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-widest block font-sans">Executive Summary</span>
-                          {execSummary ? (
-                            <p className="text-xs text-[var(--dash-text-primary)] leading-relaxed italic border-l-2 border-[var(--dash-accent)]/50 pl-4 font-semibold font-sans">
-                              "{execSummary}"
-                            </p>
-                          ) : (
-                            <div className="text-xs text-[var(--dash-text-secondary)] py-3 text-center border-2 border-dashed border-[var(--dash-border)] rounded-xl font-medium">
-                              Complete your assessment to generate a customized C-suite executive summary.
-                            </div>
-                          )}
-                        </div>
-
-                        {/* AI Maturity Strip */}
-                        {(() => {
-                          const scoreVal = latestReportData?.scores?.total_score;
-                          let activeStage = 0;
-                          if (typeof scoreVal === 'number') {
-                            if (scoreVal >= 0 && scoreVal <= 39) activeStage = 1;
-                            else if (scoreVal >= 40 && scoreVal <= 74) activeStage = 2;
-                            else if (scoreVal >= 75 && scoreVal <= 100) activeStage = 3;
-                          }
-                          const stages = [
-                            { num: 1, name: 'FOUNDATIONAL', band: '0–39' },
-                            { num: 2, name: 'PILOTING & GOVERNANCE', band: '40–74' },
-                            { num: 3, name: 'SCALING ENTERPRISE AI', band: '75–100' }
-                          ];
-                          return (
-                            <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-5 space-y-4 w-full shadow-sm text-left font-sans">
-                              <div className="flex justify-between items-center w-full">
-                                <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-widest block">
-                                  Your AI Maturity
-                                </span>
-                                {activeStage > 0 ? (
-                                  <span className="text-[10px] font-bold text-[var(--dash-accent)] uppercase bg-[var(--dash-active-bg)] border border-[var(--dash-active-border)] px-2.5 py-0.5 rounded-lg shadow-sm">
-                                    Stage {activeStage} of 3
-                                  </span>
-                                ) : (
-                                  <span className="text-[10px] text-[var(--dash-text-secondary)] font-medium">
-                                    Complete the assessment to see your maturity stage
-                                  </span>
-                                )}
-                              </div>
-
-                              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-2 relative">
-                                {stages.map((stage, idx) => {
-                                  const isActive = activeStage === stage.num;
-                                  return (
-                                    <div key={stage.num} className="flex-1 flex flex-col md:flex-row items-center gap-2 relative w-full">
-                                      <div className={`w-full rounded-xl p-3 border transition duration-150 text-center flex flex-col justify-center items-center ${
-                                        isActive 
-                                          ? 'bg-[var(--dash-active-bg)] border-[var(--dash-active-border)] text-[var(--dash-active-text)] shadow-sm'
-                                          : 'bg-[var(--dash-bg)]/40 border-[var(--dash-border)]/70 opacity-50 text-[var(--dash-text-secondary)]'
-                                      }`}>
-                                        <div className="flex items-center gap-2">
-                                          <span className="text-[11px] font-bold tracking-wider">{stage.name}</span>
-                                          {isActive && (
-                                            <span className="text-[9px] font-extrabold uppercase bg-[var(--dash-accent)]/20 border border-[var(--dash-accent)] text-[var(--dash-accent)] px-1.5 py-0.5 rounded">
-                                              Current
-                                            </span>
-                                          )}
-                                        </div>
-                                        <span className="text-[10px] font-mono mt-1 font-semibold block">Band: {stage.band}</span>
-                                      </div>
-                                      
-                                      {idx < 2 && (
-                                        <div className={`hidden md:block w-8 h-[2px] shrink-0 ${
-                                          activeStage > 0 && activeStage > stage.num
-                                            ? 'bg-[var(--dash-accent)]/40'
-                                            : 'bg-[var(--dash-border)]/40'
-                                        }`} />
-                                      )}
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          );
-                        })()}
-
-                        {/* AI Journey Panel */}
-                        <div id="ai-journey-roadmap" className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-5 space-y-4 w-full shadow-sm">
-                          <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-widest block text-left">AI Journey Roadmap</span>
-                          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-2">
-                            {[
-                              { label: 'Assessment Completed', done: !!latestReportData, roadmap: false },
-                              { label: 'Executive Report Generated', done: !!latestReportData, roadmap: false },
-                              { label: 'Connect Systems', done: false, roadmap: true },
-                              { label: 'Configure Governance', done: false, roadmap: true },
-                              { label: 'Deploy Agents', done: false, roadmap: true },
-                              { label: 'Activate Control Tower', done: false, roadmap: true }
-                            ].map((step, idx, arr) => (
-                              <div key={idx} className="flex-1 flex flex-col md:flex-row items-start md:items-center gap-2 relative">
-                                <div className="flex items-center gap-2">
-                                  {step.done ? (
-                                    <span className="w-5 h-5 rounded-full bg-[var(--emerald)]/20 border border-[var(--emerald)]/40 text-[var(--emerald)] flex items-center justify-center text-[10px] font-extrabold font-sans">
-                                      ✓
-                                    </span>
-                                  ) : (
-                                    <span className="w-5 h-5 rounded-full bg-transparent border-2 border-[var(--dash-border)] text-[var(--dash-text-secondary)] flex items-center justify-center text-[10px] font-extrabold font-sans">
-                                      ○
-                                    </span>
-                                  )}
-                                  <span className={`text-[11px] font-bold ${step.done ? 'text-[var(--dash-text-primary)]' : 'text-[var(--dash-text-secondary)]'}`}>
-                                    {step.label}
-                                  </span>
-                                </div>
-                                {idx < arr.length - 1 && (
-                                  <div className="hidden md:block flex-1 h-[1px] bg-[var(--dash-border)] mx-4 min-w-[20px]" />
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* Recommended Next Action Card */}
-                        <div className="bg-gradient-to-br from-[var(--dash-card-bg)] to-[var(--dash-hover-bg)] border-2 border-[var(--dash-accent)]/30 rounded-2xl p-6 space-y-4 w-full shadow-md relative overflow-hidden group">
-                          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[var(--dash-accent)]/5 to-transparent rounded-bl-full pointer-events-none"></div>
-                          
-                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                            <div className="space-y-1">
-                              <span className="text-[10px] font-bold text-[var(--dash-accent)] uppercase tracking-wider bg-[var(--dash-active-bg)] border border-[var(--dash-active-border)] px-2.5 py-0.5 rounded-full">
-                                Recommended Next Action
-                              </span>
-                              <h3 className="text-lg font-bold text-[var(--dash-text-primary)] mt-1">Connect Gemini Endpoint</h3>
-                              <p className="text-xs text-[var(--dash-text-secondary)] leading-relaxed max-w-lg">
-                                Unlock real-time monitoring and autonomous agent orchestration by linking your Google Vertex AI or Gemini API key.
-                              </p>
-                            </div>
-                            <div className="flex gap-2 shrink-0">
-                              <button 
-                                onClick={() => setPreviewAlert({ 
-                                  title: 'Gemini Endpoint Preview', 
-                                  message: 'Gemini integration is currently in Preview Mode. Full connection will be available in a future release.' 
-                                })}
-                                className="px-4 py-2 bg-[var(--dash-accent)] hover:bg-[var(--dash-accent-hover)] text-xs font-bold rounded-xl transition duration-150 text-[var(--dash-newchat-text)] hover:text-[var(--dash-newchat-hover-text)] shadow-sm cursor-pointer"
-                              >
-                                Connect Now (Coming Soon)
-                              </button>
-                              <button 
-                                onClick={() => handleCopilotSend("Tell me about connecting Gemini and what capabilities it unlocks")}
-                                className="px-4 py-2 bg-[var(--dash-card-bg)] hover:bg-[var(--dash-hover-bg)] text-xs font-bold rounded-xl border border-[var(--dash-border)] text-[var(--dash-text-primary)] transition duration-150 cursor-pointer"
-                              >
-                                Learn More
-                              </button>
-                            </div>
-                          </div>
-
-                          <div className="pt-4 border-t border-[var(--dash-border)]/50">
-                            <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-wider block mb-2">Capabilities you will unlock:</span>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
-                              {[
-                                { title: 'AI FinOps', desc: 'Real-time cost tracing and budget ceilings' },
-                                { title: 'Model Recommendations', desc: 'Predictive multi-cloud workload routing' },
-                                { title: 'Agent Orchestration', desc: 'Deploy task-specific C-suite assistants' },
-                                { title: 'Agent-to-Agent (A2A)', desc: 'Future cross-agent coordination protocols' }
-                              ].map((feat, i) => (
-                                <div key={i} className="bg-[var(--dash-bg)]/40 border border-[var(--dash-border)] rounded-xl p-3 space-y-1">
-                                  <span className="text-xs font-bold text-[var(--dash-text-primary)] block">
-                                    {feat.title}
-                                  </span>
-                                  <span className="text-[10px] text-[var(--dash-text-secondary)] leading-tight block">
-                                    {feat.desc}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
                           </div>
                         </div>
 
@@ -4119,8 +3847,194 @@ export default function Dashboard() {
                 gapIcon = "⚡";
               }
 
+              // 6-Tile calculations:
+              const activeStage = totalScore >= 75 ? 3 : totalScore >= 40 ? 2 : 1;
+              const maturityLevel = totalScore >= 75 ? "Scaling" : totalScore >= 40 ? "Piloting" : "Foundational";
+              const maturityBandRange = totalScore >= 75 ? "75-100" : totalScore >= 40 ? "40-74" : "0-39";
+
+              const coreDomainsForGaps = [
+                { label: "Semantic Alignment", score: semScore },
+                { label: "RAG Accuracy", score: ragScore },
+                { label: "Audit & Provenance", score: audScore },
+                { label: "Governance Oversight", score: ovsScore },
+                { label: "Data Maturity", score: datScore }
+              ];
+              const gapsList = coreDomainsForGaps.filter(d => d.score < 50);
+              const priorityProjectsCount = Math.min(gapsList.length, 3);
+              const sortedGaps = [...gapsList].sort((a, b) => a.score - b.score);
+              const lowestDomainLabels = sortedGaps.slice(0, 2).map(d => d.label).join(", ");
+              const priorityProjectsSubline = lowestDomainLabels ? `${lowestDomainLabels}` : "No critical gaps identified";
+
+              const govAvg = (ovsScore + audScore) / 2;
+              let govGapLabel = "Low gap";
+              if (govAvg < 50) {
+                govGapLabel = "High gap";
+              } else if (govAvg < 75) {
+                govGapLabel = "Medium gap";
+              }
+              const govGapSubline = `Avg: ${govAvg}/100`;
+
+              const stages = [
+                { num: 1, name: 'FOUNDATIONAL', band: '0-39' },
+                { num: 2, name: 'PILOTING & GOVERNANCE', band: '40-74' },
+                { num: 3, name: 'SCALING ENTERPRISE AI', band: '75-100' }
+              ];
+
               return (
                 <div className="space-y-6">
+                  {/* Executive KPI Strip (6 Tiles) */}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 w-full">
+                    {/* Tile 1: AI Readiness Score */}
+                    <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-xl p-4 flex flex-col justify-between h-28 text-left shadow-sm hover:border-[var(--dash-accent)]/40 transition-all duration-300 group">
+                      <div className="flex justify-between items-start">
+                        <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-wider">AI Readiness Score</span>
+                        <span className="text-xs group-hover:scale-110 transition-transform duration-200">🛡️</span>
+                      </div>
+                      <div className="my-1">
+                        <span className="text-2xl font-black text-[var(--dash-text-primary)] font-sans tracking-tight">
+                          {totalScore}/100
+                        </span>
+                      </div>
+                      <div className="text-[9px] text-[var(--dash-text-secondary)] font-semibold truncate">
+                        Based on active report
+                      </div>
+                    </div>
+
+                    {/* Tile 2: Maturity Level */}
+                    <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-xl p-4 flex flex-col justify-between h-28 text-left shadow-sm hover:border-[var(--dash-accent)]/40 transition-all duration-300 group">
+                      <div className="flex justify-between items-start">
+                        <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-wider">Maturity Level</span>
+                        <span className="text-xs group-hover:scale-110 transition-transform duration-200">📈</span>
+                      </div>
+                      <div className="my-1">
+                        <span className="text-2xl font-black text-[var(--dash-text-primary)] font-sans tracking-tight">
+                          {maturityLevel}
+                        </span>
+                      </div>
+                      <div className="text-[9px] text-[var(--dash-text-secondary)] font-semibold truncate">
+                        Band: {maturityBandRange}
+                      </div>
+                    </div>
+
+                    {/* Tile 3: Priority Projects */}
+                    <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-xl p-4 flex flex-col justify-between h-28 text-left shadow-sm hover:border-[var(--dash-accent)]/40 transition-all duration-300 group">
+                      <div className="flex justify-between items-start">
+                        <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-wider">Priority Projects</span>
+                        <span className="text-xs group-hover:scale-110 transition-transform duration-200">📋</span>
+                      </div>
+                      <div className="my-1">
+                        <span className={`text-2xl font-black font-sans tracking-tight ${priorityProjectsCount > 0 ? "text-[var(--rose)]" : "text-[var(--emerald)]"}`}>
+                          {priorityProjectsCount}
+                        </span>
+                      </div>
+                      <div className="text-[9px] text-[var(--dash-text-secondary)] font-semibold truncate" title={priorityProjectsSubline}>
+                        {priorityProjectsSubline}
+                      </div>
+                    </div>
+
+                    {/* Tile 4: Governance Gap */}
+                    <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-xl p-4 flex flex-col justify-between h-28 text-left shadow-sm hover:border-[var(--dash-accent)]/40 transition-all duration-300 group">
+                      <div className="flex justify-between items-start">
+                        <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-wider">Governance Gap</span>
+                        <span className="text-xs group-hover:scale-110 transition-transform duration-200">⚖️</span>
+                      </div>
+                      <div className="my-1">
+                        <span className={`text-2xl font-black font-sans tracking-tight ${
+                          govGapLabel === "High gap" ? "text-[var(--rose)]" : 
+                          govGapLabel === "Medium gap" ? "text-[var(--amber)]" : "text-[var(--emerald)]"
+                        }`}>
+                          {govGapLabel}
+                        </span>
+                      </div>
+                      <div className="text-[9px] text-[var(--dash-text-secondary)] font-semibold truncate">
+                        {govGapSubline}
+                      </div>
+                    </div>
+
+                    {/* Tile 5: Value Potential (Roadmap placeholder) */}
+                    <div className="bg-[var(--dash-card-bg)]/40 border border-[var(--dash-border)]/50 rounded-xl p-4 flex flex-col justify-between h-28 text-left transition-all duration-300">
+                      <div className="flex justify-between items-start">
+                        <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-wider">Value Potential</span>
+                        <span className="text-xs filter grayscale opacity-60">💎</span>
+                      </div>
+                      <div className="my-1">
+                        <span className="text-2xl font-black text-[var(--dash-text-secondary)] font-sans tracking-tight">
+                          —
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-[9px] text-[var(--dash-text-secondary)] font-semibold truncate">
+                        <span>Roadmap feature</span>
+                        <span className="bg-[var(--dash-border)]/30 border border-[var(--dash-border)]/60 text-[var(--dash-text-secondary)] px-1.5 py-0.5 rounded text-[8px] uppercase tracking-wider font-extrabold">
+                          Roadmap
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Tile 6: Risk Exposure (Roadmap placeholder) */}
+                    <div className="bg-[var(--dash-card-bg)]/40 border border-[var(--dash-border)]/50 rounded-xl p-4 flex flex-col justify-between h-28 text-left transition-all duration-300">
+                      <div className="flex justify-between items-start">
+                        <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-wider">Risk Exposure</span>
+                        <span className="text-xs filter grayscale opacity-60">⚠️</span>
+                      </div>
+                      <div className="my-1">
+                        <span className="text-2xl font-black text-[var(--dash-text-secondary)] font-sans tracking-tight">
+                          —
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-[9px] text-[var(--dash-text-secondary)] font-semibold truncate">
+                        <span>Roadmap feature</span>
+                        <span className="bg-[var(--dash-border)]/30 border border-[var(--dash-border)]/60 text-[var(--dash-text-secondary)] px-1.5 py-0.5 rounded text-[8px] uppercase tracking-wider font-extrabold">
+                          Roadmap
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Relocated Maturity Band Strip */}
+                  <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-5 space-y-4 w-full shadow-sm text-left font-sans">
+                    <div className="flex justify-between items-center w-full">
+                      <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-widest block">
+                        Your AI Maturity
+                      </span>
+                      <span className="text-[10px] font-bold text-[var(--dash-accent)] uppercase bg-[var(--dash-active-bg)] border border-[var(--dash-active-border)] px-2.5 py-0.5 rounded-lg shadow-sm">
+                        Stage {activeStage} of 3
+                      </span>
+                    </div>
+
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-2 relative">
+                      {stages.map((stage, idx) => {
+                        const isActive = activeStage === stage.num;
+                        return (
+                          <div key={stage.num} className="flex-1 flex flex-col md:flex-row items-center gap-2 relative w-full">
+                            <div className={`w-full rounded-xl p-3 border transition duration-150 text-center flex flex-col justify-center items-center ${
+                              isActive 
+                                ? 'bg-[var(--dash-active-bg)] border-[var(--dash-active-border)] text-[var(--dash-active-text)] shadow-sm'
+                                : 'bg-[var(--dash-bg)]/40 border-[var(--dash-border)]/70 opacity-50 text-[var(--dash-text-secondary)]'
+                            }`}>
+                              <div className="flex items-center gap-2">
+                                <span className="text-[11px] font-bold tracking-wider">{stage.name}</span>
+                                {isActive && (
+                                  <span className="text-[9px] font-extrabold uppercase bg-[var(--dash-accent)]/20 border border-[var(--dash-accent)] text-[var(--dash-accent)] px-1.5 py-0.5 rounded">
+                                    Current
+                                  </span>
+                                )}
+                              </div>
+                              <span className="text-[10px] font-mono mt-1 font-semibold block">Band: {stage.band}</span>
+                            </div>
+                            
+                            {idx < 2 && (
+                              <div className={`hidden md:block w-8 h-[2px] shrink-0 ${
+                                activeStage > stage.num
+                                  ? 'bg-[var(--dash-accent)]/40'
+                                  : 'bg-[var(--dash-border)]/40'
+                              }`} />
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
                   {/* Top Analytics Row: Radar Spider Chart & Horizontal Bar Chart */}
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {/* Radar Chart Panel */}
@@ -4285,6 +4199,41 @@ export default function Dashboard() {
                           Construct dynamic ontologies to standardize enterprise acronyms, while logging execution runs and prompt parameters for strict auditability compliance.
                         </p>
                       </div>
+                    </div>
+                  </div>
+
+                  {/* Relocated AI Journey Roadmap */}
+                  <div id="ai-journey-roadmap" className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-5 space-y-4 w-full shadow-sm text-left font-sans">
+                    <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-widest block">AI Journey Roadmap</span>
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-2">
+                      {[
+                        { label: 'Assessment Completed', done: true, roadmap: false },
+                        { label: 'Executive Report Generated', done: true, roadmap: false },
+                        { label: 'Connect Systems', done: false, roadmap: true },
+                        { label: 'Configure Governance', done: false, roadmap: true },
+                        { label: 'Deploy Agents', done: false, roadmap: true },
+                        { label: 'Activate Control Tower', done: false, roadmap: true }
+                      ].map((step, idx, arr) => (
+                        <div key={idx} className="flex-1 flex flex-col md:flex-row items-start md:items-center gap-2 relative">
+                          <div className="flex items-center gap-2">
+                            {step.done ? (
+                              <span className="w-5 h-5 rounded-full bg-[var(--emerald)]/20 border border-[var(--emerald)]/40 text-[var(--emerald)] flex items-center justify-center text-[10px] font-extrabold font-sans shrink-0">
+                                ✓
+                              </span>
+                            ) : (
+                              <span className="w-5 h-5 rounded-full bg-transparent border-2 border-[var(--dash-border)] text-[var(--dash-text-secondary)] flex items-center justify-center text-[10px] font-extrabold font-sans shrink-0">
+                                ○
+                              </span>
+                            )}
+                            <span className={`text-[11px] font-bold ${step.done ? 'text-[var(--dash-text-primary)]' : 'text-[var(--dash-text-secondary)]'}`}>
+                              {step.label}
+                            </span>
+                          </div>
+                          {idx < arr.length - 1 && (
+                            <div className="hidden md:block flex-1 h-[1px] bg-[var(--dash-border)] mx-4 min-w-[20px]" />
+                          )}
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </div>
