@@ -505,7 +505,7 @@ def adapt_to_legacy_answers(intake: dict[str, Any], sub_scores: dict[str, int], 
             "compliance_frameworks": compliance_frameworks
         },
         "finops": {
-            "monthly_spend": 12000.0,
+            "monthly_spend": 0.0,
             "primary_provider": "openai_flash",
             "gpu_constrained": False,
             "dev_ai_ratio": 0.8

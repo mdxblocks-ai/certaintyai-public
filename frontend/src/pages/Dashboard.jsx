@@ -1376,7 +1376,7 @@ export default function Dashboard() {
   }, [reportHtml])
 
   const [simulationRatio, setSimulationRatio] = useState(0.8)
-  const currentSpend = reportMeta?.scores?.finops?.monthly_spend || 12000
+  const currentSpend = reportMeta?.scores?.finops?.monthly_spend || 0
   const projectedSavings = Math.round(currentSpend * simulationRatio * 0.60 * 12)
 
   // --- Strategy & Roadmap Sub-Tab States ---
@@ -3948,19 +3948,19 @@ export default function Dashboard() {
                         <div className="flex items-center justify-between border-b border-[var(--dash-border)]/40 pb-2">
                           <span className="text-[var(--dash-text-secondary)] font-medium">Monthly Compute Spend</span>
                           <span className="font-extrabold text-[var(--dash-text-primary)] font-mono">
-                            {finops.monthly_spend !== undefined ? `$${(finops.monthly_spend || 0).toLocaleString()}` : '—'}
+                            {finops.monthly_spend !== undefined && finops.monthly_spend > 0 ? `$${(finops.monthly_spend || 0).toLocaleString()}` : '—'}
                           </span>
                         </div>
                         <div className="flex items-center justify-between border-b border-[var(--dash-border)]/40 pb-2">
                           <span className="text-[var(--dash-text-secondary)] font-medium">Estimated Compute Waste</span>
                           <span className="font-extrabold text-[var(--rose)] font-mono">
-                            {finops.estimated_waste !== undefined ? `$${(finops.estimated_waste || 0).toLocaleString()}/mo` : '—'}
+                            {finops.monthly_spend !== undefined && finops.monthly_spend > 0 ? `$${(finops.estimated_waste || 0).toLocaleString()}/mo` : '—'}
                           </span>
                         </div>
                         <div className="flex items-center justify-between border-b border-[var(--dash-border)]/40 pb-2">
                           <span className="text-[var(--dash-text-secondary)] font-medium">Cost Efficiency Index</span>
                           <span className="font-extrabold text-[var(--dash-accent)] font-mono">
-                            {finops.cost_efficiency !== undefined ? `${finops.cost_efficiency}%` : '—'}
+                            {finops.monthly_spend !== undefined && finops.monthly_spend > 0 ? `${finops.cost_efficiency}%` : '—'}
                           </span>
                         </div>
                         <div className="flex items-center justify-between">
@@ -4264,12 +4264,16 @@ export default function Dashboard() {
                             
                             <div className="bg-slate-950/60 border border-slate-800/80 rounded-xl p-3 text-center">
                               <span className="text-[10px] text-slate-500 font-semibold uppercase block mb-0.5">Current Monthly Spend</span>
-                              <span className="text-base font-bold text-slate-100">${currentSpend.toLocaleString()}</span>
+                              <span className="text-base font-bold text-slate-100">
+                                {currentSpend > 0 ? `$${currentSpend.toLocaleString()}` : '—'}
+                              </span>
                             </div>
 
                             <div className="bg-gradient-to-r from-emerald-500/10 to-cyan-500/10 border border-emerald-500/30 rounded-xl p-3 text-center">
                               <span className="text-[10px] text-emerald-400 font-semibold uppercase block mb-0.5">Projected Annual Savings</span>
-                              <span className="text-base font-bold text-emerald-300">${projectedSavings.toLocaleString()}</span>
+                              <span className="text-base font-bold text-emerald-300">
+                                {currentSpend > 0 ? `$${projectedSavings.toLocaleString()}` : '—'}
+                              </span>
                             </div>
                           </div>
                         </div>
