@@ -2555,7 +2555,7 @@ export default function Dashboard() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-[var(--dash-border)] pb-3">
             <div>
               <span className="text-xs uppercase tracking-widest text-[var(--dash-accent)] font-bold bg-[var(--dash-active-bg)] border border-[var(--dash-active-border)] px-3 py-1 rounded-full">
-                {activeTab === 'dashboard' && '📊 Executive Briefing'}
+                {activeTab === 'dashboard' && '📊 AI Readiness Dashboard'}
                 {activeTab === 'reports' && '📂 Assessment History'}
                 {activeTab === 'portfolio' && (dashboardSubTab === 'strategy' ? '💎 Strategic Advisory Portfolio' : 'Live Observability Core')}
                 {activeTab === 'readiness' && '🛡️ Readiness & Governance'}
@@ -2569,7 +2569,7 @@ export default function Dashboard() {
                 {activeTab === 'integrations' && '🔌 Integrations'}
               </span>
               <h2 className="text-3xl font-extrabold text-[var(--dash-text-primary)] mt-2">
-                {activeTab === 'dashboard' && 'Dashboard'}
+                {activeTab === 'dashboard' && 'AI Readiness Dashboard'}
                 {activeTab === 'reports' && 'Saved Reports'}
                 {activeTab === 'portfolio' && (dashboardSubTab === 'strategy' ? 'Strategic Advisory Portfolio' : 'LLM Observatory')}
                 {activeTab === 'readiness' && 'AI Readiness Assessment Wizard'}
@@ -2584,7 +2584,7 @@ export default function Dashboard() {
               </h2>
               {activeTab === 'dashboard' && (
                 <p className="text-xs text-[var(--dash-text-secondary)] mt-1 font-medium font-sans">
-                  Executive financial summary, investment health score, and ROI payback diagnostics.
+                  Assessment-based analytics, maturity gaps, and opportunities.
                 </p>
               )}
               {activeTab === 'control-tower' && (
@@ -3899,257 +3899,363 @@ export default function Dashboard() {
 
             {/* TAB: CFO DASHBOARD */}
             {activeTab === 'dashboard' && (() => {
-              const totalScore = latestReportData?.scores?.total_score || 42;
-              const monthlySpend = latestReportData?.scores?.finops?.monthly_spend || 12000;
-              const annualSavings = Math.round(monthlySpend * 0.625 * 12);
+              const scores = latestReportData?.scores || {};
+              const totalScore = scores.total_score || 0;
+              const subScores = scores.sub_scores || {};
+              const finops = scores.finops || {};
               
-              let healthColor = 'text-[var(--rose)] border-[var(--rose)]/30 bg-[var(--rose)]/10';
-              let healthText = '🔴 At Risk';
-              if (totalScore >= 80) {
-                healthColor = 'text-[var(--emerald)] border-[var(--emerald)]/30 bg-[var(--emerald)]/10';
-                healthText = '🟢 Healthy';
-              } else if (totalScore >= 50) {
-                healthColor = 'text-[var(--amber)] border-[var(--amber)]/30 bg-[var(--amber)]/10';
-                healthText = '🟡 Needs Attention';
+              // per-domain scores (from Step 1)
+              const semScore = subScores.semantic ?? 0;
+              const ragScore = subScores.rag ?? 0;
+              const audScore = subScores.audit ?? 0;
+              const ovsScore = subScores.oversight ?? 0;
+              const datScore = subScores.data ?? subScores.maturity ?? 0;
+
+              // If no report data is loaded, render the clean empty/preview state callout
+              if (!latestReportData) {
+                return (
+                  <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-8 text-center space-y-4 font-sans max-w-2xl mx-auto my-8 shadow-sm">
+                    <span className="text-4xl block">📊</span>
+                    <h3 className="text-lg font-bold text-[var(--dash-text-primary)]">Ready to visualize your AI maturity?</h3>
+                    <p className="text-xs text-[var(--dash-text-secondary)] leading-relaxed max-w-md mx-auto">
+                      Complete your first assessment to unlock dynamic, assessment-based analytics, maturity gaps, and opportunities on this dashboard.
+                    </p>
+                    <div className="pt-2">
+                      <button
+                        onClick={() => handleTabChange('readiness')}
+                        className="px-4 py-2.5 bg-[var(--dash-accent)] hover:bg-[var(--dash-accent-hover)] text-white text-xs font-bold rounded-xl transition duration-150 shadow-sm cursor-pointer"
+                      >
+                        Start Assessment Survey
+                      </button>
+                    </div>
+                  </div>
+                );
+              }
+
+              // Compute Radar Chart SVG metrics
+              const cx = 150;
+              const cy = 150;
+              const rMax = 100;
+              const angles = [
+                -Math.PI / 2,                     // Top: Semantic Alignment
+                -Math.PI / 2 + (2 * Math.PI) / 5, // Top-Right: RAG Accuracy
+                -Math.PI / 2 + (4 * Math.PI) / 5, // Bottom-Right: Audit & Provenance
+                -Math.PI / 2 + (6 * Math.PI) / 5, // Bottom-Left: Governance Oversight
+                -Math.PI / 2 + (8 * Math.PI) / 5  // Top-Left: Data Maturity
+              ];
+              
+              const labels = [
+                "Semantic Alignment",
+                "RAG Accuracy",
+                "Audit & Provenance",
+                "Governance Oversight",
+                "Data Maturity"
+              ];
+              
+              const values = [semScore, ragScore, audScore, ovsScore, datScore];
+
+              // Concentric grid pentagons (20, 40, 60, 80, 100)
+              const gridPentagons = [20, 40, 60, 80, 100].map(val => {
+                const points = angles.map(angle => {
+                  const x = cx + rMax * (val / 100) * Math.cos(angle);
+                  const y = cy + rMax * (val / 100) * Math.sin(angle);
+                  return `${x},${y}`;
+                }).join(" ");
+                return (
+                  <polygon 
+                    key={val} 
+                    points={points} 
+                    fill="none" 
+                    stroke="var(--dash-border)" 
+                    strokeWidth="0.5" 
+                    strokeDasharray={val === 100 ? "" : "2,2"} 
+                    opacity="0.4" 
+                  />
+                );
+              });
+
+              // Radar spider lines/axes
+              const axisLines = angles.map((angle, i) => {
+                const x = cx + rMax * Math.cos(angle);
+                const y = cy + rMax * Math.sin(angle);
+                return (
+                  <line 
+                    key={i} 
+                    x1={cx} 
+                    y1={cy} 
+                    x2={x} 
+                    y2={y} 
+                    stroke="var(--dash-border)" 
+                    strokeWidth="0.75" 
+                    opacity="0.5" 
+                  />
+                );
+              });
+
+              // Radar labels placed around the vertices
+              const labelElements = angles.map((angle, i) => {
+                const labelOffset = 22;
+                let x = cx + (rMax + labelOffset) * Math.cos(angle);
+                let y = cy + (rMax + labelOffset) * Math.sin(angle);
+                
+                let textAnchor = "middle";
+                if (Math.abs(Math.cos(angle)) > 0.1) {
+                  textAnchor = Math.cos(angle) > 0 ? "start" : "end";
+                }
+                
+                let dy = "0.33em";
+                if (i === 0) dy = "-0.4em";
+                if (i === 2 || i === 3) dy = "0.8em";
+                
+                return (
+                  <text
+                    key={i}
+                    x={x}
+                    y={y}
+                    textAnchor={textAnchor}
+                    dy={dy}
+                    className="text-[9px] font-bold fill-[var(--dash-text-secondary)] font-sans"
+                  >
+                    {labels[i]}
+                  </text>
+                );
+              });
+
+              // Radar data polygon
+              const dataPoints = angles.map((angle, i) => {
+                const val = values[i];
+                const x = cx + rMax * (val / 100) * Math.cos(angle);
+                const y = cy + rMax * (val / 100) * Math.sin(angle);
+                return `${x},${y}`;
+              }).join(" ");
+
+              const dataPolygon = (
+                <polygon
+                  points={dataPoints}
+                  fill="var(--dash-accent)"
+                  fillOpacity="0.12"
+                  stroke="var(--dash-accent)"
+                  strokeWidth="2"
+                  className="transition-all duration-500"
+                />
+              );
+
+              // Radar data points/dots
+              const dataDots = angles.map((angle, i) => {
+                const val = values[i];
+                const x = cx + rMax * (val / 100) * Math.cos(angle);
+                const y = cy + rMax * (val / 100) * Math.sin(angle);
+                return (
+                  <circle
+                    key={i}
+                    cx={x}
+                    cy={y}
+                    r="3.5"
+                    fill="var(--dash-accent)"
+                    stroke="var(--dash-card-bg)"
+                    strokeWidth="1.5"
+                    className="transition-all duration-500"
+                  />
+                );
+              });
+
+              // Define fields for horizontal bar charts
+              const domainFields = [
+                { key: 'semantic', label: 'Semantic Alignment' },
+                { key: 'rag', label: 'RAG Accuracy' },
+                { key: 'audit', label: 'Audit & Provenance' },
+                { key: 'oversight', label: 'Governance Oversight' },
+                { key: 'data', label: 'Data Maturity' }
+              ];
+
+              // Executive interpretation gap list
+              const scoresList = [
+                { key: 'semantic', label: 'Semantic Alignment', score: semScore, desc: 'Enterprise data terminology and domain ontologies are fragmented. Standardize cross-system data models to reduce context leakage.' },
+                { key: 'rag', label: 'RAG Accuracy', score: ragScore, desc: 'Model retrieval pipeline validation rates are low. Refine retrieval chunking parameters and index query routers to reduce hallucination risk.' },
+                { key: 'audit', label: 'Audit & Provenance', score: audScore, desc: 'Audit logging for AI agent executions, prompt lineage, and outputs is missing or incomplete. Implement systematic traceability.' },
+                { key: 'oversight', label: 'Governance Oversight', score: ovsScore, desc: 'AI compliance workflows and organizational oversight committees are informal or ad-hoc. Establish formal steering parameters.' },
+                { key: 'data', label: 'Data Maturity', score: datScore, desc: 'Unstructured data ingestion volume, freshness, or formats are unoptimized. Build automated cleanup and ingestion pipelines.' }
+              ];
+              
+              const lowestDomain = scoresList.reduce((min, current) => current.score < min.score ? current : min, scoresList[0]);
+
+              let gapBg = "bg-[var(--rose)]/5 border-[var(--rose)]/20 text-[var(--rose)]";
+              let gapLabel = `Primary Readiness Gap: ${lowestDomain.label}`;
+              let gapIcon = "⚠️";
+              if (lowestDomain.score >= 75) {
+                gapBg = "bg-[var(--emerald)]/5 border-[var(--emerald)]/20 text-[var(--emerald)]";
+                gapLabel = `Primary Optimization Opportunity: ${lowestDomain.label}`;
+                gapIcon = "🎯";
+              } else if (lowestDomain.score >= 50) {
+                gapBg = "bg-[var(--amber)]/5 border-[var(--amber)]/20 text-[var(--amber)]";
+                gapLabel = `Primary Development Area: ${lowestDomain.label}`;
+                gapIcon = "⚡";
               }
 
               return (
                 <div className="space-y-6">
-                  {/* Top Row: 4 key indicators */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {/* Health Score Widget */}
-                    <div className={`border rounded-2xl p-5 flex flex-col justify-between min-h-[140px] backdrop-blur relative overflow-hidden group hover:scale-[1.01] transition duration-300 ${healthColor}`}>
-                      <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-white/5 to-transparent rounded-bl-full pointer-events-none"></div>
-                      <div>
-                        <div className="text-[10px] uppercase font-bold tracking-wider text-[var(--dash-text-secondary)] mb-1">AI Investment Health</div>
-                        <div className="text-3xl font-extrabold font-mono flex items-baseline">
-                          {totalScore}
-                          <span className="text-xs font-normal text-[var(--dash-text-secondary)]/80 ml-1">/100</span>
-                        </div>
-                        <div className="text-[10px] font-extrabold uppercase mt-1 tracking-wider">{healthText}</div>
-                      </div>
-                      <div className="text-[10.5px] text-[var(--dash-text-secondary)] mt-3 leading-relaxed border-t border-[var(--dash-border)] pt-2 font-medium">
-                        • Overspending on premium models<br/>
-                        • Missing governance controls<br/>
-                        • No ROI measurement
-                      </div>
-                    </div>
-
-                    {/* Annual Savings */}
-                    <div className="bg-[var(--dash-card-bg)] border border-[var(--emerald)]/20 hover:border-[var(--emerald)]/30 rounded-2xl p-5 flex flex-col justify-between min-h-[140px] backdrop-blur relative overflow-hidden group hover:scale-[1.01] transition duration-300">
-                      <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-[var(--emerald)]/5 to-transparent rounded-bl-full pointer-events-none"></div>
-                      <div>
-                        <div className="text-[10px] uppercase font-bold tracking-wider text-[var(--dash-text-secondary)] mb-1">Annual Savings</div>
-                        <div className="text-3xl font-extrabold text-[var(--emerald)] font-mono">
-                          ${annualSavings.toLocaleString()}
-                        </div>
-                        <div className="text-[10px] text-[var(--dash-text-secondary)] font-semibold mt-1">Based on ${monthlySpend.toLocaleString()}/mo spend</div>
-                      </div>
-                      <div className="text-[10.5px] text-[var(--dash-text-secondary)] mt-3 leading-relaxed border-t border-[var(--dash-border)] pt-2 font-medium">
-                        62.5% monthly cost reduction projected via smart multi-cloud model routing.
-                      </div>
-                    </div>
-
-                    {/* Cost Reduction */}
-                    <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-accent)]/20 hover:border-[var(--dash-accent)]/30 rounded-2xl p-5 flex flex-col justify-between min-h-[140px] backdrop-blur relative overflow-hidden group hover:scale-[1.01] transition duration-300">
-                      <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-[var(--dash-accent)]/5 to-transparent rounded-bl-full pointer-events-none"></div>
-                      <div>
-                        <div className="text-[10px] uppercase font-bold tracking-wider text-[var(--dash-text-secondary)] mb-1">Cost Reduction</div>
-                        <div className="text-3xl font-extrabold text-[var(--dash-accent)] font-mono">62.5%</div>
-                        <div className="text-[10px] text-[var(--dash-text-secondary)] font-semibold mt-1">Target spend optimization</div>
-                      </div>
-                      <div className="text-[10.5px] text-[var(--dash-text-secondary)] mt-3 leading-relaxed border-t border-[var(--dash-border)] pt-2 font-medium">
-                        Migrating 95% of basic tasks to standard/flash configurations.
-                      </div>
-                    </div>
-
-                    {/* AI Risk Exposure */}
-                    <div className="bg-[var(--dash-card-bg)] border border-[var(--rose)]/20 hover:border-[var(--rose)]/30 rounded-2xl p-5 flex flex-col justify-between min-h-[140px] backdrop-blur relative overflow-hidden group hover:scale-[1.01] transition duration-300">
-                      <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-[var(--rose)]/5 to-transparent rounded-bl-full pointer-events-none"></div>
-                      <div>
-                        <div className="text-[10px] uppercase font-bold tracking-wider text-[var(--dash-text-secondary)] mb-1">AI Risk Exposure</div>
-                        <div className="text-3xl font-extrabold text-[var(--rose)] font-mono">HIGH</div>
-                        <div className="text-[10px] text-[var(--rose)]/80 font-bold uppercase mt-1 tracking-wider">⚠️ Action Required</div>
-                      </div>
-                      <div className="text-[10.5px] text-[var(--dash-text-secondary)] mt-3 leading-relaxed border-t border-[var(--dash-border)] pt-2 font-medium">
-                        Ad-hoc oversight workflows expose the firm to compliance and security gaps.
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Middle Row: Financial Opportunity Summary Table */}
-                  <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-6 backdrop-blur">
-                    <h3 className="text-base font-bold text-[var(--dash-text-primary)] mb-4 flex items-center gap-2">
-                      <span className="text-[var(--dash-accent)]">💎</span> Financial Opportunity Summary
-                    </h3>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left border-collapse font-sans text-xs">
-                        <thead>
-                          <tr className="border-b border-[var(--dash-border)] text-[var(--dash-text-secondary)] font-bold uppercase tracking-wider text-[10px]">
-                            <th className="pb-3 px-4">Strategic Metric</th>
-                            <th className="pb-3 px-4 text-right">Target Business Value</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-[var(--dash-border)]/40 text-[var(--dash-text-secondary)]">
-                          <tr className="hover:bg-[var(--dash-hover-bg)] transition duration-150">
-                            <td className="py-3.5 px-4 font-bold text-[var(--dash-text-primary)]">Annual Savings</td>
-                            <td className="py-3.5 px-4 text-right text-[var(--emerald)] font-bold font-mono">${annualSavings.toLocaleString()}</td>
-                          </tr>
-                          <tr className="hover:bg-[var(--dash-hover-bg)] transition duration-150">
-                            <td className="py-3.5 px-4 font-bold text-[var(--dash-text-primary)]">Cost Reduction</td>
-                            <td className="py-3.5 px-4 text-right text-[var(--dash-accent)] font-bold font-mono">62.5%</td>
-                          </tr>
-                          <tr className="hover:bg-[var(--dash-hover-bg)] transition duration-150">
-                            <td className="py-3.5 px-4 font-bold text-[var(--dash-text-primary)]">Audit Cost Reduction</td>
-                            <td className="py-3.5 px-4 text-right text-[var(--accent-2)] font-bold font-mono">60%</td>
-                          </tr>
-                          <tr className="hover:bg-[var(--dash-hover-bg)] transition duration-150">
-                            <td className="py-3.5 px-4 font-bold text-[var(--dash-text-primary)]">Productivity Gain</td>
-                            <td className="py-3.5 px-4 text-right text-[var(--accent-2)] font-bold font-mono">15-25%</td>
-                          </tr>
-                          <tr className="hover:bg-[var(--dash-hover-bg)] transition duration-150">
-                            <td className="py-3.5 px-4 font-bold text-[var(--dash-text-primary)]">Risk Exposure</td>
-                            <td className="py-3.5 px-4 text-right">
-                              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-[var(--rose)]/10 border border-[var(--rose)]/20 text-[var(--rose)]">
-                                High
-                              </span>
-                            </td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-
-                  {/* Bottom Row: Donut Chart & ROI Timeline */}
+                  {/* Top Analytics Row: Radar Spider Chart & Horizontal Bar Chart */}
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Donut Spend Chart */}
-                    <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-6 backdrop-blur flex flex-col justify-between">
+                    {/* Radar Chart Panel */}
+                    <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-6 flex flex-col justify-between shadow-sm">
                       <div>
-                        <h3 className="text-base font-bold text-[var(--dash-text-primary)] mb-4 flex items-center gap-2">
-                          <span className="text-[var(--dash-accent)]">📊</span> AI Spend Breakdown
+                        <h3 className="text-base font-bold text-[var(--dash-text-primary)] mb-2 flex items-center gap-2">
+                          <span className="text-[var(--dash-accent)]">🛡️</span> AI Maturity Radar
                         </h3>
-                        <div className="flex flex-col sm:flex-row items-center gap-8 justify-center py-4">
-                          <div className="relative w-36 h-36 rounded-full flex items-center justify-center flex-shrink-0" style={{
-                            background: 'conic-gradient(var(--accent) 0% 65%, var(--accent-2) 65% 80%, var(--amber) 80% 88%, var(--rose) 88% 95%, var(--emerald) 95% 100%)'
-                          }}>
-                            {/* Inner circle for donut hole */}
-                            <div className="absolute w-24 h-24 rounded-full bg-[var(--dash-bg)] flex flex-col items-center justify-center z-10 shadow-inner">
-                              <span className="text-[8px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-widest">Total Spend</span>
-                              <span className="text-sm font-extrabold text-[var(--dash-text-primary)] font-mono">${monthlySpend.toLocaleString()}/mo</span>
-                            </div>
-                          </div>
-
-                          <div className="flex flex-col gap-2.5 w-full max-w-[200px]">
-                            <div className="flex items-center justify-between text-xs">
-                              <div className="flex items-center gap-2">
-                                <span className="w-2.5 h-2.5 rounded bg-[var(--dash-accent)] flex-shrink-0"></span>
-                                <span className="text-[var(--dash-text-secondary)]">Premium Models</span>
-                              </div>
-                              <span className="font-bold text-[var(--dash-text-primary)] font-mono">65%</span>
-                            </div>
-                            <div className="flex items-center justify-between text-xs">
-                              <div className="flex items-center gap-2">
-                                <span className="w-2.5 h-2.5 rounded bg-[var(--accent-2)] flex-shrink-0"></span>
-                                <span className="text-[var(--dash-text-secondary)]">Infrastructure</span>
-                              </div>
-                              <span className="font-bold text-[var(--dash-text-primary)] font-mono">15%</span>
-                            </div>
-                            <div className="flex items-center justify-between text-xs">
-                              <div className="flex items-center gap-2">
-                                <span className="w-2.5 h-2.5 rounded bg-[var(--amber)] flex-shrink-0"></span>
-                                <span className="text-[var(--dash-text-secondary)]">Data Quality</span>
-                              </div>
-                              <span className="font-bold text-[var(--dash-text-primary)] font-mono">8%</span>
-                            </div>
-                            <div className="flex items-center justify-between text-xs">
-                              <div className="flex items-center gap-2">
-                                <span className="w-2.5 h-2.5 rounded bg-[var(--rose)] flex-shrink-0"></span>
-                                <span className="text-[var(--dash-text-secondary)]">RAG pipelines</span>
-                              </div>
-                              <span className="font-bold text-[var(--dash-text-primary)] font-mono">7%</span>
-                            </div>
-                            <div className="flex items-center justify-between text-xs">
-                              <div className="flex items-center gap-2">
-                                <span className="w-2.5 h-2.5 rounded bg-[var(--emerald)] flex-shrink-0"></span>
-                                <span className="text-[var(--dash-text-secondary)]">Embeddings</span>
-                              </div>
-                              <span className="font-bold text-[var(--dash-text-primary)] font-mono">5%</span>
-                            </div>
-                          </div>
-                        </div>
+                        <p className="text-xs text-[var(--dash-text-secondary)] mb-6 font-medium">
+                          Multi-dimensional view of your assessment sub-scores across the 5 core AI readiness pillars.
+                        </p>
+                      </div>
+                      
+                      <div className="flex justify-center items-center py-4">
+                        <svg width="340" height="300" viewBox="0 0 340 300" className="mx-auto overflow-visible">
+                          {gridPentagons}
+                          {axisLines}
+                          {dataPolygon}
+                          {dataDots}
+                          {labelElements}
+                          {/* Center Dot */}
+                          <circle cx={cx} cy={cy} r="2.5" fill="var(--dash-text-secondary)" opacity="0.6" />
+                        </svg>
                       </div>
                     </div>
 
-                    {/* ROI Payback Timeline */}
-                    <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-6 backdrop-blur flex flex-col justify-between">
+                    {/* Bar Chart Panel */}
+                    <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-6 flex flex-col justify-between shadow-sm">
                       <div>
-                        <h3 className="text-base font-bold text-[var(--dash-text-primary)] mb-4 flex items-center gap-2">
-                          <span className="text-[var(--dash-accent)]">📈</span> ROI Timeline
+                        <h3 className="text-base font-bold text-[var(--dash-text-primary)] mb-2 flex items-center gap-2">
+                          <span className="text-[var(--dash-accent)]">📊</span> Readiness by Domain
                         </h3>
-                        <p className="text-xs text-[var(--dash-text-secondary)] mb-6 leading-relaxed">
-                          Projected cumulative savings and break-even milestones over a 12-month horizon.
+                        <p className="text-xs text-[var(--dash-text-secondary)] mb-6 font-medium">
+                          Linear breakdown of your computed scores for each assessment category.
                         </p>
-                        
-                        <div className="relative flex justify-between items-start pt-8 pb-4">
-                          {/* Progress Line */}
-                          <div className="absolute top-[41px] left-2.5 right-2.5 h-0.5 bg-[var(--dash-border)] z-0">
-                            <div className="h-full bg-[var(--dash-accent)]" style={{ width: '40%' }}></div>
-                          </div>
+                      </div>
 
-                          {/* Steps */}
-                          <div className="flex flex-col items-center z-10 w-[20%] text-center">
-                            <div className="w-5 h-5 rounded-full bg-[var(--dash-accent)] border-4 border-[var(--dash-bg)] shadow-[0_0_8px_var(--accent)] flex items-center justify-center"></div>
-                            <span className="text-[8px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-wider mt-2.5">Month 0</span>
-                            <span className="text-[10px] font-bold text-[var(--dash-text-primary)] mt-1">Inception</span>
-                          </div>
+                      <div className="space-y-5 py-4">
+                        {domainFields.map(field => {
+                          const score = subScores[field.key] ?? subScores.maturity ?? 0;
+                          let barColor = "bg-[var(--dash-accent)]";
+                          if (score < 40) barColor = "bg-[var(--rose)]";
+                          else if (score < 75) barColor = "bg-[var(--amber)]";
                           
-                          <div className="flex flex-col items-center z-10 w-[20%] text-center">
-                            <div className="w-5 h-5 rounded-full bg-[var(--dash-accent)] border-4 border-[var(--dash-bg)] shadow-[0_0_8px_var(--accent)] flex items-center justify-center"></div>
-                            <span className="text-[8px] font-bold text-[var(--dash-accent)] uppercase tracking-wider mt-2.5">Month 3</span>
-                            <span className="text-[10px] font-extrabold text-emerald-400 mt-1">🏆 Break-Even</span>
-                          </div>
-
-                          <div className="flex flex-col items-center z-10 w-[20%] text-center">
-                            <div className="w-5 h-5 rounded-full bg-[var(--dash-bg)] border-4 border-[var(--dash-border)] flex items-center justify-center"></div>
-                            <span className="text-[8px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-wider mt-2.5">Month 6</span>
-                            <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] mt-1">62% savings</span>
-                          </div>
-
-                          <div className="flex flex-col items-center z-10 w-[20%] text-center">
-                            <div className="w-5 h-5 rounded-full bg-[var(--dash-bg)] border-4 border-[var(--dash-border)] flex items-center justify-center"></div>
-                            <span className="text-[8px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-wider mt-2.5">Month 12</span>
-                            <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] mt-1">$90K saved</span>
-                          </div>
-                        </div>
+                          return (
+                            <div key={field.key} className="space-y-1.5 font-sans">
+                              <div className="flex justify-between text-xs font-bold">
+                                <span className="text-[var(--dash-text-primary)]">{field.label}</span>
+                                <span className="text-[var(--dash-text-secondary)] font-mono">{score}/100</span>
+                              </div>
+                              <div className="w-full bg-[var(--dash-border)]/20 h-2.5 rounded-full overflow-hidden">
+                                <div
+                                  className={`${barColor} h-full rounded-full transition-all duration-500`}
+                                  style={{ width: `${score}%` }}
+                                />
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   </div>
 
-                  {/* Recommendations Row */}
-                  <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-6 backdrop-blur">
+                  {/* Middle Row: Executive Interpretation & Calculated FinOps Metrics */}
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* Executive Interpretation Column (2/3 width) */}
+                    <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-6 lg:col-span-2 space-y-4 shadow-sm text-left">
+                      <h3 className="text-base font-bold text-[var(--dash-text-primary)] flex items-center gap-2">
+                        <span className="text-[var(--dash-accent)]">📝</span> Executive Interpretation
+                      </h3>
+                      
+                      {execSummary ? (
+                        <p className="text-xs text-[var(--dash-text-primary)] leading-relaxed italic border-l-2 border-[var(--dash-accent)]/50 pl-4 font-semibold font-sans">
+                          "{execSummary}"
+                        </p>
+                      ) : (
+                        <div className="text-xs text-[var(--dash-text-secondary)] leading-relaxed italic border-l-2 border-[var(--dash-border)] pl-4 font-medium font-sans">
+                          "System is processing completed assessment data to output optimized strategic brief insights."
+                        </div>
+                      )}
+
+                      {/* Calculated Primary Gap Callout */}
+                      <div className={`border rounded-xl p-4 space-y-2 text-xs font-sans ${gapBg}`}>
+                        <div className="flex items-center gap-2 font-bold">
+                          <span>{gapIcon}</span>
+                          <span className="uppercase tracking-wider">{gapLabel} (Score: {lowestDomain.score}/100)</span>
+                        </div>
+                        <p className="leading-relaxed opacity-90">
+                          {lowestDomain.desc} Formalize mitigation workflows and prioritize resource allocation to address this gap.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Calculated FinOps Metrics Column (1/3 width) */}
+                    <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-6 space-y-4 shadow-sm text-left">
+                      <h3 className="text-base font-bold text-[var(--dash-text-primary)] flex items-center gap-2">
+                        <span className="text-[var(--dash-accent)]">⚡</span> Compute & FinOps Insights
+                      </h3>
+                      <p className="text-[11px] text-[var(--dash-text-secondary)] font-medium leading-relaxed">
+                        Calculated model operations metrics derived from your primary provider and spend.
+                      </p>
+
+                      <div className="space-y-3 pt-2 font-sans text-xs">
+                        <div className="flex items-center justify-between border-b border-[var(--dash-border)]/40 pb-2">
+                          <span className="text-[var(--dash-text-secondary)] font-medium">Monthly Compute Spend</span>
+                          <span className="font-extrabold text-[var(--dash-text-primary)] font-mono">
+                            {finops.monthly_spend !== undefined ? `$${(finops.monthly_spend || 0).toLocaleString()}` : '—'}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between border-b border-[var(--dash-border)]/40 pb-2">
+                          <span className="text-[var(--dash-text-secondary)] font-medium">Estimated Compute Waste</span>
+                          <span className="font-extrabold text-[var(--rose)] font-mono">
+                            {finops.estimated_waste !== undefined ? `$${(finops.estimated_waste || 0).toLocaleString()}/mo` : '—'}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between border-b border-[var(--dash-border)]/40 pb-2">
+                          <span className="text-[var(--dash-text-secondary)] font-medium">Cost Efficiency Index</span>
+                          <span className="font-extrabold text-[var(--dash-accent)] font-mono">
+                            {finops.cost_efficiency !== undefined ? `${finops.cost_efficiency}%` : '—'}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-[var(--dash-text-secondary)] font-medium">Workforce Optimization</span>
+                          <span className="font-extrabold text-[var(--emerald)] font-mono">
+                            {finops.workforce_optimization !== undefined ? `${finops.workforce_optimization}%` : '—'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {finops.primary_provider && (
+                        <div className="bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl p-3 text-[10.5px] text-[var(--dash-text-secondary)] leading-relaxed mt-2 font-medium">
+                          💡 Primary provider detected as <strong className="text-[var(--dash-text-primary)] font-bold">{scores.provider_model_names?.[finops.primary_provider] || finops.primary_provider}</strong>. Enforcing Flash-model fallbacks could increase your Cost Efficiency index.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Qualitative Opportunity & Recommendations Cards */}
+                  <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-6 shadow-sm text-left">
                     <h3 className="text-base font-bold text-[var(--dash-text-primary)] mb-4 flex items-center gap-2">
-                      <span className="text-[var(--accent)]">💡</span> Top 3 Recommendations
+                      <span className="text-[var(--dash-accent)]">💡</span> Strategic Opportunities & Action Plan
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                       <div className="bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl p-4.5 space-y-2">
-                        <span className="text-[10px] font-bold text-[var(--dash-accent)] uppercase tracking-wider">Recommendation 1</span>
-                        <h4 className="text-sm font-bold text-[var(--dash-text-primary)]">Optimize Model Usage</h4>
-                        <p className="text-xs text-[var(--dash-text-secondary)] leading-relaxed font-sans">
-                          Establish a smart routing tier to migrate 95% of basic tasks to standard/flash models, keeping premium models reserved exclusively for complex logic.
+                        <span className="text-[10px] font-bold text-[var(--dash-accent)] uppercase tracking-wider block">Remediation Path 1</span>
+                        <h4 className="text-sm font-bold text-[var(--dash-text-primary)]">AI Governance Framework</h4>
+                        <p className="text-xs text-[var(--dash-text-secondary)] leading-relaxed font-sans font-medium">
+                          Build a steering committee and formal permitted/restricted tools matrix. Set clear classification limits and strict human-in-the-loop policies to reduce regulatory risk.
                         </p>
                       </div>
                       <div className="bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl p-4.5 space-y-2">
-                        <span className="text-[10px] font-bold text-[var(--accent-2)] uppercase tracking-wider">Recommendation 2</span>
-                        <h4 className="text-sm font-bold text-[var(--dash-text-primary)]">Implement Governance</h4>
-                        <p className="text-xs text-[var(--dash-text-secondary)] leading-relaxed font-sans">
-                          Build a steering committee and formal permitted/restricted tools matrix to eliminate random compliance exposure and establish clear accountability boundaries.
+                        <span className="text-[10px] font-bold text-[var(--accent-2)] uppercase tracking-wider block">Remediation Path 2</span>
+                        <h4 className="text-sm font-bold text-[var(--dash-text-primary)]">Cost Controls & Gateway Routing</h4>
+                        <p className="text-xs text-[var(--dash-text-secondary)] leading-relaxed font-sans font-medium">
+                          Implement a model routing proxy to intercept API calls, redirecting simple summarization and lookup queries to lighter, more cost-efficient models.
                         </p>
                       </div>
                       <div className="bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl p-4.5 space-y-2">
-                        <span className="text-[10px] font-bold text-[var(--emerald)] uppercase tracking-wider">Recommendation 3</span>
-                        <h4 className="text-sm font-bold text-[var(--dash-text-primary)]">Establish ROI Tracking</h4>
-                        <p className="text-xs text-[var(--dash-text-secondary)] leading-relaxed font-sans">
-                          Deploy automated instrumentation dashboards to measure, analyze, and report cumulative multi-agent savings back to the CFO boardroom monthly.
+                        <span className="text-[10px] font-bold text-[var(--emerald)] uppercase tracking-wider block">Remediation Path 3</span>
+                        <h4 className="text-sm font-bold text-[var(--dash-text-primary)]">Data Quality & Lineage mapping</h4>
+                        <p className="text-xs text-[var(--dash-text-secondary)] leading-relaxed font-sans font-medium">
+                          Construct dynamic ontologies to standardize enterprise acronyms, while logging execution runs and prompt parameters for strict auditability compliance.
                         </p>
                       </div>
                     </div>
@@ -4157,7 +4263,7 @@ export default function Dashboard() {
                 </div>
               );
             })()}
-
+            
             {/* TAB: SAVED REPORTS */}
             {activeTab === 'reports' && (
               <div className="space-y-6">
