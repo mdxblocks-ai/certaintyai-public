@@ -1377,6 +1377,7 @@ export default function Dashboard() {
 
   // --- Strategy & Roadmap Sub-Tab States ---
   const [dashboardSubTab, setDashboardSubTab] = useState('strategy')
+  const [controlTowerTab, setControlTowerTab] = useState('overview')
   const [isProcurementModalOpen, setIsProcurementModalOpen] = useState(false)
   const [selectedProcurementTier, setSelectedProcurementTier] = useState(null)
   const [procurementFormSubmitted, setProcurementFormSubmitted] = useState(false)
@@ -2589,7 +2590,7 @@ export default function Dashboard() {
               )}
               {activeTab === 'control-tower' && (
                 <p className="text-xs text-[var(--dash-text-secondary)] mt-1 font-medium font-sans">
-                  Preview Mode · Enterprise live AI monitoring, FinOps, and policy compliance controls.
+                  Enterprise AI monitoring, FinOps, and policy compliance controls · Preview Mode.
                 </p>
               )}
               {activeTab === 'integrations' && (
@@ -4855,31 +4856,314 @@ export default function Dashboard() {
                     <span>🏰 Control Tower Preview Mode</span>
                   </div>
                   <p className="text-xs text-[var(--dash-text-secondary)] leading-relaxed">
-                    Connect enterprise systems to activate live AI Governance, AI FinOps, Data Trust, AgentOps, and Business Value monitoring.
+                    Preview Mode · connect enterprise systems to activate live AI Governance, AI FinOps, Data Trust, AgentOps, and Business Value monitoring.
                   </p>
                 </div>
 
-                {/* Empty State Cards Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
+                {/* Sub-tab Navigation */}
+                <div className="flex flex-wrap bg-[var(--dash-card-bg)] border border-[var(--dash-border)] p-1 rounded-xl items-center gap-1 w-fit">
                   {[
-                    { label: 'Active Agents', val: '—', desc: 'Active autonomous agent workloads' },
-                    { label: 'Live AI Spend', val: '—', desc: 'Cumulative token and inference cost' },
-                    { label: 'Compliance Events', val: '—', desc: 'Regulatory policy violations or blocks' },
-                    { label: 'Data Lineage', val: '—', desc: 'Sovereign data provenance chains' }
-                  ].map((card, i) => (
-                    <div key={i} className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-6 flex flex-col justify-between h-36 shadow-sm">
-                      <span className="text-[10px] font-bold tracking-widest text-[var(--dash-text-secondary)] uppercase">
-                        {card.label}
-                      </span>
-                      <span className="text-4xl font-extrabold text-[var(--dash-text-primary)] py-2">
-                        {card.val}
-                      </span>
-                      <span className="text-[10px] text-[var(--dash-text-secondary)] font-medium">
-                        {card.desc}
-                      </span>
-                    </div>
+                    { id: 'overview', label: 'Executive Overview' },
+                    { id: 'cost', label: 'Cost Management' },
+                    { id: 'llm', label: 'LLM Recommendations' },
+                    { id: 'data', label: 'Data Lineage & Quality' },
+                    { id: 'governance', label: 'Governance' },
+                    { id: 'audit', label: 'Audit Trail' }
+                  ].map((t) => (
+                    <button
+                      key={t.id}
+                      onClick={() => setControlTowerTab(t.id)}
+                      className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 ${
+                        controlTowerTab === t.id
+                          ? 'bg-[var(--dash-active-bg)] text-[var(--dash-active-text)] border border-[var(--dash-active-border)] shadow-[var(--dash-active-shadow)]'
+                          : 'border border-transparent text-[var(--dash-text-secondary)] hover:text-[var(--dash-text-primary)] hover:bg-[var(--dash-hover-bg)]'
+                      }`}
+                    >
+                      {t.label}
+                    </button>
                   ))}
                 </div>
+
+                {/* TAB CONTENT: Executive Overview */}
+                {controlTowerTab === 'overview' && (
+                  <div className="space-y-6">
+                    {/* KPI Tiles */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
+                      {[
+                        { label: 'Total Agent Requests', val: '—', desc: 'Total inference queries handled by agents' },
+                        { label: 'Gemini Cost', val: '—', desc: 'Accrued cost of vertex/inference calls' },
+                        { label: 'Estimated Savings', val: '—', desc: 'Saved cost vs traditional advisory' },
+                        { label: 'AI Risk Score', val: '—', desc: 'Aggregate policy risk rating' },
+                        { label: 'Active Agents', val: '—', desc: 'Active autonomous agent workloads' },
+                        { label: 'Compliance Events', val: '—', desc: 'Regulatory policy violations or blocks' }
+                      ].map((card, i) => (
+                        <div key={i} className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-6 flex flex-col justify-between h-36 shadow-sm">
+                          <span className="text-[10px] font-bold tracking-widest text-[var(--dash-text-secondary)] uppercase">
+                            {card.label}
+                          </span>
+                          <span className="text-4xl font-extrabold text-[var(--dash-text-primary)] py-2">
+                            {card.val}
+                          </span>
+                          <span className="text-[10px] text-[var(--dash-text-secondary)] font-medium">
+                            {card.desc}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Chart Frame & Recommendations */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
+                      {/* Requests by Agent Empty Chart */}
+                      <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-6 shadow-sm flex flex-col justify-between min-h-[300px]">
+                        <span className="text-sm font-bold text-[var(--dash-text-primary)] mb-4">Requests by Agent</span>
+                        <div className="flex-grow flex items-center justify-center border-2 border-dashed border-[var(--dash-border)] rounded-xl bg-[var(--dash-hover-bg)]/30 min-h-[200px]">
+                          <span className="text-xs text-[var(--dash-text-secondary)] font-medium font-sans">
+                            Preview · connect systems to activate
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Executive Recommendations Preview */}
+                      <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-6 shadow-sm flex flex-col justify-between min-h-[300px]">
+                        <span className="text-sm font-bold text-[var(--dash-text-primary)] mb-4">Executive Recommendations</span>
+                        <div className="flex-grow flex flex-col justify-center items-center p-6 border border-dashed border-[var(--dash-border)] rounded-xl bg-[var(--dash-hover-bg)]/20 text-center space-y-2">
+                          <i className="ti ti-bulb text-2xl text-[var(--dash-accent)]"></i>
+                          <span className="text-xs font-bold text-[var(--dash-text-primary)]">System Connection Pending</span>
+                          <p className="text-[11px] text-[var(--dash-text-secondary)] max-w-sm">
+                            Recommendations will generate automatically based on compliance scans, latency anomalies, and cost optimization opportunities once systems are linked.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* TAB CONTENT: Cost Management */}
+                {controlTowerTab === 'cost' && (
+                  <div className="space-y-6">
+                    {/* KPI Tiles */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
+                      {[
+                        { label: 'Gemini Cost', val: '—', desc: 'Total accrued Google Vertex AI inference spend' },
+                        { label: 'Estimated Savings', val: '—', desc: 'Calculated savings from automated processing' },
+                        { label: 'Cost per Agent', val: '—', desc: 'Average cost across deployed C-suite agents' },
+                        { label: 'Budget Utilization', val: '—', desc: 'Spend vs allocated organizational limits' }
+                      ].map((card, i) => (
+                        <div key={i} className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-6 flex flex-col justify-between h-36 shadow-sm">
+                          <span className="text-[10px] font-bold tracking-widest text-[var(--dash-text-secondary)] uppercase">
+                            {card.label}
+                          </span>
+                          <span className="text-4xl font-extrabold text-[var(--dash-text-primary)] py-2">
+                            {card.val}
+                          </span>
+                          <span className="text-[10px] text-[var(--dash-text-secondary)] font-medium">
+                            {card.desc}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Gemini Usage Summary Table */}
+                    <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-6 shadow-sm w-full">
+                      <span className="text-sm font-bold text-[var(--dash-text-primary)] mb-4 block">Gemini Usage Summary</span>
+                      <div className="overflow-x-auto w-full">
+                        <table className="w-full text-left text-xs border-collapse">
+                          <thead>
+                            <tr className="border-b border-[var(--dash-border)] text-[var(--dash-text-secondary)] font-bold">
+                              <th className="py-2.5">Metric</th>
+                              <th className="py-2.5 text-right">Value</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-[var(--dash-border)]/50 text-[var(--dash-text-primary)]">
+                            {[
+                              { name: 'Pro Requests', desc: 'Gemini 2.5 Pro model invocations' },
+                              { name: 'Flash Requests', desc: 'Gemini 2.5 Flash model invocations' },
+                              { name: 'Input Tokens', desc: 'Total processed prompt tokens' },
+                              { name: 'Output Tokens', desc: 'Total generated response tokens' }
+                            ].map((row, idx) => (
+                              <tr key={idx} className="hover:bg-[var(--dash-hover-bg)]/25 transition">
+                                <td className="py-3 pr-4">
+                                  <div className="font-semibold">{row.name}</div>
+                                  <div className="text-[10px] text-[var(--dash-text-secondary)]">{row.desc}</div>
+                                </td>
+                                <td className="py-3 text-right font-extrabold text-sm">—</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* TAB CONTENT: LLM Recommendations */}
+                {controlTowerTab === 'llm' && (
+                  <div className="space-y-6">
+                    <span className="text-sm font-bold text-[var(--dash-text-primary)] block">LLM Performance & Optimization Recommendations</span>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
+                      {[
+                        { title: 'Token Amortization', metric: 'Model Tiering Opportunity', desc: 'Optimize cost by routing low-complexity tasks from Gemini Pro to Gemini Flash based on routing heuristics.' },
+                        { title: 'Context Window Caching', metric: 'Context Window Cache', desc: 'Configure prompt caching for large static RAG files in knowledge base to reduce token costs.' },
+                        { title: 'Temperature Optimization', metric: 'Deterministic Controls', desc: 'Reduce model temperature configurations on compliance triage agents to prevent hallucination drifts.' }
+                      ].map((card, i) => (
+                        <div key={i} className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-6 shadow-sm flex flex-col justify-between min-h-[200px]">
+                          <div>
+                            <span className="text-[9px] font-bold text-[var(--dash-accent)] uppercase tracking-wider block mb-1">{card.metric}</span>
+                            <h4 className="text-xs font-bold text-[var(--dash-text-primary)] mb-2">{card.title}</h4>
+                            <p className="text-[11px] text-[var(--dash-text-secondary)] leading-relaxed">{card.desc}</p>
+                          </div>
+                          <div className="pt-4 border-t border-[var(--dash-border)]/50 mt-4 text-[10px] text-[var(--dash-text-secondary)] font-semibold flex items-center gap-1.5">
+                            <i className="ti ti-link text-xs"></i>
+                            <span>Awaiting connection</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* TAB CONTENT: Data Lineage & Quality */}
+                {controlTowerTab === 'data' && (
+                  <div className="space-y-6">
+                    {/* KPI Tiles */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
+                      {[
+                        { label: 'Data Lineage Chains', val: '—', desc: 'Sovereign database lineage pathways mapped' },
+                        { label: 'Provenance Coverage', val: '—', desc: 'System-wide knowledge tracking index' },
+                        { label: 'Source Systems Connected', val: '—', desc: 'Linked directories, portals, and repositories' },
+                        { label: 'Quality Score', val: '—', desc: 'Average confidence score of indexed documents' }
+                      ].map((card, i) => (
+                        <div key={i} className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-6 flex flex-col justify-between h-36 shadow-sm">
+                          <span className="text-[10px] font-bold tracking-widest text-[var(--dash-text-secondary)] uppercase">
+                            {card.label}
+                          </span>
+                          <span className="text-4xl font-extrabold text-[var(--dash-text-primary)] py-2">
+                            {card.val}
+                          </span>
+                          <span className="text-[10px] text-[var(--dash-text-secondary)] font-medium">
+                            {card.desc}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Data Lineage Visualization Map Frame */}
+                    <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-6 shadow-sm w-full flex flex-col justify-between min-h-[360px]">
+                      <span className="text-sm font-bold text-[var(--dash-text-primary)] mb-4">Sovereign Data Provenance & Lineage Map</span>
+                      <div className="flex-grow flex items-center justify-center border-2 border-dashed border-[var(--dash-border)] rounded-xl bg-[var(--dash-hover-bg)]/30 min-h-[260px]">
+                        <span className="text-xs text-[var(--dash-text-secondary)] font-medium font-sans">
+                          Preview · connect systems to activate
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* TAB CONTENT: Governance */}
+                {controlTowerTab === 'governance' && (
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
+                      {/* Governance Summary Table */}
+                      <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-6 shadow-sm flex flex-col justify-between min-h-[360px]">
+                        <span className="text-sm font-bold text-[var(--dash-text-primary)] mb-4">Governance Safety Indicators</span>
+                        <div className="overflow-x-auto w-full flex-grow">
+                          <table className="w-full text-left text-xs border-collapse">
+                            <thead>
+                              <tr className="border-b border-[var(--dash-border)] text-[var(--dash-text-secondary)] font-bold">
+                                <th className="py-2.5">Safety Rule</th>
+                                <th className="py-2.5 text-right">Incidents</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-[var(--dash-border)]/50 text-[var(--dash-text-primary)]">
+                              {[
+                                { name: 'Prompt Injection Attempts', desc: 'Malicious inputs intercepted by security proxy' },
+                                { name: 'Policy Violations', desc: 'Agent outputs failing governance rulesets' },
+                                { name: 'Blocked Responses', desc: 'Deterministic filter overrides triggered' },
+                                { name: 'Human Escalations', desc: 'Queries routed to human in the loop reviews' },
+                                { name: 'Audit Coverage', desc: 'Proportion of executions stored with full traces' }
+                              ].map((row, idx) => (
+                                <tr key={idx} className="hover:bg-[var(--dash-hover-bg)]/25 transition">
+                                  <td className="py-3 pr-4">
+                                    <div className="font-semibold">{row.name}</div>
+                                    <div className="text-[10px] text-[var(--dash-text-secondary)]">{row.desc}</div>
+                                  </td>
+                                  <td className="py-3 text-right font-extrabold text-sm">—</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+
+                      {/* Governance Risk Mix Empty Chart */}
+                      <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-6 shadow-sm flex flex-col justify-between min-h-[360px]">
+                        <span className="text-sm font-bold text-[var(--dash-text-primary)] mb-4">Governance Risk Mix</span>
+                        <div className="flex-grow flex items-center justify-center border-2 border-dashed border-[var(--dash-border)] rounded-xl bg-[var(--dash-hover-bg)]/30 min-h-[260px]">
+                          <span className="text-xs text-[var(--dash-text-secondary)] font-medium font-sans">
+                            Preview · connect systems to activate
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* TAB CONTENT: Audit Trail */}
+                {controlTowerTab === 'audit' && (
+                  <div className="space-y-6">
+                    {/* Activity Log Table */}
+                    <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-6 shadow-sm w-full">
+                      <span className="text-sm font-bold text-[var(--dash-text-primary)] mb-4 block">Compliance Observability Audit Log</span>
+                      <div className="overflow-x-auto w-full">
+                        <table className="w-full text-left text-xs border-collapse">
+                          <thead>
+                            <tr className="border-b border-[var(--dash-border)] text-[var(--dash-text-secondary)] font-bold">
+                              <th className="py-3 px-2">Time</th>
+                              <th className="py-3 px-2">User</th>
+                              <th className="py-3 px-2">Agent</th>
+                              <th className="py-3 px-2">Model</th>
+                              <th className="py-3 px-2 text-right">Latency</th>
+                              <th className="py-3 px-2 text-right">Tokens</th>
+                              <th className="py-3 px-2 text-right">Cost</th>
+                              <th className="py-3 px-2 text-center">Risk</th>
+                              <th className="py-3 px-2 text-center">Status</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr className="text-[var(--dash-text-secondary)] hover:bg-[var(--dash-hover-bg)]/10 transition">
+                              <td colSpan="9" className="py-8 text-center italic text-xs font-semibold">
+                                No connected agent activity yet · Preview
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    {/* Agent Health Registry */}
+                    <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-6 shadow-sm w-full">
+                      <span className="text-sm font-bold text-[var(--dash-text-primary)] mb-4 block">Agent Operational Health Status</span>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {[
+                          { name: 'Vendor Risk Triage Agent', desc: 'CISO Compliance Engine' },
+                          { name: 'AI ROI Analyzer Agent', desc: 'CFO Valuation Engine' },
+                          { name: 'AI Readiness Copilot Agent', desc: 'Enterprise Assessment Engine' }
+                        ].map((agent, i) => (
+                          <div key={i} className="p-4 border border-[var(--dash-border)] rounded-xl bg-[var(--dash-hover-bg)]/10 flex flex-col justify-between min-h-[100px]">
+                            <div>
+                              <h5 className="font-bold text-xs text-[var(--dash-text-primary)]">{agent.name}</h5>
+                              <span className="text-[10px] text-[var(--dash-text-secondary)] block mb-2">{agent.desc}</span>
+                            </div>
+                            <div className="flex justify-between items-center text-[10px] font-semibold text-[var(--dash-text-secondary)] pt-2 border-t border-[var(--dash-border)]/30">
+                              <span>Health: <span className="text-[var(--dash-text-secondary)] font-bold">—</span></span>
+                              <span className="italic text-[9px]">Awaiting connection</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
