@@ -580,7 +580,7 @@ def _generate_simulated_trace(agent: Agent, user_input: str, document_count: int
         outcome = (
             f"**CFO Value Realization Analysis Summary for '{agent.name}'**\n\n"
             f"1. **Cost & ROI Impact**: Evaluated cost footprint of '{user_input}' against estimated value realization.\n"
-            f"2. **FinOps Optimization**: Projected monthly API token utilization suggests a payback period of ~9 months.\n"
+            f"2. **FinOps Optimization**: Connect your enterprise spend and telemetry data to calculate payback, savings, and ROI.\n"
             f"3. **Budget Governance**: Enforce token throttling limits to prevent cost overrun during pilot phase."
         )
         
