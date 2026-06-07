@@ -6,6 +6,8 @@ import api from '../lib/api'
 import voiceKnowledgeBase from '../lib/voiceKnowledgeBase.json'
 import SurveyWizard from '../components/survey/SurveyWizard'
 import AgentBuilder from './AgentBuilder'
+import Sidebar from '../components/Sidebar'
+
 
 const SHOW_AI_READINESS_NAV = false;
 
@@ -752,7 +754,6 @@ export default function Dashboard() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const activeTab = searchParams.get('tab') || 'home'
-  const [isCollapsed, setIsCollapsed] = useState(false)
   const disableNav = user && !user.first_assessment_completed
 
   // --- AI Readiness Copilot State ---
@@ -2332,222 +2333,8 @@ export default function Dashboard() {
 
   return (
     <div className={`w-full flex flex-col lg:flex-row h-[calc(100vh-64px)] overflow-hidden transition-colors duration-300 bg-[var(--dash-bg)] text-[var(--dash-text-primary)] ${isParchment ? 'theme-parchment' : ''}`}>
-      {/* Sidebar Navigation */}
-      <aside className={`w-full transition-all duration-300 bg-[var(--dash-sidebar-bg)] border-b lg:border-b-0 lg:border-r border-[var(--dash-border)] p-5 flex flex-col justify-between shrink-0 lg:h-full lg:overflow-y-auto ${
-        isCollapsed ? 'lg:w-16' : 'lg:w-52'
-      }`}>
-        <div className="space-y-6 flex-grow flex flex-col">
-          {/* Collapse/Expand Toggle Button */}
-          <button
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            className="hidden lg:flex items-center justify-center p-1.5 rounded-lg border border-[var(--dash-border)] text-[var(--dash-text-secondary)] hover:text-[var(--dash-text-primary)] hover:bg-[var(--dash-hover-bg)] transition w-full"
-            title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
-          >
-            {isCollapsed ? (
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
-                <polyline points="9 18 15 12 9 6" />
-              </svg>
-            ) : (
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
-                <polyline points="15 18 9 12 15 6" />
-              </svg>
-            )}
-          </button>
+      <Sidebar activeTab={activeTab} onTabChange={handleTabChange} />
 
-          <nav className="space-y-1.5">
-            {!disableNav && (
-              <button
-                onClick={() => handleTabChange('home')}
-                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-left transition duration-200 ${
-                  isCollapsed ? 'lg:justify-center' : ''
-                } ${
-                  activeTab === 'home'
-                    ? 'bg-[var(--dash-active-bg)] text-[var(--dash-active-text)] border border-[var(--dash-active-border)] shadow-[var(--dash-active-shadow)]'
-                    : 'text-[var(--dash-text-secondary)] hover:text-[var(--dash-hover-text)] hover:bg-[var(--dash-hover-bg)]'
-                }`}
-                title="Home"
-              >
-                <Icons.Home />
-                {!isCollapsed && <span className="text-sm font-semibold">Home</span>}
-              </button>
-            )}
-
-            {!disableNav && (
-              <button
-                onClick={() => handleTabChange('dashboard')}
-                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-left transition duration-200 ${
-                  isCollapsed ? 'lg:justify-center' : ''
-                } ${
-                  activeTab === 'dashboard'
-                    ? 'bg-[var(--dash-active-bg)] text-[var(--dash-active-text)] border border-[var(--dash-active-border)] shadow-[var(--dash-active-shadow)]'
-                    : 'text-[var(--dash-text-secondary)] hover:text-[var(--dash-hover-text)] hover:bg-[var(--dash-hover-bg)]'
-                }`}
-                title="Dashboard"
-              >
-                <Icons.Dashboard />
-                {!isCollapsed && <span className="text-sm font-semibold">Dashboard</span>}
-              </button>
-            )}
-
-            {(SHOW_AI_READINESS_NAV || disableNav) && (
-              <button
-                onClick={() => handleTabChange('readiness')}
-                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-left transition duration-200 ${
-                  isCollapsed ? 'lg:justify-center' : ''
-                } ${
-                  activeTab === 'readiness'
-                    ? 'bg-[var(--dash-active-bg)] text-[var(--dash-active-text)] border border-[var(--dash-active-border)] shadow-[var(--dash-active-shadow)]'
-                    : 'text-[var(--dash-text-secondary)] hover:text-[var(--dash-hover-text)] hover:bg-[var(--dash-hover-bg)]'
-                }`}
-                title="AI Readiness"
-              >
-                <Icons.Readiness />
-                {!isCollapsed && <span className="text-sm font-semibold">AI Readiness</span>}
-              </button>
-            )}
-
-            {!disableNav && (
-              <button
-                onClick={() => handleTabChange('reports')}
-                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-left transition duration-200 ${
-                  isCollapsed ? 'lg:justify-center' : ''
-                } ${
-                  activeTab === 'reports'
-                    ? 'bg-[var(--dash-active-bg)] text-[var(--dash-active-text)] border border-[var(--dash-active-border)] shadow-[var(--dash-active-shadow)] font-bold'
-                    : 'text-[var(--dash-text-secondary)] hover:text-[var(--dash-hover-text)] hover:bg-[var(--dash-hover-bg)]'
-                }`}
-                title="Reports"
-              >
-                <Icons.Reports />
-                {!isCollapsed && <span className="text-sm font-semibold">Reports</span>}
-              </button>
-            )}
-
-            {!disableNav && (
-              <button
-                onClick={() => handleTabChange('agent-builder')}
-                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-left transition duration-200 ${
-                  isCollapsed ? 'lg:justify-center' : ''
-                } ${
-                  activeTab === 'agent-builder'
-                    ? 'bg-[var(--dash-active-bg)] text-[var(--dash-active-text)] border border-[var(--dash-active-border)] shadow-[var(--dash-active-shadow)] font-bold'
-                    : 'text-[var(--dash-text-secondary)] hover:text-[var(--dash-hover-text)] hover:bg-[var(--dash-hover-bg)]'
-                }`}
-                title="Agent Builder"
-              >
-                <Icons.Tools />
-                {!isCollapsed && <span className="text-sm font-semibold">Agent Builder</span>}
-              </button>
-            )}
-
-            {!disableNav && (
-              <button
-                onClick={() => handleTabChange('control-tower')}
-                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-left transition duration-200 ${
-                  isCollapsed ? 'lg:justify-center' : ''
-                } ${
-                  activeTab === 'control-tower'
-                    ? 'bg-[var(--dash-active-bg)] text-[var(--dash-active-text)] border border-[var(--dash-active-border)] shadow-[var(--dash-active-shadow)] font-bold'
-                    : 'text-[var(--dash-text-secondary)] hover:text-[var(--dash-hover-text)] hover:bg-[var(--dash-hover-bg)]'
-                }`}
-                title="Control Tower"
-              >
-                <Icons.ControlTower />
-                {!isCollapsed && <span className="text-sm font-semibold">Control Tower</span>}
-              </button>
-            )}
-
-            {!disableNav && (
-              <button
-                onClick={() => handleTabChange('integrations')}
-                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-left transition duration-200 ${
-                  isCollapsed ? 'lg:justify-center' : ''
-                } ${
-                  activeTab === 'integrations'
-                    ? 'bg-[var(--dash-active-bg)] text-[var(--dash-active-text)] border border-[var(--dash-active-border)] shadow-[var(--dash-active-shadow)] font-bold'
-                    : 'text-[var(--dash-text-secondary)] hover:text-[var(--dash-hover-text)] hover:bg-[var(--dash-hover-bg)]'
-                }`}
-                title="Integrations"
-              >
-                <Icons.Integrations />
-                {!isCollapsed && <span className="text-sm font-semibold">Integrations</span>}
-              </button>
-            )}
-          </nav>
-        </div>
-
-        {/* Bottom Group: Settings & User Profile Card */}
-        <div className="space-y-4 mt-auto">
-          {/* Settings button */}
-          {!disableNav && (
-            <nav className="space-y-1">
-              <button
-                onClick={() => handleTabChange('settings')}
-                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-left transition duration-200 ${
-                  isCollapsed ? 'lg:justify-center' : ''
-                } ${
-                  activeTab === 'settings'
-                    ? 'bg-[var(--dash-active-bg)] text-[var(--dash-active-text)] border border-[var(--dash-active-border)] shadow-[var(--dash-active-shadow)]'
-                    : 'text-[var(--dash-text-secondary)] hover:text-[var(--dash-hover-text)] hover:bg-[var(--dash-hover-bg)]'
-                }`}
-                title="Settings"
-              >
-                <Icons.Settings />
-                {!isCollapsed && <span className="text-sm font-semibold">Settings</span>}
-              </button>
-            </nav>
-          )}
-
-          {/* Co-brand Trust Block */}
-          {!isCollapsed && (
-            <div className="px-3 py-2.5 rounded-xl border border-[var(--dash-border)] bg-[var(--dash-card-bg)]/20 text-[10px] space-y-1.5 font-sans">
-              <div className="flex flex-col">
-                <span className="text-[8px] uppercase tracking-wider text-[var(--dash-text-secondary)] font-bold">BUILT ON</span>
-                <div className="flex items-center mt-0.5">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3.5 h-3.5 text-[var(--dash-accent)] mr-1.5 shrink-0">
-                    <path d="M17.5 19A3.5 3.5 0 0 0 21 15.5c0-2.79-2.54-4.5-5-4.5-.42 0-.83.04-1.24.11A7 7 0 0 0 3 11.5c0 3.62 3.1 6.5 7 6.5h7.5z" />
-                  </svg>
-                  <span className="text-[11px] font-semibold text-[var(--dash-text-primary)]">Google Cloud</span>
-                </div>
-                <span className="text-[9px] mt-0.5 text-[var(--dash-text-secondary)]">Powered by Vertex AI · Cloud Run</span>
-              </div>
-              <div className="border-t border-[var(--dash-border)] pt-1.5 text-[8.5px] leading-normal text-[var(--dash-text-secondary)]">
-                Aligned to NIST AI RMF · ISO 42001 · EU AI Act
-              </div>
-            </div>
-          )}
-
-          {/* User Card */}
-          <div className="pt-4 border-t border-[var(--dash-border)] hidden lg:block">
-            <div className={`flex items-center gap-3 bg-[var(--dash-card-bg)] p-3 rounded-xl border border-[var(--dash-border)] transition duration-200 ${
-              isCollapsed ? 'justify-center' : ''
-            }`} title={user?.email}>
-              <div className="w-9 h-9 rounded-lg bg-gradient-to-tr from-cyan-500 to-indigo-500 flex items-center justify-center font-bold text-slate-950 text-sm shrink-0">
-                {user?.email?.charAt(0).toUpperCase() || 'U'}
-              </div>
-              {!isCollapsed && (
-                <div className="flex items-center justify-between flex-1 min-w-0">
-                  <div className="min-w-0">
-                    <p className="text-xs text-[var(--dash-text-secondary)] uppercase tracking-widest font-semibold">{user?.role || 'Enterprise User'}</p>
-                    <p className="text-sm text-[var(--dash-text-primary)] font-bold truncate">{user?.email}</p>
-                  </div>
-                  <button
-                    onClick={handleLogout}
-                    className="p-1.5 rounded-lg text-[var(--dash-text-secondary)] hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-500/10 transition shrink-0"
-                    title="Logout"
-                  >
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
-                      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                      <polyline points="16 17 21 12 16 7" />
-                      <line x1="21" y1="12" x2="9" y2="12" />
-                    </svg>
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </aside>
 
       {/* Main Panel */}
       <main className={`flex-1 ${activeTab === 'home' ? 'h-full overflow-hidden flex flex-col p-3 lg:p-4 max-w-none space-y-3' : 'p-4 lg:py-6 lg:px-8 space-y-5 overflow-y-auto max-w-[1380px]'} mx-auto w-full`}>
