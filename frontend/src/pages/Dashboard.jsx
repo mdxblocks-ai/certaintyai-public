@@ -2852,69 +2852,96 @@ export default function Dashboard() {
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full border-b border-[var(--dash-border)]/40 pb-4">
                           <div className="text-left">
                             <h1 className="text-2xl lg:text-3xl font-extrabold text-[var(--dash-text-primary)] tracking-tight font-sans">
-                              Welcome, {getGreetingName()}
+                              Welcome to your AI Operating Workspace
                             </h1>
                             <p className="text-xs text-[var(--dash-text-secondary)] mt-1 font-medium font-sans">
-                              Here is your AI Readiness overview. Complete the assessment to see your scores and summary.
+                              Here is your AI Readiness overview, {getGreetingName()}.
                             </p>
                           </div>
                           
-                          {/* Load Reports Multi-Report Switcher */}
-                          {reports && reports.length > 0 && (
-                            <div className="relative shrink-0 select-none">
-                              <button
-                                onClick={() => setLoadReportsOpen(prev => !prev)}
-                                className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-xl px-4 py-2 flex items-center gap-2 hover:border-[var(--dash-accent)]/50 transition cursor-pointer text-xs font-bold text-[var(--dash-text-primary)] focus:outline-none shadow-sm font-sans"
-                              >
-                                <span>📊 Load Reports</span>
-                                <i className={`ti ti-chevron-down text-xs text-[var(--dash-text-secondary)] transition-transform duration-200 ${loadReportsOpen ? 'rotate-180' : ''}`}></i>
-                              </button>
+                          {/* Controls Row: View Roadmap, Ask CertaintyAI, Load Reports */}
+                          <div className="flex flex-wrap items-center gap-3 shrink-0 select-none">
+                            <button
+                              onClick={() => {
+                                const el = document.getElementById('ai-journey-roadmap');
+                                if (el) {
+                                  el.scrollIntoView({ behavior: 'smooth' });
+                                }
+                              }}
+                              className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-xl px-4 py-2 hover:border-[var(--dash-accent)]/50 transition cursor-pointer text-xs font-bold text-[var(--dash-text-primary)] focus:outline-none shadow-sm font-sans"
+                            >
+                              📍 View Roadmap
+                            </button>
 
-                              {loadReportsOpen && (
-                                <div className="absolute right-0 mt-1.5 w-72 bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-xl shadow-lg z-30 overflow-hidden text-xs font-sans border-[var(--dash-border)]">
-                                  <div className="px-4 py-2 bg-[var(--dash-bg)] text-[10px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-wider">
-                                    Select Assessment Report
-                                  </div>
-                                  <div className="max-h-60 overflow-y-auto divide-y divide-[var(--dash-border)]/40 font-sans">
-                                    {reports.map((r, index) => {
-                                      const isActive = activeReportId === r.id;
-                                      const dateStr = r.created_at ? new Date(r.created_at).toLocaleDateString(undefined, {
-                                        year: 'numeric',
-                                        month: 'short',
-                                        day: 'numeric',
-                                        hour: '2-digit',
-                                        minute: '2-digit'
-                                      }) : `Report #${r.id}`;
-                                      return (
-                                        <div
-                                          key={r.id}
-                                          onClick={() => {
-                                            setSelectedReportId(r.id);
-                                            setLoadReportsOpen(false);
-                                          }}
-                                          className={`px-4 py-2.5 hover:bg-[var(--dash-hover-bg)] flex flex-col cursor-pointer transition ${
-                                            isActive ? 'bg-[var(--dash-hover-bg)] font-bold text-[var(--dash-text-primary)] font-semibold' : 'text-[var(--dash-text-secondary)]'
-                                          }`}
-                                        >
-                                          <div className="flex items-center justify-between w-full">
-                                            <span className="font-semibold text-xs truncate">
-                                              Report ID: {r.id} {index === 0 && <span className="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded bg-[var(--dash-active-bg)] text-[var(--dash-accent)] border border-[var(--dash-active-border)] ml-1">Latest</span>}
+                            <button
+                              onClick={() => {
+                                const inputEl = document.querySelector('input[aria-label="Chat input message"]');
+                                if (inputEl) {
+                                  inputEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                  inputEl.focus();
+                                }
+                              }}
+                              className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-xl px-4 py-2 hover:border-[var(--dash-accent)]/50 transition cursor-pointer text-xs font-bold text-[var(--dash-text-primary)] focus:outline-none shadow-sm font-sans"
+                            >
+                              💬 Ask CertaintyAI
+                            </button>
+
+                            {reports && reports.length > 0 && (
+                              <div className="relative">
+                                <button
+                                  onClick={() => setLoadReportsOpen(prev => !prev)}
+                                  className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-xl px-4 py-2 flex items-center gap-2 hover:border-[var(--dash-accent)]/50 transition cursor-pointer text-xs font-bold text-[var(--dash-text-primary)] focus:outline-none shadow-sm font-sans"
+                                >
+                                  <span>📊 Load Reports</span>
+                                  <i className={`ti ti-chevron-down text-xs text-[var(--dash-text-secondary)] transition-transform duration-200 ${loadReportsOpen ? 'rotate-180' : ''}`}></i>
+                                </button>
+
+                                {loadReportsOpen && (
+                                  <div className="absolute right-0 mt-1.5 w-72 bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-xl shadow-lg z-30 overflow-hidden text-xs font-sans border-[var(--dash-border)]">
+                                    <div className="px-4 py-2 bg-[var(--dash-bg)] text-[10px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-wider">
+                                      Select Assessment Report
+                                    </div>
+                                    <div className="max-h-60 overflow-y-auto divide-y divide-[var(--dash-border)]/40 font-sans">
+                                      {reports.map((r, index) => {
+                                        const isActive = activeReportId === r.id;
+                                        const dateStr = r.created_at ? new Date(r.created_at).toLocaleDateString(undefined, {
+                                          year: 'numeric',
+                                          month: 'short',
+                                          day: 'numeric',
+                                          hour: '2-digit',
+                                          minute: '2-digit'
+                                        }) : `Report #${r.id}`;
+                                        return (
+                                          <div
+                                            key={r.id}
+                                            onClick={() => {
+                                              setSelectedReportId(r.id);
+                                              setLoadReportsOpen(false);
+                                            }}
+                                            className={`px-4 py-2.5 hover:bg-[var(--dash-hover-bg)] flex flex-col cursor-pointer transition ${
+                                              isActive ? 'bg-[var(--dash-hover-bg)] font-bold text-[var(--dash-text-primary)] font-semibold' : 'text-[var(--dash-text-secondary)]'
+                                            }`}
+                                          >
+                                            <div className="flex items-center justify-between w-full">
+                                              <span className="font-semibold text-xs truncate">
+                                                Report ID: {r.id} {index === 0 && <span className="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded bg-[var(--dash-active-bg)] text-[var(--dash-accent)] border border-[var(--dash-active-border)] ml-1">Latest</span>}
+                                              </span>
+                                              {isActive && (
+                                                <span className="text-[var(--dash-accent)] text-[10px] font-extrabold">● Active</span>
+                                              )}
+                                            </div>
+                                            <span className="text-[10px] text-[var(--dash-text-secondary)] mt-1">
+                                              {dateStr}
                                             </span>
-                                            {isActive && (
-                                              <span className="text-[var(--dash-accent)] text-[10px] font-extrabold">● Active</span>
-                                            )}
                                           </div>
-                                          <span className="text-[10px] text-[var(--dash-text-secondary)] mt-1">
-                                            {dateStr}
-                                          </span>
-                                        </div>
-                                      );
-                                    })}
+                                        );
+                                      })}
+                                    </div>
                                   </div>
-                                </div>
-                              )}
-                            </div>
-                          )}
+                                )}
+                              </div>
+                            )}
+                          </div>
                         </div>
 
                         {/* KPI Cards Grid */}
@@ -3066,7 +3093,7 @@ export default function Dashboard() {
                         })()}
 
                         {/* AI Journey Panel */}
-                        <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-5 space-y-4 w-full shadow-sm">
+                        <div id="ai-journey-roadmap" className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-5 space-y-4 w-full shadow-sm">
                           <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-widest block text-left">AI Journey Roadmap</span>
                           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-2">
                             {[
