@@ -388,14 +388,39 @@ export default function AgentBuilder() {
         .serif { font-family: 'Fraunces', serif; }
       `}</style>
 
-      {/* Header bar */}
-      <div className="flex items-center justify-between border-b border-slate-300 pb-4 mb-6">
-        <div>
-          <h3 className="serif text-2xl font-bold tracking-tight">Governance Agent Registry</h3>
-          <p className="text-xs text-slate-500 mt-1 font-sans">
-            Compose and manage role-aware autonomous compliance engines — no code required.
-          </p>
+      {/* In-page Tab Navigation */}
+      <div className="flex items-center justify-between border-b border-slate-300 pb-3 mb-6">
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => { setView('library'); fetchAgents(); }}
+            className={`pb-1 text-sm font-bold transition-all relative ${
+              view === 'library'
+                ? 'text-[#1E3A36] border-b-2 border-[#1E3A36]'
+                : 'text-slate-400 hover:text-[#1E3A36]'
+            }`}
+          >
+            AI Agents
+          </button>
+          {view === 'builder' && (
+            <>
+              <span className="text-slate-300 text-sm">/</span>
+              <span className="pb-1 text-sm font-bold text-[#A87C3C]">
+                {selectedAgent ? `Edit: ${name || 'Agent'}` : 'New Agent'}
+              </span>
+            </>
+          )}
         </div>
+        {view === 'library' && (
+          <button
+            type="button"
+            onClick={() => openBuilder(null)}
+            className="bg-[#A87C3C] text-white hover:bg-[#7A5A24] px-3.5 py-1.5 rounded-lg text-xs font-bold shadow-md hover:scale-[1.01] active:scale-[0.99] transition cursor-pointer flex items-center gap-1.5"
+          >
+            <i className="ti ti-plus text-xs"></i>
+            <span>New Agent</span>
+          </button>
+        )}
       </div>
 
       {/* LIBRARY VIEW */}
