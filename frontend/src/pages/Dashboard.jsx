@@ -4935,6 +4935,114 @@ export default function Dashboard() {
                     </div>
                   ))}
                 </div>
+
+                {/* Healthcare Section */}
+                <div className="space-y-4 pt-4">
+                  <h3 className="text-base font-bold text-white flex items-center gap-2">
+                    <span>🏥</span> Healthcare Systems
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 w-full">
+                    {[
+                      { name: 'Epic', desc: 'Electronic health record (planned connector)' },
+                      { name: 'Oracle Health (Cerner)', desc: 'Electronic health record (planned connector)' },
+                      { name: 'athenahealth', desc: 'Electronic health record (planned connector)' },
+                      { name: 'DynaMed', desc: 'Clinical decision support / evidence (planned connector)' },
+                      { name: 'Electronic Prior Authorization', desc: 'CMS interoperability / FHIR-based prior-auth framework (planned connector)' }
+                    ].map((conn) => (
+                      <div key={conn.name} className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-5 flex flex-col justify-between space-y-4 hover:border-[var(--dash-accent)]/30 transition duration-150 shadow-sm text-left">
+                        <div>
+                          <div className="flex items-center justify-between gap-2">
+                            <h4 className="font-bold text-sm text-[var(--dash-text-primary)]">{conn.name}</h4>
+                            <span className="text-[9px] uppercase font-bold px-2 py-0.5 rounded-full bg-[var(--dash-hover-bg)] text-[var(--dash-text-secondary)] border border-[var(--dash-border)] shrink-0">
+                              Not Connected
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-[var(--dash-text-secondary)] mt-2 leading-relaxed">
+                            {conn.desc}
+                          </p>
+                        </div>
+
+                        <div className="pt-2 border-t border-[var(--dash-border)]/50 space-y-2">
+                          <div className="flex justify-between text-[9px] text-[var(--dash-text-secondary)]">
+                            <span>Last Sync</span>
+                            <span className="font-mono font-bold">—</span>
+                          </div>
+                          <div className="flex justify-between text-[9px] text-[var(--dash-text-secondary)]">
+                            <span>Permissions</span>
+                            <span className="font-bold">Read-Only</span>
+                          </div>
+                          <button
+                            onClick={() => setPreviewAlert({
+                              title: `${conn.name} Connector Preview`,
+                              message: 'System integrations are currently in Preview Mode. Live connection will be enabled in a future release.'
+                            })}
+                            className="w-full bg-[var(--dash-hover-bg)] text-[var(--dash-text-primary)] border border-[var(--dash-border)] hover:bg-[var(--dash-active-bg)] hover:text-[var(--dash-active-text)] hover:border-[var(--dash-active-border)] text-xs font-bold py-1.5 rounded-xl transition duration-150 mt-2 cursor-pointer"
+                          >
+                            Connect (Preview)
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Data Governance & Catalog Section */}
+                <div className="space-y-4 pt-4">
+                  <h3 className="text-base font-bold text-white flex items-center gap-2">
+                    <span>🛡️</span> Data Governance & Catalog
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 w-full">
+                    {[
+                      { name: 'OpenMetadata', desc: 'Open-source data catalog (planned connector)' },
+                      { name: 'Microsoft Fabric', desc: 'Unified data platform (planned connector)' },
+                      { name: 'Microsoft Purview', desc: 'Data governance & catalog (planned connector)' },
+                      { name: 'Google Cloud Dataplex', desc: 'Data governance & catalog (planned connector)' },
+                      { name: 'IBM watsonx.data intelligence', desc: 'Data governance & lineage (planned connector)' },
+                      { name: 'Amazon SageMaker Catalog', desc: 'Data governance on Amazon DataZone (planned connector)' }
+                    ].map((conn) => (
+                      <div key={conn.name} className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-5 flex flex-col justify-between space-y-4 hover:border-[var(--dash-accent)]/30 transition duration-150 shadow-sm text-left">
+                        <div>
+                          <div className="flex items-center justify-between gap-2">
+                            <h4 className="font-bold text-sm text-[var(--dash-text-primary)]">{conn.name}</h4>
+                            <span className="text-[9px] uppercase font-bold px-2 py-0.5 rounded-full bg-[var(--dash-hover-bg)] text-[var(--dash-text-secondary)] border border-[var(--dash-border)] shrink-0">
+                              Not Connected
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-[var(--dash-text-secondary)] mt-2 leading-relaxed">
+                            {conn.desc}
+                          </p>
+                        </div>
+
+                        <div className="pt-2 border-t border-[var(--dash-border)]/50 space-y-2">
+                          <div className="flex justify-between text-[9px] text-[var(--dash-text-secondary)]">
+                            <span>Last Sync</span>
+                            <span className="font-mono font-bold">—</span>
+                          </div>
+                          <div className="flex justify-between text-[9px] text-[var(--dash-text-secondary)]">
+                            <span>Permissions</span>
+                            <span className="font-bold">Read-Only</span>
+                          </div>
+                          <button
+                            onClick={() => setPreviewAlert({
+                              title: `${conn.name} Connector Preview`,
+                              message: 'System integrations are currently in Preview Mode. Live connection will be enabled in a future release.'
+                            })}
+                            className="w-full bg-[var(--dash-hover-bg)] text-[var(--dash-text-primary)] border border-[var(--dash-border)] hover:bg-[var(--dash-active-bg)] hover:text-[var(--dash-active-text)] hover:border-[var(--dash-active-border)] text-xs font-bold py-1.5 rounded-xl transition duration-150 mt-2 cursor-pointer"
+                          >
+                            Connect (Preview)
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Trademark Disclaimer line at the bottom */}
+                <div className="pt-8 pb-2 border-t border-[var(--dash-border)]/20 text-center w-full">
+                  <p className="text-[10px] text-[var(--dash-text-secondary)] max-w-2xl mx-auto leading-relaxed">
+                    All product names and trademarks are the property of their respective owners. Connector availability is on our roadmap and does not imply partnership, endorsement, or certification.
+                  </p>
+                </div>
               </div>
             )}
           </div>
