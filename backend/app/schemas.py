@@ -137,3 +137,90 @@ class DynamicSurveyAnswers(BaseModel):
     questions: list[dict[str, Any]]
     email: Optional[str] = None
 
+
+# ============================================================
+# Agent Builder schemas
+# ============================================================
+
+class AgentDocumentOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    agent_id: int
+    source_type: str
+    source_ref: str
+    status: str
+    indexed_at: datetime
+
+
+class AgentCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=255)
+    description: str = ""
+    instructions: str = ""
+    icon: str = "ti-robot"
+    role: str = "ciso"
+    model: str = "Gemini 2.5 · Vertex AI"
+    temperature: float = Field(0.3, ge=0.0, le=1.0)
+    max_steps: int = Field(25, ge=1, le=100)
+    tools: list[str] = Field(default_factory=list)
+    voice_enabled: bool = True
+
+
+class AgentUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=1, max_length=255)
+    description: Optional[str] = None
+    instructions: Optional[str] = None
+    icon: Optional[str] = None
+    role: Optional[str] = None
+    model: Optional[str] = None
+    temperature: Optional[float] = Field(None, ge=0.0, le=1.0)
+    max_steps: Optional[int] = Field(None, ge=1, le=100)
+    tools: Optional[list[str]] = None
+    voice_enabled: Optional[bool] = None
+
+
+class AgentRunOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    agent_id: int
+    input: str
+    steps: list[dict]
+    outcome: str
+    follow_ups: list[str] = Field(default_factory=list)
+    retrieved_sources: list[str] = Field(default_factory=list)
+    status: str
+    started_at: datetime
+    finished_at: datetime
+    owner_id: int
+
+
+class AgentOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+    description: str
+    instructions: str
+    icon: str
+    role: str
+    model: str
+    temperature: float
+    max_steps: int
+    tools: list[str]
+    voice_enabled: bool
+    owner_id: int
+    tenant_id: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+    run_count: int = 0
+    documents: list[AgentDocumentOut] = Field(default_factory=list)
+
+
+class AgentRunRequest(BaseModel):
+    input: str
+    history: list[dict] = Field(default_factory=list)
+    attached_doc_ref: Optional[str] = None
+    attached_doc_content: Optional[str] = None
+
+

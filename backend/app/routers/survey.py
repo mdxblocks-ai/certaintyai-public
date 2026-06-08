@@ -573,3 +573,103 @@ def submit_survey(
     )
 
 
+@router.post("/adk", response_model=SurveyResponse, status_code=status.HTTP_201_CREATED)
+async def submit_survey_adk(
+    payload: Union[SurveyAnswers, DynamicSurveyAnswers],
+    current: User | None = Depends(_maybe_user),
+    db: Session = Depends(get_db),
+) -> SurveyResponse:
+    import os
+    if not os.getenv("USE_ADK_PIPELINE", "false").lower() == "true":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="ADK pipeline is disabled."
+        )
+
+    # Check if this is the dynamic questionnaire format
+    if isinstance(payload, DynamicSurveyAnswers) or (hasattr(payload, "intake") and payload.intake):
+        intake = payload.intake
+        answers = payload.answers
+        questions = payload.questions
+        contact_email = (payload.email or "").strip().lower()
+
+        payload_dict = {
+            "payload_type": "dynamic",
+            "answers": answers,
+            "questions": questions,
+            "intake": intake,
+            "email": contact_email
+        }
+    else:
+        answers = payload.model_dump()
+        if (not answers.get("maturity") or len(answers.get("maturity", [])) == 0) and answers.get("ai_use_cases"):
+            use_cases = answers.get("ai_use_cases", [])
+            if any(x in ["Agentic Workflows", "Analytics", "Coding", "Compliance", "Healthcare", "Customer Support"] for x in use_cases):
+                answers["maturity"] = ["In Production", "Scaling Across Organization"]
+            else:
+                answers["maturity"] = ["🔍 Exploring / Researching"]
+
+        if "objectives_other" in answers and isinstance(answers["objectives_other"], str):
+            answers["objectives_other"], _ = sanitize_and_scan_input(answers["objectives_other"])
+        if "painPoints_other" in answers and isinstance(answers["painPoints_other"], str):
+            answers["painPoints_other"], _ = sanitize_and_scan_input(answers["painPoints_other"])
+
+        contact_email = (payload.company.email or "").strip().lower()
+        payload_dict = {
+            "payload_type": "legacy",
+            "answers": answers,
+            "email": contact_email
+        }
+
+    user_id = str(current.id) if current else "anonymous"
+    import uuid
+    session_id = f"sess_{uuid.uuid4().hex}"
+
+    from ..agents.adk_pipeline import run_adk_pipeline
+
+    report_data = await run_adk_pipeline(payload_dict, user_id=user_id, session_id=session_id)
+
+    assessment = Assessment(
+        user_id=current.id if current else None,
+        contact_email=contact_email,
+        answers=report_data["answers"],
+        scores=report_data["scores"],
+        report_html="",
+    )
+    if current:
+        current.first_assessment_completed = True
+        db.add(current)
+    db.add(assessment)
+    db.commit()
+    db.refresh(assessment)
+
+    try:
+        assessment.report_html = render_report(report_data)
+    except Exception as exc:
+        logger.exception("ADK report generation failed for assessment %s", assessment.id)
+        assessment.report_html = render_error_page(str(exc))
+
+    db.add(assessment)
+    db.commit()
+
+    try:
+        sig = generate_profile_signature(report_data["answers"])
+        vector = create_vector_embedding(sig)
+        memory = AssessmentMemory(
+            assessment_id=assessment.id,
+            signature_text=sig,
+            embedding_json=json.dumps(vector)
+        )
+        db.add(memory)
+        db.commit()
+    except Exception as mem_exc:
+        logger.warning("Failed to persist semantic memory: %s", mem_exc)
+
+    return SurveyResponse(
+        id=assessment.id if current else None,
+        anon_token=assessment.anon_token,
+        report_url=f"/report/by-token/{assessment.anon_token}",
+    )
+
+
+

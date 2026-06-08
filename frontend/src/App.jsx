@@ -44,6 +44,14 @@ export default function App() {
                     </ProtectedRoute>
                   }
                 />
+                <Route
+                  path="/agent-builder"
+                  element={
+                    <ProtectedRoute>
+                      <Navigate to="/dashboard?tab=agent-builder" replace />
+                    </ProtectedRoute>
+                  }
+                />
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </ErrorBoundary>

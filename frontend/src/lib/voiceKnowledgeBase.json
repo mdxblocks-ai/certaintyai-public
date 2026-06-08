@@ -20,7 +20,7 @@
         "rates",
         "investment"
       ],
-      "response": "### 📈 C-Suite AI Investment Health & ROI Verification\n\nCertaintyAI quantifies your technology investments directly against bottom-line outcomes, ensuring business-outcome-driven KPIs map to every model rollout.\n\n#### Core Investment Health Metrics:\n*   **AI Investment Health Score:** **{totalScore}/100** (reflecting mature foundational governance but opportunities to scale).\n*   **Blended Cooperative Labor Rates:** Structured under illustrative, sample cooperative labor rates (ranging from **$185/hr to $210/hr** across key specialist roles: AI Strategist, AI Architect, Data Scientist, ML Engineer, and CISO Security Specialist).\n*   **Payback Horizon:** Standardized workflows yield net payback in **4.2 Months**, generating **$90k+ in validated annual savings**.\n\n#### CFO Next Steps:\n1.  Establish a formal steering committee to manage departmental budgeting.\n2.  Connect BI analytics pipelines directly to the model gateway to track compute spend in real-time."
+      "response": "### 📈 C-Suite AI Investment Health & ROI Verification\n\nCertaintyAI quantifies your technology investments directly against bottom-line outcomes, ensuring business-outcome-driven KPIs map to every model rollout.\n\n#### Core Investment Health Metrics:\n*   **AI Investment Health Score:** **{totalScore}/100** (reflecting mature foundational governance but opportunities to scale).\n*   **Blended Cooperative Labor Rates:** Enterprise labor rates can be configured in your system settings to compute custom blending.\n*   **Payback Horizon:** Connect your enterprise spend and telemetry data to calculate payback, savings, and ROI horizon.\n\n#### CFO Next Steps:\n1.  Establish a formal steering committee to manage departmental budgeting.\n2.  Connect BI analytics pipelines directly to the model gateway to track compute spend in real-time."
     },
     {
       "id": "cfo_finops_optimization",
@@ -31,7 +31,7 @@
         "finops",
         "optimization"
       ],
-      "response": "### 💸 CertaintyAI FinOps & Multi-Cloud Cost Optimization\n\nBased on the active telemetry and model mapping configurations inside your Cockpit, we have simulated the financial impact of shifting high-volume reasoning workflows to resource-optimized orchestrators:\n\n#### Annual Savings Simulation:\n*   **Anthropic Claude to Google Gemini 1.5 Flash:** Shifting 30% of structured JSON extractions and vector search evaluations reduces reasoning fees by **$680/month** (representing a **45% reduction** in compute overhead) with zero loss in schema accuracy.\n*   **Observation Alerts:** Standardizing off-peak execution times for heavy compliance sweeps (e.g., EHR HIPAA ingestion) and utilizing relational semantic caching reduces Snowflake Cortex roundtrips by **18%**.\n\n#### Recommendations for CFO:\n1.  **Deploy Cost-Optimization routing rules** through the multi-agent gateway.\n2.  **Activate token rate-limiting policies** to prevent sandbox usage spikes.\n3.  **Review Snowflake Cortex cache limits** to leverage local relational memory."
+      "response": "### 💸 CertaintyAI FinOps & Multi-Cloud Cost Optimization\n\nBased on the active telemetry and model mapping configurations inside your Cockpit, we can simulate the financial impact of shifting high-volume reasoning workflows to resource-optimized orchestrators:\n\n#### Annual Savings Simulation:\n*   **Anthropic Claude to Google Gemini 1.5 Flash:** Shifting high-volume, structured JSON extractions and vector search evaluations to resource-optimized models reduces reasoning fees with zero loss in schema accuracy. Connect telemetry data to compute specific cost savings.\n*   **Observation Alerts:** Standardizing off-peak execution times for heavy compliance sweeps (e.g., EHR HIPAA ingestion) and utilizing relational semantic caching reduces database roundtrips.\n\n#### Recommendations for CFO:\n1.  **Deploy Cost-Optimization routing rules** through the multi-agent gateway.\n2.  **Activate token rate-limiting policies** to prevent sandbox usage spikes.\n3.  **Review Snowflake Cortex cache limits** to leverage local relational memory."
     },
     {
       "id": "hipaa_compliance",
@@ -145,10 +145,6 @@
       "response": "Your Healthcare AI assessment indicates a {totalScore}/100 score. Under HIPAA Privacy and Security rules, your low Governance ({auditScore}%) and Data Readiness ({ragScore}%) present critical vulnerabilities for PHI data exposure. MDx recommends establishing automated data guardrails and audit logging immediately.",
       "followUps": [
         {
-          "text": "Enable WatsonX strict guardrails",
-          "action": "enable_watsonx_guard"
-        },
-        {
           "text": "View compliance matrix",
           "action": "go_to_insights"
         }
@@ -171,7 +167,7 @@
         "efficiency",
         "saving"
       ],
-      "response": "Your unified Observatory detects high reasoning costs on Anthropic Claude. MDx recommends shifting 30% of your high-volume, structured JSON extractions over to Google Gemini 1.5 Flash. This will reduce your latency by 45% and generate a monthly cost saving of approximately $680 without compromising schema accuracy.",
+      "response": "Your unified Observatory monitors reasoning costs. MDx recommends evaluating high-volume, structured JSON extractions on Google Gemini 1.5 Flash to optimize latency and cost efficiency. Connect your telemetry to view specific computed savings.",
       "followUps": [
         {
           "text": "Deploy cost optimization rule",
@@ -208,7 +204,7 @@
         "anomalies",
         "future"
       ],
-      "response": "Observatory forecasts a 18% spike in token consumption starting next Tuesday. This is directly driven by your scheduled automated HIPAA Compliance and EHR Ingest Scans. MDx recommends scheduling these resource-heavy pipelines during off-peak hours (2:00 AM - 5:00 AM EST) and routing them through Snowflake Cortex's local relational semantic cache to limit cloud database roundtrips.",
+      "response": "Observatory forecasts scheduled scan peaks. This is directly driven by automated HIPAA Compliance and EHR Ingest Scans. MDx recommends scheduling these resource-heavy pipelines during off-peak hours and routing them through a local relational semantic cache to limit cloud database roundtrips.",
       "followUps": [
         {
           "text": "Schedule off-peak HIPAA scan",
@@ -239,43 +235,6 @@
       ]
     },
     {
-      "id": "watsonx_compliance",
-      "keywords": [
-        "watsonx",
-        "compliance",
-        "sovereignty"
-      ],
-      "response": "For strict regulated sovereignty, IBM WatsonX guarantees full on-premise and single-tenant private cloud isolation. When dealing with highly sensitive patient healthcare data or BFSI transactions, MDx blocks generic open-endpoint API routing and maps models securely to your WatsonX dedicated cluster to prevent potential cross-border metadata leaks.",
-      "followUps": [
-        {
-          "text": "Enable WatsonX strict guardrails",
-          "action": "enable_watsonx_guard"
-        },
-        {
-          "text": "View Azure OpenAI security",
-          "action": "azure_security"
-        },
-        {
-          "text": "Read compliance matrix",
-          "action": "go_to_insights"
-        }
-      ],
-      "voicePrompts": [
-        {
-          "label": "🛡️ Show Governance Gaps",
-          "query": "Show my governance gaps"
-        },
-        {
-          "label": "⚠️ High-Risk Gaps",
-          "query": "Identify high-risk governance and operational gaps"
-        },
-        {
-          "label": "⚙️ WatsonX Compliance",
-          "query": "Explain WatsonX regulatory compliance vaults"
-        }
-      ]
-    },
-    {
       "id": "rate_limits",
       "keywords": [
         "limit",
@@ -283,7 +242,7 @@
         "rpm",
         "optimize"
       ],
-      "response": "Your primary OpenAI TPM is currently running at 84% capacity. To avoid rate limits (429 HTTP errors), MDx has automatically provisioned a smart, redundant fallback path. High-priority traffic will seamlessly route to your Azure OpenAI private endpoints which maintain an isolated, unshared quota pool.",
+      "response": "Your primary model API rates are monitored. To avoid rate limits (429 HTTP errors), MDx recommends provisioning a smart, redundant fallback path, routing traffic to private endpoints which maintain isolated quota pools.",
       "followUps": [
         {
           "text": "Adjust fallback priority thresholds",
@@ -367,7 +326,7 @@
     }
   ],
   "voiceDefault": {
-    "response": "Understood. Analyzing \"{text}\". The MDx multi-cloud orchestrator shows fully operational health status for OpenAI, Anthropic, Gemini, Azure OpenAI, WatsonX, and Snowflake Cortex. Average multi-agent response latency stands at a highly optimized 320ms.",
+    "response": "Understood. Analyzing \"{text}\". The MDx multi-cloud orchestrator shows fully operational health status for OpenAI, Anthropic, Gemini, Azure OpenAI, and Snowflake Cortex. Connect model telemetry to view live multi-agent response latency.",
     "followUps": [
       {
         "text": "Show all LLM Latencies",

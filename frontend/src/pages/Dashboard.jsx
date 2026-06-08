@@ -5,11 +5,25 @@ import { useForm } from 'react-hook-form'
 import api from '../lib/api'
 import voiceKnowledgeBase from '../lib/voiceKnowledgeBase.json'
 import SurveyWizard from '../components/survey/SurveyWizard'
+import AgentBuilder from './AgentBuilder'
+import Sidebar from '../components/Sidebar'
+
 
 const SHOW_AI_READINESS_NAV = false;
 
 // Lucide-like custom inline SVGs for premium look & feel
 const Icons = {
+  ControlTower: () => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5">
+      <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+    </svg>
+  ),
+  Integrations: () => (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5">
+      <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M9 16h6M12 12v6" />
+      <circle cx="12" cy="6" r="4" />
+    </svg>
+  ),
   Home: () => (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-5 h-5">
       <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
@@ -534,7 +548,7 @@ const getFollowUpPromptsForResponse = (query) => {
       'Assess AI Security Risks',
       'Identify compliance risks',
       'Draft secure gateway rules',
-      'Review WatsonX sovereignty features',
+      'Review multicloud sovereignty features',
       'Explain my AI Readiness Score',
       'Calculate AI ROI'
     ]
@@ -740,7 +754,6 @@ export default function Dashboard() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const activeTab = searchParams.get('tab') || 'home'
-  const [isCollapsed, setIsCollapsed] = useState(false)
   const disableNav = user && !user.first_assessment_completed
 
   // --- AI Readiness Copilot State ---
@@ -812,27 +825,75 @@ export default function Dashboard() {
   const copilotSpeechRecognitionRef = useRef(null)
   const voiceBottomRef = useRef(null)
 
+  const [allAgents, setAllAgents] = useState([])
+  const [activeAgentId, setActiveAgentId] = useState(0)
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const [copilotReadAloud, setCopilotReadAloud] = useState(false)
 
-
-  // Persist Copilot Sessions to localStorage
-  useEffect(() => {
-    localStorage.setItem('copilot_sessions', JSON.stringify(copilotSessions))
-  }, [copilotSessions])
-
-  // Persist active session id
-  useEffect(() => {
-    localStorage.setItem('copilot_active_session_id', copilotActiveSessionId)
-  }, [copilotActiveSessionId])
-
-  // Redirect to readiness tab if survey not completed
-  useEffect(() => {
-    if (user && !user.first_assessment_completed && activeTab !== 'readiness') {
-      setSearchParams({ tab: 'readiness' })
+  // Get greeting name helper
+  const getGreetingName = () => {
+    if (!user) return 'User'
+    if (user.first_name) return user.first_name
+    if (user.name) return user.name.split(' ')[0]
+    if (user.email) {
+      const localPart = user.email.split('@')[0]
+      if (localPart === 'demo') return 'Demo User'
+      const clean = localPart.split('.')[0]
+      return clean.charAt(0).toUpperCase() + clean.slice(1)
     }
-  }, [user, activeTab, setSearchParams])
+    return 'User'
+  }
 
-  // Get active session
-  const activeCopilotSession = copilotSessions.find(s => s.id === copilotActiveSessionId) || copilotSessions[0] || null
+  // Get starter prompts for an agent based on its role
+  const getAgentStarters = (agent) => {
+    if (!agent) return ["Explain my AI Readiness Score", "Identify AI maturity gaps", "Build an AI adoption roadmap"]
+    const roleKey = (agent.role || 'base').toLowerCase()
+    if (roleKey === 'ciso') {
+      return [
+        "Which NIST AI RMF controls are missing from this vendor's documentation?",
+        "What are our top data-protection and threat-exposure gaps right now?",
+        "Draft a concise risk summary of our current AI security posture."
+      ]
+    }
+    if (roleKey === 'cfo') {
+      return [
+        "What's our current AI spend, and where is the biggest waste?",
+        "What's our AI cost-saving opportunity and the payback period?",
+        "Does this AI proposal meet our investment and governance bar?"
+      ]
+    }
+    return ["Explain my AI Readiness Score", "Identify AI maturity gaps", "Build an AI adoption roadmap"]
+  }
+
+  // Fetch agents list
+  const fetchCustomAgents = async () => {
+    try {
+      const res = await api.get('/agents')
+      setAllAgents(res.data)
+      const baseDbAgent = res.data.find(a => a.role === 'base')
+      if (baseDbAgent && (activeAgentId === 0 || activeAgentId === undefined)) {
+        setActiveAgentId(baseDbAgent.id)
+      }
+    } catch (err) {
+      console.error("Failed to fetch custom agents:", err)
+    }
+  }
+
+  useEffect(() => {
+    if (user) {
+      fetchCustomAgents()
+    }
+  }, [user, activeTab])
+
+  const activeAgent = allAgents.find(a => a.id === activeAgentId) || allAgents.find(a => a.role === 'base') || null
+
+  // Filter sessions by activeAgentId
+  const displayedSessions = copilotSessions.filter(s => 
+    s.agentId === activeAgentId || 
+    (!s.agentId && activeAgent?.role === 'base')
+  )
+
+  const activeCopilotSession = displayedSessions.find(s => s.id === copilotActiveSessionId) || displayedSessions[0] || null
 
   // Ensure active model is updated when session changes
   useEffect(() => {
@@ -840,6 +901,39 @@ export default function Dashboard() {
       setCopilotModel(activeCopilotSession.selectedModel || 'Gemini 2.5 Flash')
     }
   }, [copilotActiveSessionId])
+
+  // Sync sessions when activeAgentId changes
+  useEffect(() => {
+    if (!activeAgentId) return;
+    
+    const agentSessions = copilotSessions.filter(s => s.agentId === activeAgentId);
+    if (agentSessions.length > 0) {
+      const lastActiveId = localStorage.getItem(`last_active_session_for_agent_${activeAgentId}`)
+      if (lastActiveId && agentSessions.some(s => s.id === lastActiveId)) {
+        setCopilotActiveSessionId(lastActiveId)
+      } else {
+        setCopilotActiveSessionId(agentSessions[0].id)
+      }
+    } else {
+      const fallbackId = `session-${activeAgentId}-${Date.now()}`
+      const newSession = {
+        id: fallbackId,
+        title: 'New Chat Session',
+        selectedModel: copilotModel,
+        createdDate: new Date().toISOString(),
+        messages: [],
+        agentId: activeAgentId
+      }
+      setCopilotSessions(prev => [newSession, ...prev])
+      setCopilotActiveSessionId(fallbackId)
+    }
+  }, [activeAgentId])
+
+  useEffect(() => {
+    if (copilotActiveSessionId && activeAgentId) {
+      localStorage.setItem(`last_active_session_for_agent_${activeAgentId}`, copilotActiveSessionId)
+    }
+  }, [copilotActiveSessionId, activeAgentId])
 
   const handleModelChange = (modelName) => {
     setCopilotModel(modelName)
@@ -854,13 +948,14 @@ export default function Dashboard() {
   }
 
   const handleCopilotNewChat = () => {
-    const newId = `session-${Date.now()}`
+    const newId = `session-${activeAgentId}-${Date.now()}`
     const newSession = {
       id: newId,
       title: 'New Chat Session',
       selectedModel: copilotModel,
       createdDate: new Date().toISOString(),
-      messages: []
+      messages: [],
+      agentId: activeAgentId
     }
     setCopilotSessions(prev => [newSession, ...prev])
     setCopilotActiveSessionId(newId)
@@ -870,24 +965,32 @@ export default function Dashboard() {
     e.stopPropagation()
     const updated = copilotSessions.filter(s => s.id !== id)
     setCopilotSessions(updated)
+    const agentSessions = updated.filter(s => s.agentId === activeAgentId)
     if (copilotActiveSessionId === id) {
-      if (updated.length > 0) {
-        setCopilotActiveSessionId(updated[0].id)
+      if (agentSessions.length > 0) {
+        setCopilotActiveSessionId(agentSessions[0].id)
       } else {
-        const fallbackId = `session-${Date.now()}`
-        setCopilotSessions([{
-          id: fallbackId,
-          title: 'New Chat Session',
-          selectedModel: copilotModel,
-          createdDate: new Date().toISOString(),
-          messages: []
-        }])
+        const fallbackId = `session-${activeAgentId}-${Date.now()}`
+        setCopilotSessions(prev => [
+          ...prev.filter(s => s.id !== id),
+          {
+            id: fallbackId,
+            title: 'New Chat Session',
+            selectedModel: copilotModel,
+            createdDate: new Date().toISOString(),
+            messages: [],
+            agentId: activeAgentId
+          }
+        ])
         setCopilotActiveSessionId(fallbackId)
       }
     }
   }
 
   const handleCopilotSpeak = (messageId, text) => {
+    const hasSpeech = typeof window !== 'undefined' && window.speechSynthesis && typeof SpeechSynthesisUtterance !== 'undefined';
+    if (!hasSpeech) return;
+
     if (copilotReadingId === messageId) {
       window.speechSynthesis.cancel()
       setCopilotReadingId(null)
@@ -967,14 +1070,14 @@ export default function Dashboard() {
     const files = Array.from(e.target.files)
     if (files.length === 0) return
 
-    const allowedExtensions = ['pdf', 'docx', 'xlsx', 'csv', 'pptx', 'txt', 'png', 'jpg', 'jpeg']
+    const allowedExtensions = ['txt', 'md']
     const validFiles = files.filter(file => {
       const ext = file.name.split('.').pop().toLowerCase()
       return allowedExtensions.includes(ext)
     })
 
     if (validFiles.length < files.length) {
-      alert("Some files were skipped. Only PDF, DOCX, XLSX, CSV, PPTX, TXT, PNG, JPG, JPEG files are allowed.")
+      alert("Some files were skipped. Only plain-text files (.txt, .md) are allowed.")
     }
 
     if (validFiles.length === 0) return
@@ -982,8 +1085,9 @@ export default function Dashboard() {
     const formatted = validFiles.map(file => ({
       name: file.name,
       size: file.size,
-      type: file.type || 'application/octet-stream',
-      id: `file-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      type: file.type || 'text/plain',
+      id: `file-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      file: file
     }))
     setCopilotFiles(prev => [...prev, ...formatted])
     e.target.value = '' // reset input
@@ -1013,14 +1117,14 @@ export default function Dashboard() {
     const files = Array.from(e.dataTransfer.files)
     if (files.length === 0) return
 
-    const allowedExtensions = ['pdf', 'docx', 'xlsx', 'csv', 'pptx', 'txt', 'png', 'jpg', 'jpeg']
+    const allowedExtensions = ['txt', 'md']
     const validFiles = files.filter(file => {
       const ext = file.name.split('.').pop().toLowerCase()
       return allowedExtensions.includes(ext)
     })
 
     if (validFiles.length < files.length) {
-      alert("Some files were skipped. Only PDF, DOCX, XLSX, CSV, PPTX, TXT, PNG, JPG, JPEG files are allowed.")
+      alert("Some files were skipped. Only plain-text files (.txt, .md) are allowed.")
     }
 
     if (validFiles.length === 0) return
@@ -1028,36 +1132,51 @@ export default function Dashboard() {
     const formatted = validFiles.map(file => ({
       name: file.name,
       size: file.size,
-      type: file.type || 'application/octet-stream',
-      id: `file-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      type: file.type || 'text/plain',
+      id: `file-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      file: file
     }))
     setCopilotFiles(prev => [...prev, ...formatted])
   }
 
-  const handleCopilotSend = (textToSend = copilotInput) => {
+  const readFileAsText = (file) => {
+    // TODO: Implement real PDF/docx parsing + pgvector chunking later in production.
+    // Currently fallback to browser FileReader for plain-text (.txt, .md) only.
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(reader.result)
+      reader.onerror = () => reject(reader.error)
+      reader.readAsText(file)
+    })
+  }
+
+  const handleCopilotSend = async (textToSend = copilotInput) => {
     const trimmed = textToSend.trim()
     if (!trimmed && copilotFiles.length === 0) return
 
     let currentSession = activeCopilotSession
     if (!currentSession) {
-      const newId = `session-${Date.now()}`
+      const newId = `session-${activeAgentId}-${Date.now()}`
       currentSession = {
         id: newId,
         title: trimmed ? (trimmed.length > 25 ? trimmed.substring(0, 25) + '...' : trimmed) : 'File Upload Chat',
         selectedModel: copilotModel,
         createdDate: new Date().toISOString(),
-        messages: []
+        messages: [],
+        agentId: activeAgentId
       }
       setCopilotSessions(prev => [currentSession, ...prev])
       setCopilotActiveSessionId(newId)
     }
+
+    const attachedFiles = [...copilotFiles]
 
     // Add user message
     const userMsg = {
       id: `msg-user-${Date.now()}`,
       role: 'user',
       content: trimmed,
-      files: [...copilotFiles],
+      files: attachedFiles,
       timestamp: new Date().toISOString()
     }
 
@@ -1086,63 +1205,106 @@ export default function Dashboard() {
     const query = trimmed.toLowerCase()
     if (query.includes('hola') || query.includes('reporte') || query.includes('explicar')) detectedLang = 'Spanish'
     else if (query.includes('bonjour') || query.includes('rapport')) detectedLang = 'French'
-    else if (query.includes('hallo') || query.includes('bericht')) detectedLang = 'German'
-    else if (query.includes('olá') || query.includes('relatório')) detectedLang = 'Portuguese'
-    else if (query.includes('مرحبا') || query.includes('تقرير')) detectedLang = 'Arabic'
-    else if (query.includes('नमस्ते') || query.includes('विवरण') || query.includes('रिपोर्ट')) detectedLang = 'Hindi'
-    else if (query.includes('ನಮಸ್ಕಾರ') || query.includes('ವರದಿ') || query.includes('ಸ್ಕೋರ್')) detectedLang = 'Kannada'
-    else if (query.includes('నమస్కారం') || query.includes('నివేదిక')) detectedLang = 'Telugu'
-    else if (query.includes('வணக்கம்') || query.includes('அறிக்கை')) detectedLang = 'Tamil'
-    else if (query.includes('നമസ്കാരം') || query.includes('റിപ്പോർട്ട്')) detectedLang = 'Malayalam'
-    else if (query.includes('こんにちは') || query.includes('レポート') || query.includes('ロードマップ')) detectedLang = 'Japanese'
-    else if (query.includes('안녕하세요') || query.includes('보고서')) detectedLang = 'Korean'
-    else if (query.includes('你好') || query.includes('评估') || query.includes('报告')) detectedLang = 'Chinese'
-
+    
     if (detectedLang !== copilotLanguage) {
       setCopilotLanguage(detectedLang)
     }
 
-    // Match prompt against our expert response mapping
-    const botResponseText = getExpertResponse(trimmed, copilotModel, detectedLang, latestReportData)
+    // Thread history: map past messages
+    const historyList = (currentSession.messages || []).map(m => ({
+      role: m.role,
+      content: m.content
+    }))
 
-    // Add bot message container
-    const botMsgId = `msg-bot-${Date.now()}`
-    const botMsg = {
-      id: botMsgId,
-      role: 'assistant',
-      content: '', // Start empty for streaming
-      timestamp: new Date().toISOString()
+    // Read first file if attached
+    let attachedDocRef = null
+    let attachedDocContent = null
+    if (attachedFiles.length > 0) {
+      const firstFile = attachedFiles[0]
+      attachedDocRef = firstFile.name
+      if (firstFile.file) {
+        try {
+          attachedDocContent = await readFileAsText(firstFile.file)
+        } catch (e) {
+          console.error("Failed to read attached file content:", e)
+        }
+      }
     }
 
-    setCopilotSessions(prev => prev.map(s => 
-      s.id === currentSession.id 
-        ? { ...s, messages: [...updatedMessages, botMsg] } 
-        : s
-    ))
+    try {
+      // Execute agent run API call
+      const res = await api.post(`/agents/${activeAgentId}/run`, {
+        input: trimmed,
+        history: historyList,
+        attached_doc_ref: attachedDocRef,
+        attached_doc_content: attachedDocContent
+      })
 
-    // Stream effect
-    let currentIdx = 0
-    const words = botResponseText.split(' ')
-    const interval = setInterval(() => {
-      if (currentIdx < words.length) {
-        const partialResponse = words.slice(0, currentIdx + 1).join(' ')
-        setCopilotSessions(prev => prev.map(s => {
-          if (s.id === currentSession.id) {
-            const msgs = [...s.messages]
-            const lastMsgIdx = msgs.findIndex(m => m.id === botMsgId)
-            if (lastMsgIdx !== -1) {
-              msgs[lastMsgIdx] = { ...msgs[lastMsgIdx], content: partialResponse }
-            }
-            return { ...s, messages: msgs }
-          }
-          return s
-        }))
-        currentIdx++
-      } else {
-        clearInterval(interval)
-        setCopilotStreaming(false)
+      const runLog = res.data
+      const botResponseText = runLog.outcome || "No output generated by the assistant."
+      const followUps = runLog.follow_ups || []
+      const retrievedSources = runLog.retrieved_sources || []
+
+      // Add bot message container
+      const botMsgId = `msg-bot-${Date.now()}`
+      const botMsg = {
+        id: botMsgId,
+        role: 'assistant',
+        content: '', // Start empty for streaming
+        follow_ups: followUps,
+        retrieved_sources: retrievedSources,
+        timestamp: new Date().toISOString()
       }
-    }, 40)
+
+      setCopilotSessions(prev => prev.map(s => 
+        s.id === currentSession.id 
+          ? { ...s, messages: [...updatedMessages, botMsg] } 
+          : s
+      ))
+
+      // Stream effect word-by-word
+      let currentIdx = 0
+      const words = botResponseText.split(' ')
+      const interval = setInterval(() => {
+        if (currentIdx < words.length) {
+          const partialResponse = words.slice(0, currentIdx + 1).join(' ')
+          setCopilotSessions(prev => prev.map(s => {
+            if (s.id === currentSession.id) {
+              const msgs = [...s.messages]
+              const lastMsgIdx = msgs.findIndex(m => m.id === botMsgId)
+              if (lastMsgIdx !== -1) {
+                msgs[lastMsgIdx] = { ...msgs[lastMsgIdx], content: partialResponse }
+              }
+              return { ...s, messages: msgs }
+            }
+            return s
+          }))
+          currentIdx++
+        } else {
+          clearInterval(interval)
+          setCopilotStreaming(false)
+          
+          if (copilotReadAloud && activeAgent?.voice_enabled !== false) {
+            handleCopilotSpeak(botMsgId, botResponseText)
+          }
+        }
+      }, 30)
+
+    } catch (err) {
+      console.error("Agent execution failed:", err)
+      const errorMsg = {
+        id: `msg-error-${Date.now()}`,
+        role: 'assistant',
+        content: "I'm sorry, I encountered an error executing this request. Please verify the backend connection.",
+        timestamp: new Date().toISOString()
+      }
+      setCopilotSessions(prev => prev.map(s => 
+        s.id === currentSession.id 
+          ? { ...s, messages: [...updatedMessages, errorMsg] } 
+          : s
+      ))
+      setCopilotStreaming(false)
+    }
   }
 
   function handleLogout() {
@@ -1214,11 +1376,12 @@ export default function Dashboard() {
   }, [reportHtml])
 
   const [simulationRatio, setSimulationRatio] = useState(0.8)
-  const currentSpend = reportMeta?.scores?.finops?.monthly_spend || 12000
+  const currentSpend = reportMeta?.scores?.finops?.monthly_spend || 0
   const projectedSavings = Math.round(currentSpend * simulationRatio * 0.60 * 12)
 
   // --- Strategy & Roadmap Sub-Tab States ---
   const [dashboardSubTab, setDashboardSubTab] = useState('strategy')
+  const [controlTowerTab, setControlTowerTab] = useState('overview')
   const [isProcurementModalOpen, setIsProcurementModalOpen] = useState(false)
   const [selectedProcurementTier, setSelectedProcurementTier] = useState(null)
   const [procurementFormSubmitted, setProcurementFormSubmitted] = useState(false)
@@ -1241,7 +1404,7 @@ export default function Dashboard() {
 
   // --- Voice Agent State & Logic ---
   const [isListening, setIsListening] = useState(false)
-  const [voiceEnabled, setVoiceEnabled] = useState(true)
+  const [voiceEnabled, setVoiceEnabled] = useState(false)
   const [agentText, setAgentText] = useState('Welcome back! I am your co-brand AI strategist. How can I help optimize your multi-cloud LLM architecture today?')
 
   // Smooth scroll to keep latest transcript visible
@@ -1382,9 +1545,8 @@ export default function Dashboard() {
       ];
     }
     return [
-      { label: '🛡️ Security Gateways', query: 'Check security gateways and firewall lock status' },
-      { label: '⚙️ WatsonX Compliance', query: 'Explain WatsonX regulatory compliance vaults' },
-      { label: '💸 FinOps Simulation', query: 'Simulate FinOps cost savings for multi-cloud' }
+      { label: '💸 FinOps Simulation', query: 'Simulate FinOps cost savings for multi-cloud' },
+      { label: '📊 Maturity Summary', query: 'Explain my AI maturity level and readiness timeline' }
     ];
   };
 
@@ -1397,7 +1559,7 @@ export default function Dashboard() {
   const [followUps, setFollowUps] = useState([
     { text: 'Analyze LLM cost efficiency', action: 'cost' },
     { text: 'Show forecast anomalies', action: 'forecast' },
-    { text: 'Explain WatsonX compliance', action: 'compliance' },
+    { text: 'Review security frameworks', action: 'security' },
     { text: 'Optimize my API limits', action: 'optimize' },
   ])
 
@@ -1412,6 +1574,9 @@ export default function Dashboard() {
   // Web Speech API Voice synthesis setup
   const speakText = (text) => {
     if (!voiceEnabled || !voiceAssistantOpen) return
+    const hasSpeech = typeof window !== 'undefined' && window.speechSynthesis && typeof SpeechSynthesisUtterance !== 'undefined';
+    if (!hasSpeech) return;
+
     window.speechSynthesis.cancel() // stop any current speech
     const utterance = new SpeechSynthesisUtterance(text)
     utterance.onstart = () => setAgentState('speaking')
@@ -1475,7 +1640,9 @@ export default function Dashboard() {
   // Stop audio immediately when the voice assistant is closed/minimized or hidden
   useEffect(() => {
     if (!voiceAssistantOpen) {
-      window.speechSynthesis.cancel()
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.cancel()
+      }
       setAgentState('idle')
       setIsListening(false)
       setIsAudioPaused(false)
@@ -1494,7 +1661,9 @@ export default function Dashboard() {
   // Global listeners to clean up audio playback on tab change or page unload
   useEffect(() => {
     const handleTabOrPageCleanup = () => {
-      window.speechSynthesis.cancel()
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.cancel()
+      }
       setAgentState('idle')
       setIsListening(false)
       setIsAudioPaused(false)
@@ -1573,7 +1742,7 @@ export default function Dashboard() {
 
       rec.onresult = (event) => {
         // Smart Interruption: If AI is actively speaking and user starts speaking, instantly cancel AI audio
-        if (window.speechSynthesis.speaking) {
+        if (typeof window !== 'undefined' && window.speechSynthesis && window.speechSynthesis.speaking) {
           window.speechSynthesis.cancel()
           setAgentState('listening')
           setIsAudioPaused(false)
@@ -1670,7 +1839,9 @@ export default function Dashboard() {
   // Handle tab change: reset voice agent welcome text, and stop any active speech synthesis/listening
   useEffect(() => {
     // 1. Interrupt active voice playback & recording
-    window.speechSynthesis.cancel()
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.cancel()
+    }
     setAgentState('idle')
     setIsListening(false)
     setIsAudioPaused(false)
@@ -1800,7 +1971,9 @@ export default function Dashboard() {
   const toggleListening = () => {
     // Smart Interruption: If AI is actively speaking, immediately cancel speech, reset audio states, and open microphone
     if (agentState === 'speaking') {
-      window.speechSynthesis.cancel()
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.cancel()
+      }
       setIsAudioPaused(false)
       setAgentState('idle')
     }
@@ -1830,6 +2003,9 @@ export default function Dashboard() {
   // Speak dynamic streaming chunks/sentences sequentially using standard voice queueing
   const speakTextStreamingChunk = (text) => {
     if (!voiceEnabled || !voiceAssistantOpen) return
+    const hasSpeech = typeof window !== 'undefined' && window.speechSynthesis && typeof SpeechSynthesisUtterance !== 'undefined';
+    if (!hasSpeech) return;
+
     const plainText = text.replace(/[#*`\-]/g, '') // remove basic markdown chars
     const utterance = new SpeechSynthesisUtterance(plainText)
     
@@ -1899,8 +2075,10 @@ export default function Dashboard() {
   // Answer Agent Query with streaming tokens & real-time TTS segment queueing
   const handleAgentQuery = (text) => {
     setAgentState('searching')
-    setAgentText('Analyzing telemetry across OpenAI, Anthropic, Gemini, Azure OpenAI, WatsonX, and Snowflake Cortex...')
-    window.speechSynthesis.cancel() // Stop any ongoing playback before starting a new run
+    setAgentText('Analyzing telemetry across OpenAI, Anthropic, Gemini, Azure OpenAI, and Snowflake Cortex...')
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.cancel() // Stop any ongoing playback before starting a new run
+    }
 
     setTimeout(() => {
       let fullResponse = ''
@@ -1995,6 +2173,11 @@ export default function Dashboard() {
   const [reports, setReports] = useState([])
   const [reportsLoading, setReportsLoading] = useState(true)
   const [latestReportData, setLatestReportData] = useState(null)
+  const [latestReportHtml, setLatestReportHtml] = useState('')
+  const [execSummary, setExecSummary] = useState('')
+  const [previewAlert, setPreviewAlert] = useState(null)
+  const [selectedReportId, setSelectedReportId] = useState(null)
+  const [loadReportsOpen, setLoadReportsOpen] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -2005,16 +2188,38 @@ export default function Dashboard() {
     return () => { cancelled = true }
   }, [])
 
+  const activeReportId = selectedReportId || (reports && reports.length > 0 ? reports[0].id : null);
+
   useEffect(() => {
-    if (reports && reports.length > 0) {
-      const latestReport = reports[0]
-      api.get(`/report/${latestReport.id}/data`)
+    if (activeReportId) {
+      api.get(`/report/${activeReportId}/data`)
         .then((res) => {
           setLatestReportData(res.data)
         })
-        .catch((err) => console.error("Error fetching latest report data:", err))
+        .catch((err) => console.error("Error fetching report data:", err))
+
+      api.get(`/report/${activeReportId}`)
+        .then((res) => {
+          setLatestReportHtml(res.data || '')
+          const match = (res.data || '').match(/<p class="exec-summary-in-hero">([\s\S]*?)<\/p>/)
+          if (match && match[1]) {
+            const text = match[1].replace(/<[^>]*>/g, '').trim()
+            setExecSummary(text)
+          } else {
+            setExecSummary('')
+          }
+        })
+        .catch((err) => {
+          console.error("Error fetching report html:", err)
+          setLatestReportHtml('')
+          setExecSummary('')
+        })
+    } else {
+      setLatestReportData(null)
+      setLatestReportHtml('')
+      setExecSummary('')
     }
-  }, [reports])
+  }, [reports, selectedReportId])
 
   async function onPasswordSubmit(values) {
     setServerError('')
@@ -2097,8 +2302,8 @@ export default function Dashboard() {
       partner: 'MDx Partnered'
     },
     {
-      name: 'IBM WatsonX.ai',
-      type: 'Sovereign Compliance',
+      name: 'Google Vertex AI',
+      type: 'Sovereign Compliance & Agents',
       usage: '72,110 tokens / 500K',
       percent: 14,
       calls: 231,
@@ -2109,7 +2314,7 @@ export default function Dashboard() {
       status: 'Sovereignty Protection Enforced',
       color: 'from-purple-500 to-pink-500',
       borderGlow: 'hover:shadow-[0_0_15px_rgba(168,85,247,0.3)]',
-      rec: 'Sovereign guardrails are active. WatsonX hosts all internal patient medical files.',
+      rec: 'Sovereign guardrails are active. Vertex AI secure endpoint hosts all patient medical pipelines.',
       partner: 'MDx Partnered'
     },
     {
@@ -2131,7 +2336,7 @@ export default function Dashboard() {
   ]
 
   const tasksList = [
-    { id: 1, name: 'HIPAA Monthly Compliance Scan', status: 'Running', progress: 68, model: 'IBM WatsonX', type: 'Security' },
+    { id: 1, name: 'HIPAA Monthly Compliance Scan', status: 'Running', progress: 68, model: 'Google Vertex AI', type: 'Security' },
     { id: 2, name: 'EHR Patient Data Intake', status: 'Active', progress: 100, model: 'Snowflake Cortex', type: 'Data Sync' },
     { id: 3, name: 'Ontology Graph Entity Reconciliation', status: 'Pending', progress: 0, model: 'Google Gemini 1.5 Pro', type: 'Ontology' },
     { id: 4, name: 'Strategic Financial Anomaly Audit', status: 'Failed', progress: 42, model: 'Azure OpenAI', type: 'FinOps' },
@@ -2147,180 +2352,17 @@ export default function Dashboard() {
 
   return (
     <div className={`w-full flex flex-col lg:flex-row h-[calc(100vh-64px)] overflow-hidden transition-colors duration-300 bg-[var(--dash-bg)] text-[var(--dash-text-primary)] ${isParchment ? 'theme-parchment' : ''}`}>
-      {/* Sidebar Navigation */}
-      <aside className={`w-full transition-all duration-300 bg-[var(--dash-sidebar-bg)] border-b lg:border-b-0 lg:border-r border-[var(--dash-border)] p-5 flex flex-col justify-between shrink-0 lg:h-full lg:overflow-y-auto ${
-        isCollapsed ? 'lg:w-16' : 'lg:w-52'
-      }`}>
-        <div className="space-y-6 flex-grow flex flex-col">
-          {/* Collapse/Expand Toggle Button */}
-          <button
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            className="hidden lg:flex items-center justify-center p-1.5 rounded-lg border border-[var(--dash-border)] text-[var(--dash-text-secondary)] hover:text-[var(--dash-text-primary)] hover:bg-[var(--dash-hover-bg)] transition w-full"
-            title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
-          >
-            {isCollapsed ? (
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
-                <polyline points="9 18 15 12 9 6" />
-              </svg>
-            ) : (
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
-                <polyline points="15 18 9 12 15 6" />
-              </svg>
-            )}
-          </button>
+      <Sidebar activeTab={activeTab} onTabChange={handleTabChange} />
 
-          <nav className="space-y-1.5">
-            {!disableNav && (
-              <button
-                onClick={() => handleTabChange('home')}
-                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-left transition duration-200 ${
-                  isCollapsed ? 'lg:justify-center' : ''
-                } ${
-                  activeTab === 'home'
-                    ? 'bg-[var(--dash-active-bg)] text-[var(--dash-active-text)] border border-[var(--dash-active-border)] shadow-[var(--dash-active-shadow)]'
-                    : 'text-[var(--dash-text-secondary)] hover:text-[var(--dash-hover-text)] hover:bg-[var(--dash-hover-bg)]'
-                }`}
-                title="Home"
-              >
-                <Icons.Home />
-                {!isCollapsed && <span className="text-sm font-semibold">Home</span>}
-              </button>
-            )}
-
-            {!disableNav && (
-              <button
-                onClick={() => handleTabChange('dashboard')}
-                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-left transition duration-200 ${
-                  isCollapsed ? 'lg:justify-center' : ''
-                } ${
-                  activeTab === 'dashboard'
-                    ? 'bg-[var(--dash-active-bg)] text-[var(--dash-active-text)] border border-[var(--dash-active-border)] shadow-[var(--dash-active-shadow)]'
-                    : 'text-[var(--dash-text-secondary)] hover:text-[var(--dash-hover-text)] hover:bg-[var(--dash-hover-bg)]'
-                }`}
-                title="Dashboard"
-              >
-                <Icons.Dashboard />
-                {!isCollapsed && <span className="text-sm font-semibold">Dashboard</span>}
-              </button>
-            )}
-
-            {(SHOW_AI_READINESS_NAV || disableNav) && (
-              <button
-                onClick={() => handleTabChange('readiness')}
-                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-left transition duration-200 ${
-                  isCollapsed ? 'lg:justify-center' : ''
-                } ${
-                  activeTab === 'readiness'
-                    ? 'bg-[var(--dash-active-bg)] text-[var(--dash-active-text)] border border-[var(--dash-active-border)] shadow-[var(--dash-active-shadow)]'
-                    : 'text-[var(--dash-text-secondary)] hover:text-[var(--dash-hover-text)] hover:bg-[var(--dash-hover-bg)]'
-                }`}
-                title="AI Readiness"
-              >
-                <Icons.Readiness />
-                {!isCollapsed && <span className="text-sm font-semibold">AI Readiness</span>}
-              </button>
-            )}
-
-            {!disableNav && (
-              <button
-                onClick={() => handleTabChange('reports')}
-                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-left transition duration-200 ${
-                  isCollapsed ? 'lg:justify-center' : ''
-                } ${
-                  activeTab === 'reports'
-                    ? 'bg-[var(--dash-active-bg)] text-[var(--dash-active-text)] border border-[var(--dash-active-border)] shadow-[var(--dash-active-shadow)] font-bold'
-                    : 'text-[var(--dash-text-secondary)] hover:text-[var(--dash-hover-text)] hover:bg-[var(--dash-hover-bg)]'
-                }`}
-                title="Saved Reports"
-              >
-                <Icons.Reports />
-                {!isCollapsed && <span className="text-sm font-semibold">Saved Reports</span>}
-              </button>
-            )}
-          </nav>
-        </div>
-
-        {/* Bottom Group: Settings & User Profile Card */}
-        <div className="space-y-4 mt-auto">
-          {/* Settings button */}
-          {!disableNav && (
-            <nav className="space-y-1">
-              <button
-                onClick={() => handleTabChange('settings')}
-                className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-left transition duration-200 ${
-                  isCollapsed ? 'lg:justify-center' : ''
-                } ${
-                  activeTab === 'settings'
-                    ? 'bg-[var(--dash-active-bg)] text-[var(--dash-active-text)] border border-[var(--dash-active-border)] shadow-[var(--dash-active-shadow)]'
-                    : 'text-[var(--dash-text-secondary)] hover:text-[var(--dash-hover-text)] hover:bg-[var(--dash-hover-bg)]'
-                }`}
-                title="Settings"
-              >
-                <Icons.Settings />
-                {!isCollapsed && <span className="text-sm font-semibold">Settings</span>}
-              </button>
-            </nav>
-          )}
-
-          {/* Co-brand Trust Block */}
-          {!isCollapsed && (
-            <div className="px-3 py-2.5 rounded-xl border border-[var(--dash-border)] bg-[var(--dash-card-bg)]/20 text-[10px] space-y-1.5 font-sans">
-              <div className="flex flex-col">
-                <span className="text-[8px] uppercase tracking-wider text-[var(--dash-text-secondary)] font-bold">BUILT ON</span>
-                <div className="flex items-center mt-0.5">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3.5 h-3.5 text-[var(--dash-accent)] mr-1.5 shrink-0">
-                    <path d="M17.5 19A3.5 3.5 0 0 0 21 15.5c0-2.79-2.54-4.5-5-4.5-.42 0-.83.04-1.24.11A7 7 0 0 0 3 11.5c0 3.62 3.1 6.5 7 6.5h7.5z" />
-                  </svg>
-                  <span className="text-[11px] font-semibold text-[var(--dash-text-primary)]">Google Cloud</span>
-                </div>
-                <span className="text-[9px] mt-0.5 text-[var(--dash-text-secondary)]">Powered by Vertex AI · Cloud Run</span>
-              </div>
-              <div className="border-t border-[var(--dash-border)] pt-1.5 text-[8.5px] leading-normal text-[var(--dash-text-secondary)]">
-                Aligned to NIST AI RMF · ISO 42001 · EU AI Act
-              </div>
-            </div>
-          )}
-
-          {/* User Card */}
-          <div className="pt-4 border-t border-[var(--dash-border)] hidden lg:block">
-            <div className={`flex items-center gap-3 bg-[var(--dash-card-bg)] p-3 rounded-xl border border-[var(--dash-border)] transition duration-200 ${
-              isCollapsed ? 'justify-center' : ''
-            }`} title={user?.email}>
-              <div className="w-9 h-9 rounded-lg bg-gradient-to-tr from-cyan-500 to-indigo-500 flex items-center justify-center font-bold text-slate-950 text-sm shrink-0">
-                {user?.email?.charAt(0).toUpperCase() || 'U'}
-              </div>
-              {!isCollapsed && (
-                <div className="flex items-center justify-between flex-1 min-w-0">
-                  <div className="min-w-0">
-                    <p className="text-xs text-[var(--dash-text-secondary)] uppercase tracking-widest font-semibold">{user?.role || 'Enterprise User'}</p>
-                    <p className="text-sm text-[var(--dash-text-primary)] font-bold truncate">{user?.email}</p>
-                  </div>
-                  <button
-                    onClick={handleLogout}
-                    className="p-1.5 rounded-lg text-[var(--dash-text-secondary)] hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-500/10 transition shrink-0"
-                    title="Logout"
-                  >
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
-                      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                      <polyline points="16 17 21 12 16 7" />
-                      <line x1="21" y1="12" x2="9" y2="12" />
-                    </svg>
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </aside>
 
       {/* Main Panel */}
       <main className={`flex-1 ${activeTab === 'home' ? 'h-full overflow-hidden flex flex-col p-3 lg:p-4 max-w-none space-y-3' : 'p-4 lg:py-6 lg:px-8 space-y-5 overflow-y-auto max-w-[1380px]'} mx-auto w-full`}>
         {/* Header Summary Row */}
-        <div className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-[var(--dash-border)] pb-3`}>
-          <div>
-            {activeTab !== 'home' && (
+        {activeTab !== 'home' && (
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-[var(--dash-border)] pb-3">
+            <div>
               <span className="text-xs uppercase tracking-widest text-[var(--dash-accent)] font-bold bg-[var(--dash-active-bg)] border border-[var(--dash-active-border)] px-3 py-1 rounded-full">
-                {activeTab === 'dashboard' && '📊 Executive Briefing'}
+                {activeTab === 'dashboard' && '📊 AI Readiness Dashboard'}
                 {activeTab === 'reports' && '📂 Assessment History'}
                 {activeTab === 'portfolio' && (dashboardSubTab === 'strategy' ? '💎 Strategic Advisory Portfolio' : 'Live Observability Core')}
                 {activeTab === 'readiness' && '🛡️ Readiness & Governance'}
@@ -2329,107 +2371,78 @@ export default function Dashboard() {
                 {activeTab === 'tools' && '🛠️ Model Orchestration'}
                 {activeTab === 'plugins' && '🔌 Plugin Marketplace'}
                 {activeTab === 'settings' && '👤 User Profile'}
+                {activeTab === 'agent-builder' && '🛠️ Agent Builder'}
+                {activeTab === 'control-tower' && '🏰 Control Tower'}
+                {activeTab === 'integrations' && '🔌 Integrations'}
               </span>
-            )}
-            <h2 className="text-3xl font-extrabold text-[var(--dash-text-primary)] mt-2">
-              {activeTab === 'home' && 'AI Readiness Copilot'}
-              {activeTab === 'dashboard' && 'Dashboard'}
-              {activeTab === 'reports' && 'Saved Reports'}
-              {activeTab === 'portfolio' && (dashboardSubTab === 'strategy' ? 'Strategic Advisory Portfolio' : 'LLM Observatory')}
-              {activeTab === 'readiness' && 'AI Readiness Assessment Wizard'}
-              {activeTab === 'tasks' && 'Active Background Workflows'}
-              {activeTab === 'insights' && 'Industry Benchmark Analytics'}
-              {activeTab === 'tools' && 'Integrated Model Control'}
-              {activeTab === 'plugins' && 'Enterprise Plugin Store'}
-              {activeTab === 'settings' && 'Account Settings'}
-            </h2>
-            {activeTab === 'home' && (
-              <p className="text-xs text-[var(--dash-text-secondary)] mt-1 font-medium font-sans">
-                Assess, Plan, Govern and Scale Enterprise AI Adoption
-              </p>
-            )}
-            {activeTab === 'dashboard' && (
-              <p className="text-xs text-[var(--dash-text-secondary)] mt-1 font-medium font-sans">
-                Executive financial summary, investment health score, and ROI payback diagnostics.
-              </p>
-            )}
-            {activeTab === 'readiness' && (
-              <p className="text-xs text-[var(--dash-text-secondary)] mt-1 font-medium font-sans">
-                Take the 2-minute readiness survey to instantly recalculate and regenerate your strategic C-suite deliverables.
-              </p>
-            )}
-          </div>
-          <div className="flex items-center gap-3 text-xs font-sans">
-            {/* Dynamic Role Quick-Switcher - Always Visible */}
-            <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] p-1 rounded-xl flex items-center gap-2 hover:border-[var(--dash-accent)]/50 transition">
-              <span className="text-[var(--dash-text-secondary)] text-xs font-semibold px-2 shrink-0">C-Suite Focus:</span>
-              <select
-                value={user?.role || 'user'}
-                onChange={async (e) => {
-                  try {
-                    await updateUserRole(e.target.value);
-                  } catch (err) {
-                    console.error('Failed to quick-switch role:', err);
-                  }
-                }}
-                className="bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-lg px-2.5 py-1.5 text-xs font-bold text-[var(--dash-text-secondary)] focus:border-[var(--dash-accent)] focus:outline-none transition cursor-pointer hover:text-[var(--dash-text-primary)]"
-              >
-                <option value="user">General Enterprise</option>
-                <option value="CFO">CFO Cockpit 💸</option>
-                <option value="CIO/CTO">CIO / CTO / CISO ⚙️</option>
-                <option value="Healthcare CTO">Healthcare CTO 🏥</option>
-                <option value="Cybersecurity Leader">Cybersecurity Leader 🛡️</option>
-              </select>
+              <h2 className="text-3xl font-extrabold text-[var(--dash-text-primary)] mt-2">
+                {activeTab === 'dashboard' && 'AI Readiness Dashboard'}
+                {activeTab === 'reports' && 'Saved Reports'}
+                {activeTab === 'portfolio' && (dashboardSubTab === 'strategy' ? 'Strategic Advisory Portfolio' : 'LLM Observatory')}
+                {activeTab === 'readiness' && 'AI Readiness Assessment Wizard'}
+                {activeTab === 'tasks' && 'Active Background Workflows'}
+                {activeTab === 'insights' && 'Industry Benchmark Analytics'}
+                {activeTab === 'tools' && 'Integrated Model Control'}
+                {activeTab === 'plugins' && 'Enterprise Plugin Store'}
+                {activeTab === 'settings' && 'Account Settings'}
+                {activeTab === 'agent-builder' && 'Agent Builder & Governance'}
+                {activeTab === 'control-tower' && 'AI Control Tower'}
+                {activeTab === 'integrations' && 'System Integrations'}
+              </h2>
+              {activeTab === 'dashboard' && (
+                <p className="text-xs text-[var(--dash-text-secondary)] mt-1 font-medium font-sans">
+                  Assessment-based analytics, maturity gaps, and opportunities.
+                </p>
+              )}
+              {activeTab === 'control-tower' && (
+                <p className="text-xs text-[var(--dash-text-secondary)] mt-1 font-medium font-sans">
+                  Enterprise AI monitoring, FinOps, and policy compliance controls · Preview Mode.
+                </p>
+              )}
+              {activeTab === 'integrations' && (
+                <p className="text-xs text-[var(--dash-text-secondary)] mt-1 font-medium font-sans">
+                  Connect third-party enterprise platforms to feed live data into CertaintyAI.
+                </p>
+              )}
+              {activeTab === 'agent-builder' && (
+                <p className="text-xs text-[var(--dash-text-secondary)] mt-1 font-medium font-sans">
+                  Govern, build, and deploy custom C-suite AI readiness assistants with custom RAG knowledge bases.
+                </p>
+              )}
+              {activeTab === 'readiness' && (
+                <p className="text-xs text-[var(--dash-text-secondary)] mt-1 font-medium font-sans">
+                  Take the 2-minute readiness survey to instantly recalculate and regenerate your strategic C-suite deliverables.
+                </p>
+              )}
             </div>
-
-            {activeTab === 'home' ? (
-              <div className="flex items-center gap-2">
-                {/* New Chat Button in Top Toolbar */}
-                <button
-                  onClick={handleCopilotNewChat}
-                  className="bg-[var(--dash-newchat-bg)] hover:bg-[var(--dash-newchat-hover-bg)] text-[var(--dash-newchat-text)] hover:text-[var(--dash-newchat-hover-text)] text-xs font-bold px-3 py-1.5 rounded-xl transition duration-150 shadow-[var(--dash-newchat-shadow)] hover:scale-102 active:scale-98 focus:outline-none focus:ring-1 focus:ring-[var(--dash-accent)]"
-                  title="Start a new chat session"
-                >
-                  + New Chat
-                </button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-3">
-                {activeTab === 'portfolio' && (
-                  <div className="flex bg-[var(--dash-card-bg)] border border-[var(--dash-border)] p-1 rounded-xl items-center">
-                    <button
-                      onClick={() => setDashboardSubTab('strategy')}
-                      className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 flex items-center gap-1.5 ${
-                        dashboardSubTab === 'strategy'
-                          ? 'bg-[var(--dash-active-bg)] text-[var(--dash-active-text)] border border-[var(--dash-active-border)] shadow-[var(--dash-active-shadow)]'
-                          : 'border border-transparent text-[var(--dash-text-secondary)] hover:text-[var(--dash-text-primary)]'
-                      }`}
-                    >
-                      💎 Strategy
-                    </button>
-                    <button
-                      onClick={() => setDashboardSubTab('observability')}
-                      className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 flex items-center gap-1.5 ${
-                        dashboardSubTab === 'observability'
-                          ? 'bg-[var(--dash-active-bg)] text-[var(--dash-active-text)] border border-[var(--dash-active-border)] shadow-[var(--dash-active-shadow)]'
-                          : 'border border-transparent text-[var(--dash-text-secondary)] hover:text-[var(--dash-text-primary)] hover:bg-[var(--dash-hover-bg)]'
-                      }`}
-                    >
-                      📊 Observability Core
-                    </button>
-                  </div>
-                )}
-                <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] px-4 py-2 rounded-xl flex items-center gap-3">
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
-                  </span>
-                  <span className="text-[var(--dash-text-secondary)]">Security Gateways: <strong className="text-[var(--emerald)] font-semibold uppercase">Locked</strong></span>
+            <div className="flex items-center gap-3 text-xs font-sans">
+              {activeTab === 'portfolio' && (
+                <div className="flex bg-[var(--dash-card-bg)] border border-[var(--dash-border)] p-1 rounded-xl items-center">
+                  <button
+                    onClick={() => setDashboardSubTab('strategy')}
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 flex items-center gap-1.5 ${
+                      dashboardSubTab === 'strategy'
+                        ? 'bg-[var(--dash-active-bg)] text-[var(--dash-active-text)] border border-[var(--dash-active-border)] shadow-[var(--dash-active-shadow)]'
+                        : 'border border-transparent text-[var(--dash-text-secondary)] hover:text-[var(--dash-text-primary)]'
+                    }`}
+                  >
+                    💎 Strategy
+                  </button>
+                  <button
+                    onClick={() => setDashboardSubTab('observability')}
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 flex items-center gap-1.5 ${
+                      dashboardSubTab === 'observability'
+                        ? 'bg-[var(--dash-active-bg)] text-[var(--dash-active-text)] border border-[var(--dash-active-border)] shadow-[var(--dash-active-shadow)]'
+                        : 'border border-transparent text-[var(--dash-text-secondary)] hover:text-[var(--dash-text-primary)] hover:bg-[var(--dash-hover-bg)]'
+                    }`}
+                  >
+                    📊 Observability Core
+                  </button>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Dynamic Content Body based on selected Tab */}
         <div className={`flex flex-col ${activeTab === 'home' ? 'h-0 flex-grow overflow-hidden' : ''} w-full`}>
@@ -2442,16 +2455,17 @@ export default function Dashboard() {
                   copilotSidebarCollapsed ? 'md:w-16' : 'md:w-56'
                 }`}>
                   <div className="space-y-4 overflow-y-auto scrollbar-none flex-1 pr-1 font-sans">
-                    <div className="flex justify-between items-center pb-2 border-b border-[var(--dash-border)]">
+                    <div className="flex items-center justify-between pb-2 border-b border-[var(--dash-border)] gap-2">
                       {!copilotSidebarCollapsed && (
                         <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-wider animate-fade-in">Sessions</span>
                       )}
-                      <button
-                        onClick={() => setCopilotSidebarCollapsed(!copilotSidebarCollapsed)}
-                        className="p-1 rounded-lg border border-[var(--dash-border)] text-[var(--dash-text-secondary)] hover:text-[var(--dash-accent)] hover:bg-[var(--dash-hover-bg)] transition mx-auto focus:outline-none focus:ring-1 focus:ring-[var(--dash-accent)]"
-                        title={copilotSidebarCollapsed ? "Expand Sessions" : "Collapse Sessions"}
-                        aria-label={copilotSidebarCollapsed ? "Expand Sessions" : "Collapse Sessions"}
-                      >
+                      <div className="flex items-center gap-1.5 ml-auto">
+                        <button
+                          onClick={() => setCopilotSidebarCollapsed(!copilotSidebarCollapsed)}
+                          className="p-1 rounded-lg border border-[var(--dash-border)] text-[var(--dash-text-secondary)] hover:text-[var(--dash-accent)] hover:bg-[var(--dash-hover-bg)] transition focus:outline-none focus:ring-1 focus:ring-[var(--dash-accent)] shrink-0"
+                          title={copilotSidebarCollapsed ? "Expand Sessions" : "Collapse Sessions"}
+                          aria-label={copilotSidebarCollapsed ? "Expand Sessions" : "Collapse Sessions"}
+                        >
                         {copilotSidebarCollapsed ? (
                           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3.5 h-3.5">
                             <polyline points="9 18 15 12 9 6" />
@@ -2515,6 +2529,7 @@ export default function Dashboard() {
                     )}
                   </div>
                 </div>
+              </div>
 
                 {/* Main Chat Workspace Area */}
                 <div 
@@ -2523,6 +2538,90 @@ export default function Dashboard() {
                   onDragLeave={handleDragLeave}
                   onDrop={handleDrop}
                 >
+                  {/* Top-Bar for Agent Picker */}
+                  <div className="flex items-center justify-between pb-3 border-b border-[var(--dash-border)]/40 mb-3 shrink-0">
+                    <div className="relative">
+                      {activeTab !== 'home' ? (
+                        <button
+                          onClick={() => setPickerOpen(prev => !prev)}
+                          className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-xl px-3 py-1.5 flex items-center gap-2 hover:border-[var(--dash-accent)]/50 transition cursor-pointer text-xs font-bold text-[var(--dash-text-primary)] focus:outline-none"
+                        >
+                          {activeAgent?.icon && activeAgent.icon.startsWith('data:image') ? (
+                            <div className="w-5 h-5 rounded overflow-hidden shrink-0 border border-slate-200">
+                              <img src={activeAgent.icon} alt={activeAgent.name} className="w-full h-full object-cover" />
+                            </div>
+                          ) : (
+                            <span className="w-5 h-5 rounded bg-[var(--dash-hover-bg)] text-[var(--dash-accent)] flex items-center justify-center shrink-0">
+                              <i className={`ti ${activeAgent?.icon || 'ti-robot'} text-sm`}></i>
+                            </span>
+                          )}
+                          <span>{activeAgent?.name || 'AI Readiness Copilot'}</span>
+                          <i className={`ti ti-chevron-down text-xs text-[var(--dash-text-secondary)] transition-transform duration-200 ${pickerOpen ? 'rotate-180' : ''}`}></i>
+                        </button>
+                      ) : (
+                        <div className="flex items-center gap-2 px-1 py-1.5 text-xs font-bold text-[var(--dash-text-primary)] font-sans select-none">
+                          <span className="w-5 h-5 rounded bg-[var(--dash-hover-bg)] text-[var(--dash-accent)] flex items-center justify-center shrink-0">
+                            <i className="ti ti-robot text-sm"></i>
+                          </span>
+                          <span>AI Readiness Copilot</span>
+                        </div>
+                      )}
+
+                      {activeTab !== 'home' && pickerOpen && (
+                        <div className="absolute left-0 mt-1.5 w-64 bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-xl shadow-lg z-30 overflow-hidden text-xs font-sans border-[var(--dash-border)]">
+                          {/* Create AI Assistant Pinned at Top */}
+                          <div 
+                            onClick={() => {
+                              setPickerOpen(false)
+                              handleTabChange('agent-builder')
+                            }}
+                            className="px-4 py-3 border-b border-[var(--dash-border)] hover:bg-[var(--dash-hover-bg)] text-[var(--dash-accent)] flex items-center gap-2.5 cursor-pointer font-bold transition"
+                          >
+                            <i className="ti ti-plus text-sm"></i>
+                            <span>Create AI Assistant</span>
+                          </div>
+
+                          {/* List Title */}
+                          <div className="px-4 py-2 bg-[var(--dash-bg)] text-[10px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-wider">
+                            Your Assistants
+                          </div>
+
+                          {/* Assistants list */}
+                          <div className="max-h-60 overflow-y-auto">
+                            {allAgents.map((agent) => (
+                              <div
+                                key={agent.id}
+                                onClick={() => {
+                                  setActiveAgentId(agent.id)
+                                  setPickerOpen(false)
+                                }}
+                                className={`px-4 py-2.5 hover:bg-[var(--dash-hover-bg)] flex items-center justify-between cursor-pointer transition ${
+                                  agent.id === activeAgentId ? 'bg-[var(--dash-hover-bg)] font-bold text-[var(--dash-text-primary)]' : 'text-[var(--dash-text-secondary)]'
+                                }`}
+                              >
+                                <div className="flex items-center gap-2.5 truncate">
+                                  {agent.icon && agent.icon.startsWith('data:image') ? (
+                                    <div className="w-5 h-5 rounded overflow-hidden shrink-0 border border-slate-200">
+                                      <img src={agent.icon} alt={agent.name} className="w-full h-full object-cover" />
+                                    </div>
+                                  ) : (
+                                    <span className="w-5 h-5 rounded bg-[var(--dash-hover-bg)] text-[var(--dash-accent)] flex items-center justify-center shrink-0">
+                                      <i className={`ti ${agent.icon || 'ti-robot'} text-sm`}></i>
+                                    </span>
+                                  )}
+                                  <span className="truncate">{agent.name}</span>
+                                </div>
+                                {agent.id === activeAgentId && (
+                                  <i className="ti ti-check text-[var(--dash-accent)] text-sm"></i>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
                   {/* Drag-and-Drop Overlay */}
                   {isDragging && (
                     <div className="absolute inset-0 bg-[var(--dash-bg)]/90 backdrop-blur-md border-2 border-dashed border-[var(--dash-accent)]/50 rounded-2xl flex flex-col items-center justify-center z-[100] transition-all duration-200 animate-fade-in">
@@ -2543,101 +2642,107 @@ export default function Dashboard() {
                   )}
 
                   {/* Scrollable Conversation Container / Welcome Screen */}
-                  <div className="flex-1 overflow-y-auto space-y-6 pr-1 pb-4">
+                  <div className="flex-grow min-h-0 overflow-y-auto space-y-6 pr-1 pb-4">
                     {(!activeCopilotSession || !activeCopilotSession.messages || activeCopilotSession.messages.length === 0) ? (
-                      /* Welcome Screen with Prompts */
-                       <div className="space-y-6 max-w-xl mx-auto py-8 font-sans text-center flex flex-col justify-center items-center min-h-[70vh]">
-                         <div className="space-y-2">
-                           <h1 className="text-3xl font-extrabold text-[var(--dash-text-primary)] tracking-tight">
-                    {isCfo ? "Welcome to the CFO AI Cockpit." : (isCioCto ? "Welcome to the CIO/CTO AI Cockpit." : "Welcome back.")}
-                  </h1>
-                  <p className="text-xl font-bold text-[var(--dash-text-secondary)]">
-                    {isCfo 
-                      ? "Ready to analyze your AI Investment Health, cost optimization targets, and ROI payback timelines?" 
-                      : (isCioCto ? "Ready to analyze your tech stack integration, GraphRAG data architecture, and security compliance?" : "How can I help you today?")
-                    }
-                  </p>
-                         </div>
-
-                         {/* Recommended Prompt Grid */}
-                         <div className="space-y-4 max-w-md mx-auto text-left w-full mt-6">
-                           <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-widest block text-center">Suggested Starter Actions</span>
-                           <div className="grid grid-cols-2 gap-2.5">
-                             {(isCfo
-                        ? [
-                            'Calculate AI ROI & Payback',
-                            'Analyze Cost Optimization Savings',
-                            'Compare Multi-Cloud FinOps',
-                            'Explain AI Investment Health',
-                            'Review Blended Cooperative Rates'
-                          ]
-                        : (isCioCto
-                            ? [
-                                'Assess AI Security Gaps',
-                                'Explain HIPAA Compliance Status',
-                                'Review WatsonX Regulatory Vaults',
-                                'Build AI Ingestion Roadmap',
-                                'Explain AI Readiness Score'
-                              ]
-                            : [
-                                'Explain AI Readiness Score',
-                                'Identify AI Maturity Gaps',
-                                'Build AI Adoption Roadmap',
-                                'Assess AI Security Risks',
-                                'Calculate AI ROI'
-                              ]
-                          )
-                      ).map((prompt, idx) => (
-                               <button
-                                 key={idx}
-                                 onClick={() => handleCopilotSend(prompt)}
-                                 className="text-left bg-[var(--dash-card-bg)] hover:bg-[var(--dash-hover-bg)] border border-[var(--dash-border)] hover:border-[var(--dash-accent)]/35 p-3 rounded-xl text-[11px] text-[var(--dash-text-secondary)] hover:text-[var(--dash-text-primary)] transition duration-150 shadow-sm flex flex-col justify-between group focus:outline-none focus:ring-2 focus:ring-[var(--dash-accent)] min-h-[64px]"
-                                 aria-label={`Select prompt: ${prompt}`}
+                      /* Enhanced Welcome Screen - Header and Report Selector Only */
+                      <div className="max-w-2xl mx-auto pt-2 pb-6 px-4 space-y-5 font-sans w-full text-left">
+                        {/* Welcome Heading & Report Switcher */}
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 w-full border-b border-[var(--dash-border)]/40 pb-4">
+                          <div className="text-left">
+                            <h1 className="text-2xl lg:text-3xl font-extrabold text-[var(--dash-text-primary)] tracking-tight font-sans">
+                              Welcome to your AI Operating Workspace
+                            </h1>
+                            <p className="text-xs text-[var(--dash-text-secondary)] mt-1 font-medium font-sans">
+                              Here is your AI Readiness overview, {getGreetingName()}.
+                            </p>
+                          </div>
+                          
+                          {/* Controls Row: Load Reports */}
+                          <div className="flex flex-wrap items-center gap-3 shrink-0 select-none">
+                            {reports && reports.length > 0 && (
+                              <div className="relative">
+                                <button
+                                  onClick={() => setLoadReportsOpen(prev => !prev)}
+                                  className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-xl px-4 py-2 flex items-center gap-2 hover:border-[var(--dash-accent)]/50 transition cursor-pointer text-xs font-bold text-[var(--dash-text-primary)] focus:outline-none shadow-sm font-sans"
                                 >
-                                 <span className="font-bold leading-snug">{prompt}</span>
-                                 <span className="text-[var(--dash-accent)] font-extrabold text-right w-full text-xs opacity-60 group-hover:opacity-100 transition duration-150 mt-1.5">→</span>
-                               </button>
-                             ))}
-                           </div>
-                         </div>
-
-                         {/* Categories hint block */}
-                         <div className="pt-6 border-t border-[var(--dash-border)]/40 w-full max-w-md mt-6">
-                           <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-widest block mb-2">Ask anything about:</span>
-                           <div className="flex flex-wrap justify-center gap-1.5 px-2">
-                             {(isCfo
-                                ? [
-                                    'AI ROI & Payback',
-                                    'FinOps Optimization',
-                                    'Blended Cooperative Rates',
-                                    'AI Investment Health',
-                                    'Financial Readiness',
-                                    'Commercial Risk'
-                                  ]
-                                : [
-                                    'AI Readiness',
-                                    'AI Governance',
-                                    'AI Security',
-                                    'AI Compliance',
-                                    'AI Architecture',
-                                    'Agentic AI',
-                                    'Cloud Platforms',
-                                    'Enterprise Transformation'
-                                  ]
-                              ).map((cat) => (
-                               <button
-                                  key={cat}
-                                  onClick={() => handleCopilotSend(cat)}
-                                  className="text-[10px] font-semibold bg-[var(--dash-card-bg)] border border-[var(--dash-border)] px-2.5 py-1 rounded-lg text-[var(--dash-text-secondary)] hover:bg-[var(--dash-hover-bg)] hover:text-[var(--dash-accent)] hover:border-[var(--dash-accent)]/30 transition duration-150 cursor-pointer focus:outline-none active:scale-95"
-                                  title={`Ask about ${cat}`}
-                                  type="button"
-                                >
-                                  {cat}
+                                  <span>📊 Load Reports</span>
+                                  <i className={`ti ti-chevron-down text-xs text-[var(--dash-text-secondary)] transition-transform duration-200 ${loadReportsOpen ? 'rotate-180' : ''}`}></i>
                                 </button>
-                             ))}
-                           </div>
-                         </div>
-                       </div>
+
+                                {loadReportsOpen && (
+                                  <div className="absolute right-0 mt-1.5 w-72 bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-xl shadow-lg z-30 overflow-hidden text-xs font-sans border-[var(--dash-border)]">
+                                    <div className="px-4 py-2 bg-[var(--dash-bg)] text-[10px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-wider">
+                                      Select Assessment Report
+                                    </div>
+                                    <div className="max-h-60 overflow-y-auto divide-y divide-[var(--dash-border)]/40 font-sans">
+                                      {reports.map((r, index) => {
+                                        const isActive = activeReportId === r.id;
+                                        const dateStr = r.created_at ? new Date(r.created_at).toLocaleDateString(undefined, {
+                                          year: 'numeric',
+                                          month: 'short',
+                                          day: 'numeric',
+                                          hour: '2-digit',
+                                          minute: '2-digit'
+                                        }) : `Report #${r.id}`;
+                                        return (
+                                          <div
+                                            key={r.id}
+                                            onClick={() => {
+                                              setSelectedReportId(r.id);
+                                              setLoadReportsOpen(false);
+                                            }}
+                                            className={`px-4 py-2.5 hover:bg-[var(--dash-hover-bg)] flex flex-col cursor-pointer transition ${
+                                              isActive ? 'bg-[var(--dash-hover-bg)] font-bold text-[var(--dash-text-primary)] font-semibold' : 'text-[var(--dash-text-secondary)]'
+                                            }`}
+                                          >
+                                            <div className="flex items-center justify-between w-full">
+                                              <span className="font-semibold text-xs truncate">
+                                                Report ID: {r.id} {index === 0 && <span className="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded bg-[var(--dash-active-bg)] text-[var(--dash-accent)] border border-[var(--dash-active-border)] ml-1">Latest</span>}
+                                              </span>
+                                              {isActive && (
+                                                <span className="text-[var(--dash-accent)] text-[10px] font-extrabold">● Active</span>
+                                              )}
+                                            </div>
+                                            <span className="text-[10px] text-[var(--dash-text-secondary)] mt-1">
+                                              {dateStr}
+                                            </span>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Suggested Actions (prompts feeding the existing chat) */}
+                        <div className="space-y-3 w-full">
+                          <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-widest block text-left">Suggested Executive Actions</span>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
+                            {[
+                              "Explain My Readiness Score",
+                              "Show Governance Gaps",
+                              "Generate AI Roadmap",
+                              "Estimate Business Value",
+                              "Recommend AI Priorities",
+                              "Prepare Executive Summary",
+                              "Create Governance Plan",
+                              "Build AI Control Tower Strategy"
+                            ].map((prompt) => (
+                              <button
+                                key={prompt}
+                                onClick={() => handleCopilotSend(prompt)}
+                                className="text-left bg-[var(--dash-card-bg)] hover:bg-[var(--dash-hover-bg)] border border-[var(--dash-border)] hover:border-[var(--dash-accent)]/35 p-3 rounded-xl text-xs text-[var(--dash-text-secondary)] hover:text-[var(--dash-text-primary)] transition duration-150 shadow-sm flex flex-col justify-between group focus:outline-none focus:ring-2 focus:ring-[var(--dash-accent)] min-h-[56px] w-full cursor-pointer"
+                              >
+                                <span className="font-bold leading-snug">{prompt}</span>
+                                <span className="text-[var(--dash-accent)] font-extrabold text-right w-full text-xs opacity-60 group-hover:opacity-100 transition duration-150 mt-1">→</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
                     ) : (
                       /* Conversation History Bubbles */
                        <div className="space-y-4 max-w-[95%] ml-2 mr-auto md:ml-4">
@@ -2653,7 +2758,13 @@ export default function Dashboard() {
                             >
                               {isBot && (
                                 <div className="w-8 h-8 rounded-full overflow-hidden border border-[var(--dash-border)] shrink-0 shadow bg-[var(--dash-card-bg)] mt-1">
-                                  <img src="/assistant-avatar.jpg" alt="AI Avatar" className="w-full h-full object-cover" />
+                                  {activeAgent?.icon && activeAgent.icon.startsWith('data:image') ? (
+                                    <img src={activeAgent.icon} alt={activeAgent.name} className="w-full h-full object-cover" />
+                                  ) : (
+                                    <div className="w-full h-full bg-[var(--dash-hover-bg)] text-[var(--dash-accent)] flex items-center justify-center">
+                                      <i className={`ti ${activeAgent?.icon || 'ti-robot'} text-base`}></i>
+                                    </div>
+                                  )}
                                 </div>
                               )}
                               <div className={`flex flex-col space-y-1.5 ${msg.role === 'user' ? 'items-end' : 'items-start'} max-w-[85%] w-full`}>
@@ -2691,32 +2802,54 @@ export default function Dashboard() {
                                       {parseMarkdownToReact(msg.content)}
                                     </div>
                                     
+                                    {/* Cited Source References */}
+                                    {msg.retrieved_sources && msg.retrieved_sources.length > 0 && (
+                                      <div className="pt-2 border-t border-[var(--dash-border)]/40 mt-2.5 space-y-1 font-sans">
+                                        <span className="text-[9px] uppercase tracking-wider text-[var(--dash-text-secondary)] font-bold block">
+                                          Cited Sources
+                                        </span>
+                                        <div className="flex flex-wrap gap-1.5">
+                                          {msg.retrieved_sources.map((src, sidx) => (
+                                            <span
+                                              key={sidx}
+                                              className="inline-flex items-center gap-1 bg-[var(--dash-active-bg)] text-[var(--dash-accent)] border border-[var(--dash-active-border)] px-2 py-0.5 rounded text-[10px] font-medium"
+                                            >
+                                              <i className="ti ti-file-text text-[10px]"></i>
+                                              {src}
+                                            </span>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+
                                     {/* Read Aloud Trigger */}
                                     <div className="pt-2 border-t border-[var(--dash-border)] flex justify-between items-center mt-2">
                                       <span className="text-[9px] uppercase tracking-wider text-[var(--dash-text-secondary)] font-bold">
                                         Generated by {copilotModel}
                                       </span>
-                                      <button
-                                        onClick={() => handleCopilotSpeak(msg.id, msg.content)}
-                                        className={`p-1.5 rounded-lg border transition focus:outline-none focus:ring-2 focus:ring-[var(--dash-accent)] ${
-                                          copilotReadingId === msg.id
-                                            ? 'border-[var(--dash-accent)]/30 text-[var(--dash-accent)] bg-[var(--dash-active-bg)] shadow-sm'
-                                            : 'border-[var(--dash-border)] text-[var(--dash-text-secondary)] hover:text-[var(--dash-text-primary)] hover:bg-[var(--dash-hover-bg)]'
-                                        }`}
-                                        title="Read this analysis aloud"
-                                      >
-                                        {copilotReadingId === msg.id ? (
-                                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3 h-3 animate-pulse">
-                                            <line x1="1" y1="12" x2="23" y2="12" />
-                                            <path d="M12 2v20M8 5v14M16 5v14M4 9v6M20 9v6" />
-                                          </svg>
-                                        ) : (
-                                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3 h-3">
-                                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
-                                            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" />
-                                          </svg>
-                                        )}
-                                      </button>
+                                      {activeAgent?.voice_enabled !== false && (
+                                        <button
+                                          onClick={() => handleCopilotSpeak(msg.id, msg.content)}
+                                          className={`p-1.5 rounded-lg border transition focus:outline-none focus:ring-2 focus:ring-[var(--dash-accent)] ${
+                                            copilotReadingId === msg.id
+                                              ? 'border-[var(--dash-accent)]/30 text-[var(--dash-accent)] bg-[var(--dash-active-bg)] shadow-sm'
+                                              : 'border-[var(--dash-border)] text-[var(--dash-text-secondary)] hover:text-[var(--dash-text-primary)] hover:bg-[var(--dash-hover-bg)]'
+                                          }`}
+                                          title="Read this analysis aloud"
+                                        >
+                                          {copilotReadingId === msg.id ? (
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3 h-3 animate-pulse">
+                                              <line x1="1" y1="12" x2="23" y2="12" />
+                                              <path d="M12 2v20M8 5v14M16 5v14M4 9v6M20 9v6" />
+                                            </svg>
+                                          ) : (
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3 h-3">
+                                              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                                              <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07" />
+                                            </svg>
+                                          )}
+                                        </button>
+                                      )}
                                     </div>
                                   </div>
                                 )}
@@ -2727,8 +2860,11 @@ export default function Dashboard() {
                                 <div className="mt-2.5 max-w-[95%] space-y-2 font-sans animate-fade-in">
                                   <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-widest block">Suggested Follow-Ups</span>
                                   <div className="flex flex-wrap gap-2">
-                                    {getFollowUpPromptsForResponse(
-                                      activeCopilotSession.messages.findLast(m => m.role === 'user')?.content || ''
+                                    {(msg.follow_ups && msg.follow_ups.length > 0
+                                      ? msg.follow_ups
+                                      : getFollowUpPromptsForResponse(
+                                          activeCopilotSession.messages.findLast(m => m.role === 'user')?.content || ''
+                                        )
                                     ).map((prompt, pidx) => (
                                       <button
                                         key={pidx}
@@ -2792,13 +2928,14 @@ export default function Dashboard() {
                         onChange={handleCopilotFileChange}
                         multiple
                         className="hidden"
+                        accept=".txt,.md,text/plain"
                       />
                       
                       {/* Attach Document (paperclip) Button */}
                       <button
                         onClick={() => fileInputRef.current?.click()}
                         className="p-1.5 rounded-lg text-[var(--dash-text-secondary)] hover:text-[var(--dash-accent)] hover:bg-[var(--dash-hover-bg)] focus:outline-none focus:ring-2 focus:ring-[var(--dash-accent)] transition shrink-0"
-                        title="Upload supporting documents (PDF, DOCX, XLSX, CSV, PPTX, TXT, PNG, JPG, JPEG)"
+                        title="Upload supporting plain-text documents (.txt, .md)"
                         aria-label="Upload supporting documents"
                       >
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4">
@@ -2807,18 +2944,36 @@ export default function Dashboard() {
                       </button>
 
                       {/* Mic Toggle Trigger */}
-                      <button
-                        onClick={toggleCopilotListening}
-                        className={`p-1.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--dash-accent)] transition duration-150 shrink-0 ${
-                          copilotListening
-                            ? 'text-[var(--rose)] bg-[var(--rose)]/10 shadow-sm border border-[var(--rose)]/20'
-                            : 'text-[var(--dash-text-secondary)] hover:text-[var(--dash-accent)] hover:bg-[var(--dash-hover-bg)]'
-                        }`}
-                        title={copilotListening ? 'Stop listening...' : 'Dictate a prompt'}
-                        aria-label={copilotListening ? 'Stop listening' : 'Dictate a prompt'}
-                      >
-                        <Icons.Mic />
-                      </button>
+                      {activeAgent?.voice_enabled !== false && (
+                        <button
+                          onClick={toggleCopilotListening}
+                          className={`p-1.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--dash-accent)] transition duration-150 shrink-0 ${
+                            copilotListening
+                              ? 'text-[var(--rose)] bg-[var(--rose)]/10 shadow-sm border border-[var(--rose)]/20'
+                              : 'text-[var(--dash-text-secondary)] hover:text-[var(--dash-accent)] hover:bg-[var(--dash-hover-bg)]'
+                          }`}
+                          title={copilotListening ? 'Stop listening...' : 'Dictate a prompt'}
+                          aria-label={copilotListening ? 'Stop listening' : 'Dictate a prompt'}
+                        >
+                          <Icons.Mic />
+                        </button>
+                      )}
+
+                      {/* Auto Read Aloud Toggle */}
+                      {activeAgent?.voice_enabled !== false && (
+                        <button
+                          onClick={() => setCopilotReadAloud(!copilotReadAloud)}
+                          className={`p-1.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--dash-accent)] transition duration-150 shrink-0 ${
+                            copilotReadAloud
+                              ? 'text-[var(--dash-accent)] bg-[var(--dash-active-bg)] border border-[var(--dash-accent)]/20 shadow-sm'
+                              : 'text-[var(--dash-text-secondary)] hover:text-[var(--dash-accent)] hover:bg-[var(--dash-hover-bg)]'
+                          }`}
+                          title={copilotReadAloud ? 'Auto Read Aloud: Enabled' : 'Auto Read Aloud: Disabled'}
+                          aria-label={copilotReadAloud ? 'Disable Auto Read Aloud' : 'Enable Auto Read Aloud'}
+                        >
+                          <i className={`ti ${copilotReadAloud ? 'ti-volume' : 'ti-volume-off'} text-base`}></i>
+                        </button>
+                      )}
 
                       {/* Text Input area */}
                       <input
@@ -2881,6 +3036,12 @@ export default function Dashboard() {
                           <polygon points="22 2 15 22 11 13 2 9 22 2" />
                         </svg>
                       </button>
+                    </div>
+                    
+                    {/* Plain-text helper note */}
+                    <div className="text-[10px] text-[var(--dash-text-secondary)]/75 max-w-[95%] ml-2 mr-auto md:ml-4 px-1.5 flex items-center gap-1 font-medium font-sans mt-1">
+                      <i className="ti ti-info-circle text-xs"></i>
+                      <span>Plain-text files for now (.txt, .md)</span>
                     </div>
                   </div>
                 </div>
@@ -3300,265 +3461,592 @@ export default function Dashboard() {
 
             {/* TAB: CFO DASHBOARD */}
             {activeTab === 'dashboard' && (() => {
-              const totalScore = latestReportData?.scores?.total_score || 42;
-              const monthlySpend = latestReportData?.scores?.finops?.monthly_spend || 12000;
-              const annualSavings = Math.round(monthlySpend * 0.625 * 12);
+              const scores = latestReportData?.scores || {};
+              const totalScore = scores.total_score || 0;
+              const subScores = scores.sub_scores || {};
+              const finops = scores.finops || {};
               
-              let healthColor = 'text-[var(--rose)] border-[var(--rose)]/30 bg-[var(--rose)]/10';
-              let healthText = '🔴 At Risk';
-              if (totalScore >= 80) {
-                healthColor = 'text-[var(--emerald)] border-[var(--emerald)]/30 bg-[var(--emerald)]/10';
-                healthText = '🟢 Healthy';
-              } else if (totalScore >= 50) {
-                healthColor = 'text-[var(--amber)] border-[var(--amber)]/30 bg-[var(--amber)]/10';
-                healthText = '🟡 Needs Attention';
+              // per-domain scores (from Step 1)
+              const semScore = subScores.semantic ?? 0;
+              const ragScore = subScores.rag ?? 0;
+              const audScore = subScores.audit ?? 0;
+              const ovsScore = subScores.oversight ?? 0;
+              const datScore = subScores.data ?? subScores.maturity ?? 0;
+
+              // If no report data is loaded, render the clean empty/preview state callout
+              if (!latestReportData) {
+                return (
+                  <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-8 text-center space-y-4 font-sans max-w-2xl mx-auto my-8 shadow-sm">
+                    <span className="text-4xl block">📊</span>
+                    <h3 className="text-lg font-bold text-[var(--dash-text-primary)]">Ready to visualize your AI maturity?</h3>
+                    <p className="text-xs text-[var(--dash-text-secondary)] leading-relaxed max-w-md mx-auto">
+                      Complete your first assessment to unlock dynamic, assessment-based analytics, maturity gaps, and opportunities on this dashboard.
+                    </p>
+                    <div className="pt-2">
+                      <button
+                        onClick={() => handleTabChange('readiness')}
+                        className="px-4 py-2.5 bg-[var(--dash-accent)] hover:bg-[var(--dash-accent-hover)] text-white text-xs font-bold rounded-xl transition duration-150 shadow-sm cursor-pointer"
+                      >
+                        Start Assessment Survey
+                      </button>
+                    </div>
+                  </div>
+                );
               }
+
+              // Compute Radar Chart SVG metrics
+              const cx = 150;
+              const cy = 150;
+              const rMax = 100;
+              const angles = [
+                -Math.PI / 2,                     // Top: Semantic Alignment
+                -Math.PI / 2 + (2 * Math.PI) / 5, // Top-Right: RAG Accuracy
+                -Math.PI / 2 + (4 * Math.PI) / 5, // Bottom-Right: Audit & Provenance
+                -Math.PI / 2 + (6 * Math.PI) / 5, // Bottom-Left: Governance Oversight
+                -Math.PI / 2 + (8 * Math.PI) / 5  // Top-Left: Data Maturity
+              ];
+              
+              const labels = [
+                "Semantic Alignment",
+                "RAG Accuracy",
+                "Audit & Provenance",
+                "Governance Oversight",
+                "Data Maturity"
+              ];
+              
+              const values = [semScore, ragScore, audScore, ovsScore, datScore];
+
+              // Concentric grid pentagons (20, 40, 60, 80, 100)
+              const gridPentagons = [20, 40, 60, 80, 100].map(val => {
+                const points = angles.map(angle => {
+                  const x = cx + rMax * (val / 100) * Math.cos(angle);
+                  const y = cy + rMax * (val / 100) * Math.sin(angle);
+                  return `${x},${y}`;
+                }).join(" ");
+                return (
+                  <polygon 
+                    key={val} 
+                    points={points} 
+                    fill="none" 
+                    stroke="var(--dash-border)" 
+                    strokeWidth="0.5" 
+                    strokeDasharray={val === 100 ? "" : "2,2"} 
+                    opacity="0.4" 
+                  />
+                );
+              });
+
+              // Radar spider lines/axes
+              const axisLines = angles.map((angle, i) => {
+                const x = cx + rMax * Math.cos(angle);
+                const y = cy + rMax * Math.sin(angle);
+                return (
+                  <line 
+                    key={i} 
+                    x1={cx} 
+                    y1={cy} 
+                    x2={x} 
+                    y2={y} 
+                    stroke="var(--dash-border)" 
+                    strokeWidth="0.75" 
+                    opacity="0.5" 
+                  />
+                );
+              });
+
+              // Radar labels placed around the vertices
+              const labelElements = angles.map((angle, i) => {
+                const labelOffset = 22;
+                let x = cx + (rMax + labelOffset) * Math.cos(angle);
+                let y = cy + (rMax + labelOffset) * Math.sin(angle);
+                
+                let textAnchor = "middle";
+                if (Math.abs(Math.cos(angle)) > 0.1) {
+                  textAnchor = Math.cos(angle) > 0 ? "start" : "end";
+                }
+                
+                let dy = "0.33em";
+                if (i === 0) dy = "-0.4em";
+                if (i === 2 || i === 3) dy = "0.8em";
+                
+                return (
+                  <text
+                    key={i}
+                    x={x}
+                    y={y}
+                    textAnchor={textAnchor}
+                    dy={dy}
+                    className="text-[9px] font-bold fill-[var(--dash-text-secondary)] font-sans"
+                  >
+                    {labels[i]}
+                  </text>
+                );
+              });
+
+              // Radar data polygon
+              const dataPoints = angles.map((angle, i) => {
+                const val = values[i];
+                const x = cx + rMax * (val / 100) * Math.cos(angle);
+                const y = cy + rMax * (val / 100) * Math.sin(angle);
+                return `${x},${y}`;
+              }).join(" ");
+
+              const dataPolygon = (
+                <polygon
+                  points={dataPoints}
+                  fill="var(--dash-accent)"
+                  fillOpacity="0.12"
+                  stroke="var(--dash-accent)"
+                  strokeWidth="2"
+                  className="transition-all duration-500"
+                />
+              );
+
+              // Radar data points/dots
+              const dataDots = angles.map((angle, i) => {
+                const val = values[i];
+                const x = cx + rMax * (val / 100) * Math.cos(angle);
+                const y = cy + rMax * (val / 100) * Math.sin(angle);
+                return (
+                  <circle
+                    key={i}
+                    cx={x}
+                    cy={y}
+                    r="3.5"
+                    fill="var(--dash-accent)"
+                    stroke="var(--dash-card-bg)"
+                    strokeWidth="1.5"
+                    className="transition-all duration-500"
+                  />
+                );
+              });
+
+              // Define fields for horizontal bar charts
+              const domainFields = [
+                { key: 'semantic', label: 'Semantic Alignment' },
+                { key: 'rag', label: 'RAG Accuracy' },
+                { key: 'audit', label: 'Audit & Provenance' },
+                { key: 'oversight', label: 'Governance Oversight' },
+                { key: 'data', label: 'Data Maturity' }
+              ];
+
+              // Executive interpretation gap list
+              const scoresList = [
+                { key: 'semantic', label: 'Semantic Alignment', score: semScore, desc: 'Enterprise data terminology and domain ontologies are fragmented. Standardize cross-system data models to reduce context leakage.' },
+                { key: 'rag', label: 'RAG Accuracy', score: ragScore, desc: 'Model retrieval pipeline validation rates are low. Refine retrieval chunking parameters and index query routers to reduce hallucination risk.' },
+                { key: 'audit', label: 'Audit & Provenance', score: audScore, desc: 'Audit logging for AI agent executions, prompt lineage, and outputs is missing or incomplete. Implement systematic traceability.' },
+                { key: 'oversight', label: 'Governance Oversight', score: ovsScore, desc: 'AI compliance workflows and organizational oversight committees are informal or ad-hoc. Establish formal steering parameters.' },
+                { key: 'data', label: 'Data Maturity', score: datScore, desc: 'Unstructured data ingestion volume, freshness, or formats are unoptimized. Build automated cleanup and ingestion pipelines.' }
+              ];
+              
+              const lowestDomain = scoresList.reduce((min, current) => current.score < min.score ? current : min, scoresList[0]);
+
+              let gapBg = "bg-[var(--rose)]/5 border-[var(--rose)]/20 text-[var(--rose)]";
+              let gapLabel = `Primary Readiness Gap: ${lowestDomain.label}`;
+              let gapIcon = "⚠️";
+              if (lowestDomain.score >= 75) {
+                gapBg = "bg-[var(--emerald)]/5 border-[var(--emerald)]/20 text-[var(--emerald)]";
+                gapLabel = `Primary Optimization Opportunity: ${lowestDomain.label}`;
+                gapIcon = "🎯";
+              } else if (lowestDomain.score >= 50) {
+                gapBg = "bg-[var(--amber)]/5 border-[var(--amber)]/20 text-[var(--amber)]";
+                gapLabel = `Primary Development Area: ${lowestDomain.label}`;
+                gapIcon = "⚡";
+              }
+
+              // 6-Tile calculations:
+              const activeStage = totalScore >= 75 ? 3 : totalScore >= 40 ? 2 : 1;
+              const maturityLevel = totalScore >= 75 ? "Scaling" : totalScore >= 40 ? "Piloting" : "Foundational";
+              const maturityBandRange = totalScore >= 75 ? "75-100" : totalScore >= 40 ? "40-74" : "0-39";
+
+              const coreDomainsForGaps = [
+                { label: "Semantic Alignment", score: semScore },
+                { label: "RAG Accuracy", score: ragScore },
+                { label: "Audit & Provenance", score: audScore },
+                { label: "Governance Oversight", score: ovsScore },
+                { label: "Data Maturity", score: datScore }
+              ];
+              const gapsList = coreDomainsForGaps.filter(d => d.score < 50);
+              const priorityProjectsCount = Math.min(gapsList.length, 3);
+              const sortedGaps = [...gapsList].sort((a, b) => a.score - b.score);
+              const lowestDomainLabels = sortedGaps.slice(0, 2).map(d => d.label).join(", ");
+              const priorityProjectsSubline = lowestDomainLabels ? `${lowestDomainLabels}` : "No critical gaps identified";
+
+              const govAvg = (ovsScore + audScore) / 2;
+              let govGapLabel = "Low gap";
+              if (govAvg < 50) {
+                govGapLabel = "High gap";
+              } else if (govAvg < 75) {
+                govGapLabel = "Medium gap";
+              }
+              const govGapSubline = `Avg: ${govAvg}/100`;
+
+              const stages = [
+                { num: 1, name: 'FOUNDATIONAL', band: '0-39' },
+                { num: 2, name: 'PILOTING & GOVERNANCE', band: '40-74' },
+                { num: 3, name: 'SCALING ENTERPRISE AI', band: '75-100' }
+              ];
 
               return (
                 <div className="space-y-6">
-                  {/* Top Row: 4 key indicators */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {/* Health Score Widget */}
-                    <div className={`border rounded-2xl p-5 flex flex-col justify-between min-h-[140px] backdrop-blur relative overflow-hidden group hover:scale-[1.01] transition duration-300 ${healthColor}`}>
-                      <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-white/5 to-transparent rounded-bl-full pointer-events-none"></div>
-                      <div>
-                        <div className="text-[10px] uppercase font-bold tracking-wider text-[var(--dash-text-secondary)] mb-1">AI Investment Health</div>
-                        <div className="text-3xl font-extrabold font-mono flex items-baseline">
-                          {totalScore}
-                          <span className="text-xs font-normal text-[var(--dash-text-secondary)]/80 ml-1">/100</span>
-                        </div>
-                        <div className="text-[10px] font-extrabold uppercase mt-1 tracking-wider">{healthText}</div>
+                  {/* Executive KPI Strip (6 Tiles) */}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 w-full">
+                    {/* Tile 1: AI Readiness Score */}
+                    <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-xl p-4 flex flex-col justify-between h-28 text-left shadow-sm hover:border-[var(--dash-accent)]/40 transition-all duration-300 group">
+                      <div className="flex justify-between items-start">
+                        <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-wider">AI Readiness Score</span>
+                        <span className="text-xs group-hover:scale-110 transition-transform duration-200">🛡️</span>
                       </div>
-                      <div className="text-[10.5px] text-[var(--dash-text-secondary)] mt-3 leading-relaxed border-t border-[var(--dash-border)] pt-2 font-medium">
-                        • Overspending on premium models<br/>
-                        • Missing governance controls<br/>
-                        • No ROI measurement
+                      <div className="my-1">
+                        <span className="text-2xl font-black text-[var(--dash-text-primary)] font-sans tracking-tight">
+                          {totalScore}/100
+                        </span>
+                      </div>
+                      <div className="text-[9px] text-[var(--dash-text-secondary)] font-semibold truncate">
+                        Based on active report
                       </div>
                     </div>
 
-                    {/* Annual Savings */}
-                    <div className="bg-[var(--dash-card-bg)] border border-[var(--emerald)]/20 hover:border-[var(--emerald)]/30 rounded-2xl p-5 flex flex-col justify-between min-h-[140px] backdrop-blur relative overflow-hidden group hover:scale-[1.01] transition duration-300">
-                      <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-[var(--emerald)]/5 to-transparent rounded-bl-full pointer-events-none"></div>
-                      <div>
-                        <div className="text-[10px] uppercase font-bold tracking-wider text-[var(--dash-text-secondary)] mb-1">Annual Savings</div>
-                        <div className="text-3xl font-extrabold text-[var(--emerald)] font-mono">
-                          ${annualSavings.toLocaleString()}
-                        </div>
-                        <div className="text-[10px] text-[var(--dash-text-secondary)] font-semibold mt-1">Based on ${monthlySpend.toLocaleString()}/mo spend</div>
+                    {/* Tile 2: Maturity Level */}
+                    <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-xl p-4 flex flex-col justify-between h-28 text-left shadow-sm hover:border-[var(--dash-accent)]/40 transition-all duration-300 group">
+                      <div className="flex justify-between items-start">
+                        <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-wider">Maturity Level</span>
+                        <span className="text-xs group-hover:scale-110 transition-transform duration-200">📈</span>
                       </div>
-                      <div className="text-[10.5px] text-[var(--dash-text-secondary)] mt-3 leading-relaxed border-t border-[var(--dash-border)] pt-2 font-medium">
-                        62.5% monthly cost reduction projected via smart multi-cloud model routing.
+                      <div className="my-1">
+                        <span className="text-2xl font-black text-[var(--dash-text-primary)] font-sans tracking-tight">
+                          {maturityLevel}
+                        </span>
                       </div>
-                    </div>
-
-                    {/* Cost Reduction */}
-                    <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-accent)]/20 hover:border-[var(--dash-accent)]/30 rounded-2xl p-5 flex flex-col justify-between min-h-[140px] backdrop-blur relative overflow-hidden group hover:scale-[1.01] transition duration-300">
-                      <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-[var(--dash-accent)]/5 to-transparent rounded-bl-full pointer-events-none"></div>
-                      <div>
-                        <div className="text-[10px] uppercase font-bold tracking-wider text-[var(--dash-text-secondary)] mb-1">Cost Reduction</div>
-                        <div className="text-3xl font-extrabold text-[var(--dash-accent)] font-mono">62.5%</div>
-                        <div className="text-[10px] text-[var(--dash-text-secondary)] font-semibold mt-1">Target spend optimization</div>
-                      </div>
-                      <div className="text-[10.5px] text-[var(--dash-text-secondary)] mt-3 leading-relaxed border-t border-[var(--dash-border)] pt-2 font-medium">
-                        Migrating 95% of basic tasks to standard/flash configurations.
+                      <div className="text-[9px] text-[var(--dash-text-secondary)] font-semibold truncate">
+                        Band: {maturityBandRange}
                       </div>
                     </div>
 
-                    {/* AI Risk Exposure */}
-                    <div className="bg-[var(--dash-card-bg)] border border-[var(--rose)]/20 hover:border-[var(--rose)]/30 rounded-2xl p-5 flex flex-col justify-between min-h-[140px] backdrop-blur relative overflow-hidden group hover:scale-[1.01] transition duration-300">
-                      <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-[var(--rose)]/5 to-transparent rounded-bl-full pointer-events-none"></div>
-                      <div>
-                        <div className="text-[10px] uppercase font-bold tracking-wider text-[var(--dash-text-secondary)] mb-1">AI Risk Exposure</div>
-                        <div className="text-3xl font-extrabold text-[var(--rose)] font-mono">HIGH</div>
-                        <div className="text-[10px] text-[var(--rose)]/80 font-bold uppercase mt-1 tracking-wider">⚠️ Action Required</div>
+                    {/* Tile 3: Priority Projects */}
+                    <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-xl p-4 flex flex-col justify-between h-28 text-left shadow-sm hover:border-[var(--dash-accent)]/40 transition-all duration-300 group">
+                      <div className="flex justify-between items-start">
+                        <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-wider">Priority Projects</span>
+                        <span className="text-xs group-hover:scale-110 transition-transform duration-200">📋</span>
                       </div>
-                      <div className="text-[10.5px] text-[var(--dash-text-secondary)] mt-3 leading-relaxed border-t border-[var(--dash-border)] pt-2 font-medium">
-                        Ad-hoc oversight workflows expose the firm to compliance and security gaps.
+                      <div className="my-1">
+                        <span className={`text-2xl font-black font-sans tracking-tight ${priorityProjectsCount > 0 ? "text-[var(--rose)]" : "text-[var(--emerald)]"}`}>
+                          {priorityProjectsCount}
+                        </span>
+                      </div>
+                      <div className="text-[9px] text-[var(--dash-text-secondary)] font-semibold truncate" title={priorityProjectsSubline}>
+                        {priorityProjectsSubline}
+                      </div>
+                    </div>
+
+                    {/* Tile 4: Governance Gap */}
+                    <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-xl p-4 flex flex-col justify-between h-28 text-left shadow-sm hover:border-[var(--dash-accent)]/40 transition-all duration-300 group">
+                      <div className="flex justify-between items-start">
+                        <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-wider">Governance Gap</span>
+                        <span className="text-xs group-hover:scale-110 transition-transform duration-200">⚖️</span>
+                      </div>
+                      <div className="my-1">
+                        <span className={`text-2xl font-black font-sans tracking-tight ${
+                          govGapLabel === "High gap" ? "text-[var(--rose)]" : 
+                          govGapLabel === "Medium gap" ? "text-[var(--amber)]" : "text-[var(--emerald)]"
+                        }`}>
+                          {govGapLabel}
+                        </span>
+                      </div>
+                      <div className="text-[9px] text-[var(--dash-text-secondary)] font-semibold truncate">
+                        {govGapSubline}
+                      </div>
+                    </div>
+
+                    {/* Tile 5: Value Potential (Roadmap placeholder) */}
+                    <div className="bg-[var(--dash-card-bg)]/40 border border-[var(--dash-border)]/50 rounded-xl p-4 flex flex-col justify-between h-28 text-left transition-all duration-300">
+                      <div className="flex justify-between items-start">
+                        <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-wider">Value Potential</span>
+                        <span className="text-xs filter grayscale opacity-60">💎</span>
+                      </div>
+                      <div className="my-1">
+                        <span className="text-2xl font-black text-[var(--dash-text-secondary)] font-sans tracking-tight">
+                          —
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-[9px] text-[var(--dash-text-secondary)] font-semibold truncate">
+                        <span>Roadmap feature</span>
+                        <span className="bg-[var(--dash-border)]/30 border border-[var(--dash-border)]/60 text-[var(--dash-text-secondary)] px-1.5 py-0.5 rounded text-[8px] uppercase tracking-wider font-extrabold">
+                          Roadmap
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Tile 6: Risk Exposure (Roadmap placeholder) */}
+                    <div className="bg-[var(--dash-card-bg)]/40 border border-[var(--dash-border)]/50 rounded-xl p-4 flex flex-col justify-between h-28 text-left transition-all duration-300">
+                      <div className="flex justify-between items-start">
+                        <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-wider">Risk Exposure</span>
+                        <span className="text-xs filter grayscale opacity-60">⚠️</span>
+                      </div>
+                      <div className="my-1">
+                        <span className="text-2xl font-black text-[var(--dash-text-secondary)] font-sans tracking-tight">
+                          —
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-[9px] text-[var(--dash-text-secondary)] font-semibold truncate">
+                        <span>Roadmap feature</span>
+                        <span className="bg-[var(--dash-border)]/30 border border-[var(--dash-border)]/60 text-[var(--dash-text-secondary)] px-1.5 py-0.5 rounded text-[8px] uppercase tracking-wider font-extrabold">
+                          Roadmap
+                        </span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Middle Row: Financial Opportunity Summary Table */}
-                  <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-6 backdrop-blur">
-                    <h3 className="text-base font-bold text-[var(--dash-text-primary)] mb-4 flex items-center gap-2">
-                      <span className="text-[var(--dash-accent)]">💎</span> Financial Opportunity Summary
-                    </h3>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left border-collapse font-sans text-xs">
-                        <thead>
-                          <tr className="border-b border-[var(--dash-border)] text-[var(--dash-text-secondary)] font-bold uppercase tracking-wider text-[10px]">
-                            <th className="pb-3 px-4">Strategic Metric</th>
-                            <th className="pb-3 px-4 text-right">Target Business Value</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-[var(--dash-border)]/40 text-[var(--dash-text-secondary)]">
-                          <tr className="hover:bg-[var(--dash-hover-bg)] transition duration-150">
-                            <td className="py-3.5 px-4 font-bold text-[var(--dash-text-primary)]">Annual Savings</td>
-                            <td className="py-3.5 px-4 text-right text-[var(--emerald)] font-bold font-mono">${annualSavings.toLocaleString()}</td>
-                          </tr>
-                          <tr className="hover:bg-[var(--dash-hover-bg)] transition duration-150">
-                            <td className="py-3.5 px-4 font-bold text-[var(--dash-text-primary)]">Cost Reduction</td>
-                            <td className="py-3.5 px-4 text-right text-[var(--dash-accent)] font-bold font-mono">62.5%</td>
-                          </tr>
-                          <tr className="hover:bg-[var(--dash-hover-bg)] transition duration-150">
-                            <td className="py-3.5 px-4 font-bold text-[var(--dash-text-primary)]">Audit Cost Reduction</td>
-                            <td className="py-3.5 px-4 text-right text-[var(--accent-2)] font-bold font-mono">60%</td>
-                          </tr>
-                          <tr className="hover:bg-[var(--dash-hover-bg)] transition duration-150">
-                            <td className="py-3.5 px-4 font-bold text-[var(--dash-text-primary)]">Productivity Gain</td>
-                            <td className="py-3.5 px-4 text-right text-[var(--accent-2)] font-bold font-mono">15-25%</td>
-                          </tr>
-                          <tr className="hover:bg-[var(--dash-hover-bg)] transition duration-150">
-                            <td className="py-3.5 px-4 font-bold text-[var(--dash-text-primary)]">Risk Exposure</td>
-                            <td className="py-3.5 px-4 text-right">
-                              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-[var(--rose)]/10 border border-[var(--rose)]/20 text-[var(--rose)]">
-                                High
-                              </span>
-                            </td>
-                          </tr>
-                        </tbody>
-                      </table>
+                  {/* Relocated Maturity Band Strip */}
+                  <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-5 space-y-4 w-full shadow-sm text-left font-sans">
+                    <div className="flex justify-between items-center w-full">
+                      <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-widest block">
+                        Your AI Maturity
+                      </span>
+                      <span className="text-[10px] font-bold text-[var(--dash-accent)] uppercase bg-[var(--dash-active-bg)] border border-[var(--dash-active-border)] px-2.5 py-0.5 rounded-lg shadow-sm">
+                        Stage {activeStage} of 3
+                      </span>
+                    </div>
+
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-2 relative">
+                      {stages.map((stage, idx) => {
+                        const isActive = activeStage === stage.num;
+                        return (
+                          <div key={stage.num} className="flex-1 flex flex-col md:flex-row items-center gap-2 relative w-full">
+                            <div className={`w-full rounded-xl p-3 border transition duration-150 text-center flex flex-col justify-center items-center ${
+                              isActive 
+                                ? 'bg-[var(--dash-active-bg)] border-[var(--dash-active-border)] text-[var(--dash-active-text)] shadow-sm'
+                                : 'bg-[var(--dash-bg)]/40 border-[var(--dash-border)]/70 opacity-50 text-[var(--dash-text-secondary)]'
+                            }`}>
+                              <div className="flex items-center gap-2">
+                                <span className="text-[11px] font-bold tracking-wider">{stage.name}</span>
+                                {isActive && (
+                                  <span className="text-[9px] font-extrabold uppercase bg-[var(--dash-accent)]/20 border border-[var(--dash-accent)] text-[var(--dash-accent)] px-1.5 py-0.5 rounded">
+                                    Current
+                                  </span>
+                                )}
+                              </div>
+                              <span className="text-[10px] font-mono mt-1 font-semibold block">Band: {stage.band}</span>
+                            </div>
+                            
+                            {idx < 2 && (
+                              <div className={`hidden md:block w-8 h-[2px] shrink-0 ${
+                                activeStage > stage.num
+                                  ? 'bg-[var(--dash-accent)]/40'
+                                  : 'bg-[var(--dash-border)]/40'
+                              }`} />
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
 
-                  {/* Bottom Row: Donut Chart & ROI Timeline */}
+                  {/* Top Analytics Row: Radar Spider Chart & Horizontal Bar Chart */}
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Donut Spend Chart */}
-                    <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-6 backdrop-blur flex flex-col justify-between">
+                    {/* Radar Chart Panel */}
+                    <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-6 flex flex-col justify-between shadow-sm">
                       <div>
-                        <h3 className="text-base font-bold text-[var(--dash-text-primary)] mb-4 flex items-center gap-2">
-                          <span className="text-[var(--dash-accent)]">📊</span> AI Spend Breakdown
+                        <h3 className="text-base font-bold text-[var(--dash-text-primary)] mb-2 flex items-center gap-2">
+                          <span className="text-[var(--dash-accent)]">🛡️</span> AI Maturity Radar
                         </h3>
-                        <div className="flex flex-col sm:flex-row items-center gap-8 justify-center py-4">
-                          <div className="relative w-36 h-36 rounded-full flex items-center justify-center flex-shrink-0" style={{
-                            background: 'conic-gradient(var(--accent) 0% 65%, var(--accent-2) 65% 80%, var(--amber) 80% 88%, var(--rose) 88% 95%, var(--emerald) 95% 100%)'
-                          }}>
-                            {/* Inner circle for donut hole */}
-                            <div className="absolute w-24 h-24 rounded-full bg-[var(--dash-bg)] flex flex-col items-center justify-center z-10 shadow-inner">
-                              <span className="text-[8px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-widest">Total Spend</span>
-                              <span className="text-sm font-extrabold text-[var(--dash-text-primary)] font-mono">${monthlySpend.toLocaleString()}/mo</span>
-                            </div>
-                          </div>
-
-                          <div className="flex flex-col gap-2.5 w-full max-w-[200px]">
-                            <div className="flex items-center justify-between text-xs">
-                              <div className="flex items-center gap-2">
-                                <span className="w-2.5 h-2.5 rounded bg-[var(--dash-accent)] flex-shrink-0"></span>
-                                <span className="text-[var(--dash-text-secondary)]">Premium Models</span>
-                              </div>
-                              <span className="font-bold text-[var(--dash-text-primary)] font-mono">65%</span>
-                            </div>
-                            <div className="flex items-center justify-between text-xs">
-                              <div className="flex items-center gap-2">
-                                <span className="w-2.5 h-2.5 rounded bg-[var(--accent-2)] flex-shrink-0"></span>
-                                <span className="text-[var(--dash-text-secondary)]">Infrastructure</span>
-                              </div>
-                              <span className="font-bold text-[var(--dash-text-primary)] font-mono">15%</span>
-                            </div>
-                            <div className="flex items-center justify-between text-xs">
-                              <div className="flex items-center gap-2">
-                                <span className="w-2.5 h-2.5 rounded bg-[var(--amber)] flex-shrink-0"></span>
-                                <span className="text-[var(--dash-text-secondary)]">Data Quality</span>
-                              </div>
-                              <span className="font-bold text-[var(--dash-text-primary)] font-mono">8%</span>
-                            </div>
-                            <div className="flex items-center justify-between text-xs">
-                              <div className="flex items-center gap-2">
-                                <span className="w-2.5 h-2.5 rounded bg-[var(--rose)] flex-shrink-0"></span>
-                                <span className="text-[var(--dash-text-secondary)]">RAG pipelines</span>
-                              </div>
-                              <span className="font-bold text-[var(--dash-text-primary)] font-mono">7%</span>
-                            </div>
-                            <div className="flex items-center justify-between text-xs">
-                              <div className="flex items-center gap-2">
-                                <span className="w-2.5 h-2.5 rounded bg-[var(--emerald)] flex-shrink-0"></span>
-                                <span className="text-[var(--dash-text-secondary)]">Embeddings</span>
-                              </div>
-                              <span className="font-bold text-[var(--dash-text-primary)] font-mono">5%</span>
-                            </div>
-                          </div>
-                        </div>
+                        <p className="text-xs text-[var(--dash-text-secondary)] mb-6 font-medium">
+                          Multi-dimensional view of your assessment sub-scores across the 5 core AI readiness pillars.
+                        </p>
+                      </div>
+                      
+                      <div className="flex justify-center items-center py-4">
+                        <svg width="340" height="300" viewBox="0 0 340 300" className="mx-auto overflow-visible">
+                          {gridPentagons}
+                          {axisLines}
+                          {dataPolygon}
+                          {dataDots}
+                          {labelElements}
+                          {/* Center Dot */}
+                          <circle cx={cx} cy={cy} r="2.5" fill="var(--dash-text-secondary)" opacity="0.6" />
+                        </svg>
                       </div>
                     </div>
 
-                    {/* ROI Payback Timeline */}
-                    <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-6 backdrop-blur flex flex-col justify-between">
+                    {/* Bar Chart Panel */}
+                    <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-6 flex flex-col justify-between shadow-sm">
                       <div>
-                        <h3 className="text-base font-bold text-[var(--dash-text-primary)] mb-4 flex items-center gap-2">
-                          <span className="text-[var(--dash-accent)]">📈</span> ROI Timeline
+                        <h3 className="text-base font-bold text-[var(--dash-text-primary)] mb-2 flex items-center gap-2">
+                          <span className="text-[var(--dash-accent)]">📊</span> Readiness by Domain
                         </h3>
-                        <p className="text-xs text-[var(--dash-text-secondary)] mb-6 leading-relaxed">
-                          Projected cumulative savings and break-even milestones over a 12-month horizon.
+                        <p className="text-xs text-[var(--dash-text-secondary)] mb-6 font-medium">
+                          Linear breakdown of your computed scores for each assessment category.
                         </p>
-                        
-                        <div className="relative flex justify-between items-start pt-8 pb-4">
-                          {/* Progress Line */}
-                          <div className="absolute top-[41px] left-2.5 right-2.5 h-0.5 bg-[var(--dash-border)] z-0">
-                            <div className="h-full bg-[var(--dash-accent)]" style={{ width: '40%' }}></div>
-                          </div>
+                      </div>
 
-                          {/* Steps */}
-                          <div className="flex flex-col items-center z-10 w-[20%] text-center">
-                            <div className="w-5 h-5 rounded-full bg-[var(--dash-accent)] border-4 border-[var(--dash-bg)] shadow-[0_0_8px_var(--accent)] flex items-center justify-center"></div>
-                            <span className="text-[8px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-wider mt-2.5">Month 0</span>
-                            <span className="text-[10px] font-bold text-[var(--dash-text-primary)] mt-1">Inception</span>
-                          </div>
+                      <div className="space-y-5 py-4">
+                        {domainFields.map(field => {
+                          const score = subScores[field.key] ?? subScores.maturity ?? 0;
+                          let barColor = "bg-[var(--dash-accent)]";
+                          if (score < 40) barColor = "bg-[var(--rose)]";
+                          else if (score < 75) barColor = "bg-[var(--amber)]";
                           
-                          <div className="flex flex-col items-center z-10 w-[20%] text-center">
-                            <div className="w-5 h-5 rounded-full bg-[var(--dash-accent)] border-4 border-[var(--dash-bg)] shadow-[0_0_8px_var(--accent)] flex items-center justify-center"></div>
-                            <span className="text-[8px] font-bold text-[var(--dash-accent)] uppercase tracking-wider mt-2.5">Month 3</span>
-                            <span className="text-[10px] font-extrabold text-emerald-400 mt-1">🏆 Break-Even</span>
-                          </div>
-
-                          <div className="flex flex-col items-center z-10 w-[20%] text-center">
-                            <div className="w-5 h-5 rounded-full bg-[var(--dash-bg)] border-4 border-[var(--dash-border)] flex items-center justify-center"></div>
-                            <span className="text-[8px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-wider mt-2.5">Month 6</span>
-                            <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] mt-1">62% savings</span>
-                          </div>
-
-                          <div className="flex flex-col items-center z-10 w-[20%] text-center">
-                            <div className="w-5 h-5 rounded-full bg-[var(--dash-bg)] border-4 border-[var(--dash-border)] flex items-center justify-center"></div>
-                            <span className="text-[8px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-wider mt-2.5">Month 12</span>
-                            <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] mt-1">$90K saved</span>
-                          </div>
-                        </div>
+                          return (
+                            <div key={field.key} className="space-y-1.5 font-sans">
+                              <div className="flex justify-between text-xs font-bold">
+                                <span className="text-[var(--dash-text-primary)]">{field.label}</span>
+                                <span className="text-[var(--dash-text-secondary)] font-mono">{score}/100</span>
+                              </div>
+                              <div className="w-full bg-[var(--dash-border)]/20 h-2.5 rounded-full overflow-hidden">
+                                <div
+                                  className={`${barColor} h-full rounded-full transition-all duration-500`}
+                                  style={{ width: `${score}%` }}
+                                />
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   </div>
 
-                  {/* Recommendations Row */}
-                  <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-6 backdrop-blur">
+                  {/* Middle Row: Executive Interpretation & Calculated FinOps Metrics */}
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* Executive Interpretation Column (2/3 width) */}
+                    <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-6 lg:col-span-2 space-y-4 shadow-sm text-left">
+                      <h3 className="text-base font-bold text-[var(--dash-text-primary)] flex items-center gap-2">
+                        <span className="text-[var(--dash-accent)]">📝</span> Executive Interpretation
+                      </h3>
+                      
+                      {execSummary ? (
+                        <p className="text-xs text-[var(--dash-text-primary)] leading-relaxed italic border-l-2 border-[var(--dash-accent)]/50 pl-4 font-semibold font-sans">
+                          "{execSummary}"
+                        </p>
+                      ) : (
+                        <div className="text-xs text-[var(--dash-text-secondary)] leading-relaxed italic border-l-2 border-[var(--dash-border)] pl-4 font-medium font-sans">
+                          "System is processing completed assessment data to output optimized strategic brief insights."
+                        </div>
+                      )}
+
+                      {/* Calculated Primary Gap Callout */}
+                      <div className={`border rounded-xl p-4 space-y-2 text-xs font-sans ${gapBg}`}>
+                        <div className="flex items-center gap-2 font-bold">
+                          <span>{gapIcon}</span>
+                          <span className="uppercase tracking-wider">{gapLabel} (Score: {lowestDomain.score}/100)</span>
+                        </div>
+                        <p className="leading-relaxed opacity-90">
+                          {lowestDomain.desc} Formalize mitigation workflows and prioritize resource allocation to address this gap.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Calculated FinOps Metrics Column (1/3 width) */}
+                    <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-6 space-y-4 shadow-sm text-left">
+                      <h3 className="text-base font-bold text-[var(--dash-text-primary)] flex items-center gap-2">
+                        <span className="text-[var(--dash-accent)]">⚡</span> Compute & FinOps Insights
+                      </h3>
+                      <p className="text-[11px] text-[var(--dash-text-secondary)] font-medium leading-relaxed">
+                        Calculated model operations metrics derived from your primary provider and spend.
+                      </p>
+
+                      <div className="space-y-3 pt-2 font-sans text-xs">
+                        <div className="flex items-center justify-between border-b border-[var(--dash-border)]/40 pb-2">
+                          <span className="text-[var(--dash-text-secondary)] font-medium">Monthly Compute Spend</span>
+                          <span className="font-extrabold text-[var(--dash-text-primary)] font-mono">
+                            {finops.monthly_spend !== undefined && finops.monthly_spend > 0 ? `$${(finops.monthly_spend || 0).toLocaleString()}` : '—'}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between border-b border-[var(--dash-border)]/40 pb-2">
+                          <span className="text-[var(--dash-text-secondary)] font-medium">Estimated Compute Waste</span>
+                          <span className="font-extrabold text-[var(--rose)] font-mono">
+                            {finops.monthly_spend !== undefined && finops.monthly_spend > 0 ? `$${(finops.estimated_waste || 0).toLocaleString()}/mo` : '—'}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between border-b border-[var(--dash-border)]/40 pb-2">
+                          <span className="text-[var(--dash-text-secondary)] font-medium">Cost Efficiency Index</span>
+                          <span className="font-extrabold text-[var(--dash-accent)] font-mono">
+                            {finops.monthly_spend !== undefined && finops.monthly_spend > 0 ? `${finops.cost_efficiency}%` : '—'}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-[var(--dash-text-secondary)] font-medium">Workforce Optimization</span>
+                          <span className="font-extrabold text-[var(--emerald)] font-mono">
+                            {finops.workforce_optimization !== undefined ? `${finops.workforce_optimization}%` : '—'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {finops.primary_provider && (
+                        <div className="bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl p-3 text-[10.5px] text-[var(--dash-text-secondary)] leading-relaxed mt-2 font-medium">
+                          💡 Primary provider detected as <strong className="text-[var(--dash-text-primary)] font-bold">{scores.provider_model_names?.[finops.primary_provider] || finops.primary_provider}</strong>. Enforcing Flash-model fallbacks could increase your Cost Efficiency index.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Qualitative Opportunity & Recommendations Cards */}
+                  <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-6 shadow-sm text-left">
                     <h3 className="text-base font-bold text-[var(--dash-text-primary)] mb-4 flex items-center gap-2">
-                      <span className="text-[var(--accent)]">💡</span> Top 3 Recommendations
+                      <span className="text-[var(--dash-accent)]">💡</span> Strategic Opportunities & Action Plan
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                       <div className="bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl p-4.5 space-y-2">
-                        <span className="text-[10px] font-bold text-[var(--dash-accent)] uppercase tracking-wider">Recommendation 1</span>
-                        <h4 className="text-sm font-bold text-[var(--dash-text-primary)]">Optimize Model Usage</h4>
-                        <p className="text-xs text-[var(--dash-text-secondary)] leading-relaxed font-sans">
-                          Establish a smart routing tier to migrate 95% of basic tasks to standard/flash models, keeping premium models reserved exclusively for complex logic.
+                        <span className="text-[10px] font-bold text-[var(--dash-accent)] uppercase tracking-wider block">Remediation Path 1</span>
+                        <h4 className="text-sm font-bold text-[var(--dash-text-primary)]">AI Governance Framework</h4>
+                        <p className="text-xs text-[var(--dash-text-secondary)] leading-relaxed font-sans font-medium">
+                          Build a steering committee and formal permitted/restricted tools matrix. Set clear classification limits and strict human-in-the-loop policies to reduce regulatory risk.
                         </p>
                       </div>
                       <div className="bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl p-4.5 space-y-2">
-                        <span className="text-[10px] font-bold text-[var(--accent-2)] uppercase tracking-wider">Recommendation 2</span>
-                        <h4 className="text-sm font-bold text-[var(--dash-text-primary)]">Implement Governance</h4>
-                        <p className="text-xs text-[var(--dash-text-secondary)] leading-relaxed font-sans">
-                          Build a steering committee and formal permitted/restricted tools matrix to eliminate random compliance exposure and establish clear accountability boundaries.
+                        <span className="text-[10px] font-bold text-[var(--accent-2)] uppercase tracking-wider block">Remediation Path 2</span>
+                        <h4 className="text-sm font-bold text-[var(--dash-text-primary)]">Cost Controls & Gateway Routing</h4>
+                        <p className="text-xs text-[var(--dash-text-secondary)] leading-relaxed font-sans font-medium">
+                          Implement a model routing proxy to intercept API calls, redirecting simple summarization and lookup queries to lighter, more cost-efficient models.
                         </p>
                       </div>
                       <div className="bg-[var(--dash-bg)] border border-[var(--dash-border)] rounded-xl p-4.5 space-y-2">
-                        <span className="text-[10px] font-bold text-[var(--emerald)] uppercase tracking-wider">Recommendation 3</span>
-                        <h4 className="text-sm font-bold text-[var(--dash-text-primary)]">Establish ROI Tracking</h4>
-                        <p className="text-xs text-[var(--dash-text-secondary)] leading-relaxed font-sans">
-                          Deploy automated instrumentation dashboards to measure, analyze, and report cumulative multi-agent savings back to the CFO boardroom monthly.
+                        <span className="text-[10px] font-bold text-[var(--emerald)] uppercase tracking-wider block">Remediation Path 3</span>
+                        <h4 className="text-sm font-bold text-[var(--dash-text-primary)]">Data Quality & Lineage mapping</h4>
+                        <p className="text-xs text-[var(--dash-text-secondary)] leading-relaxed font-sans font-medium">
+                          Construct dynamic ontologies to standardize enterprise acronyms, while logging execution runs and prompt parameters for strict auditability compliance.
                         </p>
                       </div>
+                    </div>
+                  </div>
+
+                  {/* Relocated AI Journey Roadmap */}
+                  <div id="ai-journey-roadmap" className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-5 space-y-4 w-full shadow-sm text-left font-sans">
+                    <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-widest block">AI Journey Roadmap</span>
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-2">
+                      {[
+                        { label: 'Assessment Completed', done: true, roadmap: false },
+                        { label: 'Executive Report Generated', done: true, roadmap: false },
+                        { label: 'Connect Systems', done: false, roadmap: true },
+                        { label: 'Configure Governance', done: false, roadmap: true },
+                        { label: 'Deploy Agents', done: false, roadmap: true },
+                        { label: 'Activate Control Tower', done: false, roadmap: true }
+                      ].map((step, idx, arr) => (
+                        <div key={idx} className="flex-1 flex flex-col md:flex-row items-start md:items-center gap-2 relative">
+                          <div className="flex items-center gap-2">
+                            {step.done ? (
+                              <span className="w-5 h-5 rounded-full bg-[var(--emerald)]/20 border border-[var(--emerald)]/40 text-[var(--emerald)] flex items-center justify-center text-[10px] font-extrabold font-sans shrink-0">
+                                ✓
+                              </span>
+                            ) : (
+                              <span className="w-5 h-5 rounded-full bg-transparent border-2 border-[var(--dash-border)] text-[var(--dash-text-secondary)] flex items-center justify-center text-[10px] font-extrabold font-sans shrink-0">
+                                ○
+                              </span>
+                            )}
+                            <span className={`text-[11px] font-bold ${step.done ? 'text-[var(--dash-text-primary)]' : 'text-[var(--dash-text-secondary)]'}`}>
+                              {step.label}
+                            </span>
+                          </div>
+                          {idx < arr.length - 1 && (
+                            <div className="hidden md:block flex-1 h-[1px] bg-[var(--dash-border)] mx-4 min-w-[20px]" />
+                          )}
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </div>
               );
             })()}
-
+            
             {/* TAB: SAVED REPORTS */}
             {activeTab === 'reports' && (
               <div className="space-y-6">
@@ -3776,12 +4264,16 @@ export default function Dashboard() {
                             
                             <div className="bg-slate-950/60 border border-slate-800/80 rounded-xl p-3 text-center">
                               <span className="text-[10px] text-slate-500 font-semibold uppercase block mb-0.5">Current Monthly Spend</span>
-                              <span className="text-base font-bold text-slate-100">${currentSpend.toLocaleString()}</span>
+                              <span className="text-base font-bold text-slate-100">
+                                {currentSpend > 0 ? `$${currentSpend.toLocaleString()}` : '—'}
+                              </span>
                             </div>
 
                             <div className="bg-gradient-to-r from-emerald-500/10 to-cyan-500/10 border border-emerald-500/30 rounded-xl p-3 text-center">
                               <span className="text-[10px] text-emerald-400 font-semibold uppercase block mb-0.5">Projected Annual Savings</span>
-                              <span className="text-base font-bold text-emerald-300">${projectedSavings.toLocaleString()}</span>
+                              <span className="text-base font-bold text-emerald-300">
+                                {currentSpend > 0 ? `$${projectedSavings.toLocaleString()}` : '—'}
+                              </span>
                             </div>
                           </div>
                         </div>
@@ -3875,7 +4367,7 @@ export default function Dashboard() {
                           <span>2h ago</span>
                         </div>
                         <p className="text-xs text-slate-200 leading-relaxed font-medium">
-                          "MDx Blocks' multi-cloud partnership framework with **Azure OpenAI, IBM WatsonX, and Snowflake Cortex** establishes a highly secure, sovereign multi-agent deployment blueprint."
+                          "MDx Blocks' multi-cloud partnership framework with **Azure OpenAI, Google Vertex AI, and Snowflake Cortex** establishes a highly secure, sovereign multi-agent deployment blueprint."
                         </p>
                       </div>
 
@@ -3885,7 +4377,7 @@ export default function Dashboard() {
                           <span>4h ago</span>
                         </div>
                         <p className="text-xs text-slate-200 leading-relaxed font-medium">
-                          "Just deployed MDx CertaintyAI HIPAA scan directly on IBM WatsonX dedicated cloud. The deterministic ontology gateway pulled latency down to 180ms. Highly impressed!"
+                          "Just deployed MDx CertaintyAI HIPAA scan directly on Google Vertex AI dedicated cloud. The deterministic ontology gateway pulled latency down to 180ms. Highly impressed!"
                         </p>
                       </div>
                     </div>
@@ -3928,12 +4420,12 @@ export default function Dashboard() {
 
                       <div className="p-4 bg-slate-900/40 border border-slate-800/80 rounded-xl space-y-2">
                         <div className="flex justify-between items-center text-xs">
-                          <span className="font-bold text-slate-200 bg-purple-950/40 text-purple-400 border border-purple-900/30 px-2 py-0.5 rounded">IBM WatsonX.ai</span>
+                          <span className="font-bold text-slate-200 bg-purple-950/40 text-purple-400 border border-purple-900/30 px-2 py-0.5 rounded">Google Vertex AI</span>
                           <span className="text-slate-500">3d ago</span>
                         </div>
-                        <h4 className="text-xs font-bold text-white mt-1">WatsonX introduces strict single-tenant healthcare container vaults</h4>
+                        <h4 className="text-xs font-bold text-white mt-1">Vertex AI introduces strict single-tenant healthcare container vaults</h4>
                         <p className="text-xs text-slate-400 leading-normal">
-                          IBM WatsonX secures sovereign regulatory compliance by providing physical network vaults. CertaintyAI's backend maps all confidential EHR operations to these vaults automatically.
+                          Google Vertex AI secures sovereign regulatory compliance by providing physical network vaults. CertaintyAI's backend maps all confidential EHR operations to these vaults automatically.
                         </p>
                       </div>
                     </div>
@@ -3984,7 +4476,7 @@ export default function Dashboard() {
                       <option value="anthropic">Anthropic Claude 3.5 Sonnet</option>
                       <option value="openai">OpenAI GPT-4o</option>
                       <option value="azure">Azure OpenAI Private Instance (MDx Partner)</option>
-                      <option value="watsonx">IBM WatsonX.ai Sandbox (MDx Partner)</option>
+                      <option value="vertex">Google Vertex AI Sandbox (MDx Partner)</option>
                       <option value="snowflake">Snowflake Cortex Triples Engine (MDx Partner)</option>
                     </select>
                   </div>
@@ -4159,6 +4651,494 @@ export default function Dashboard() {
                 </div>
               </div>
             )}
+
+            {/* TAB: AGENT BUILDER */}
+            {activeTab === 'agent-builder' && (
+              <AgentBuilder />
+            )}
+
+            {/* TAB: CONTROL TOWER */}
+            {activeTab === 'control-tower' && (
+              <div className="space-y-6 animate-fade-in w-full text-left">
+                {/* Alert/Message block */}
+                <div className="bg-[var(--dash-active-bg)] border border-[var(--dash-active-border)] rounded-2xl p-6 text-sm text-[var(--dash-text-primary)] space-y-2">
+                  <div className="flex items-center gap-2 font-bold text-[var(--dash-accent)] text-base">
+                    <span>🏰 Control Tower Preview Mode</span>
+                  </div>
+                  <p className="text-xs text-[var(--dash-text-secondary)] leading-relaxed">
+                    Preview Mode · connect enterprise systems to activate live AI Governance, AI FinOps, Data Trust, AgentOps, and Business Value monitoring.
+                  </p>
+                </div>
+
+                {/* Sub-tab Navigation */}
+                <div className="flex flex-wrap bg-[var(--dash-card-bg)] border border-[var(--dash-border)] p-1 rounded-xl items-center gap-1 w-fit">
+                  {[
+                    { id: 'overview', label: 'Executive Overview' },
+                    { id: 'cost', label: 'Cost Management' },
+                    { id: 'llm', label: 'LLM Recommendations' },
+                    { id: 'data', label: 'Data Lineage & Quality' },
+                    { id: 'governance', label: 'Governance' },
+                    { id: 'audit', label: 'Audit Trail' }
+                  ].map((t) => (
+                    <button
+                      key={t.id}
+                      onClick={() => setControlTowerTab(t.id)}
+                      className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all duration-200 ${
+                        controlTowerTab === t.id
+                          ? 'bg-[var(--dash-active-bg)] text-[var(--dash-active-text)] border border-[var(--dash-active-border)] shadow-[var(--dash-active-shadow)]'
+                          : 'border border-transparent text-[var(--dash-text-secondary)] hover:text-[var(--dash-text-primary)] hover:bg-[var(--dash-hover-bg)]'
+                      }`}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* TAB CONTENT: Executive Overview */}
+                {controlTowerTab === 'overview' && (
+                  <div className="space-y-6">
+                    {/* KPI Tiles */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
+                      {[
+                        { label: 'Total Agent Requests', val: '—', desc: 'Total inference queries handled by agents' },
+                        { label: 'Gemini Cost', val: '—', desc: 'Accrued cost of vertex/inference calls' },
+                        { label: 'Estimated Savings', val: '—', desc: 'Saved cost vs traditional advisory' },
+                        { label: 'AI Risk Score', val: '—', desc: 'Aggregate policy risk rating' },
+                        { label: 'Active Agents', val: '—', desc: 'Active autonomous agent workloads' },
+                        { label: 'Compliance Events', val: '—', desc: 'Regulatory policy violations or blocks' }
+                      ].map((card, i) => (
+                        <div key={i} className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-6 flex flex-col justify-between h-36 shadow-sm">
+                          <span className="text-[10px] font-bold tracking-widest text-[var(--dash-text-secondary)] uppercase">
+                            {card.label}
+                          </span>
+                          <span className="text-4xl font-extrabold text-[var(--dash-text-primary)] py-2">
+                            {card.val}
+                          </span>
+                          <span className="text-[10px] text-[var(--dash-text-secondary)] font-medium">
+                            {card.desc}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Chart Frame & Recommendations */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
+                      {/* Requests by Agent Empty Chart */}
+                      <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-6 shadow-sm flex flex-col justify-between min-h-[300px]">
+                        <span className="text-sm font-bold text-[var(--dash-text-primary)] mb-4">Requests by Agent</span>
+                        <div className="flex-grow flex items-center justify-center border-2 border-dashed border-[var(--dash-border)] rounded-xl bg-[var(--dash-hover-bg)]/30 min-h-[200px]">
+                          <span className="text-xs text-[var(--dash-text-secondary)] font-medium font-sans">
+                            Preview · connect systems to activate
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Executive Recommendations Preview */}
+                      <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-6 shadow-sm flex flex-col justify-between min-h-[300px]">
+                        <span className="text-sm font-bold text-[var(--dash-text-primary)] mb-4">Executive Recommendations</span>
+                        <div className="flex-grow flex flex-col justify-center items-center p-6 border border-dashed border-[var(--dash-border)] rounded-xl bg-[var(--dash-hover-bg)]/20 text-center space-y-2">
+                          <i className="ti ti-bulb text-2xl text-[var(--dash-accent)]"></i>
+                          <span className="text-xs font-bold text-[var(--dash-text-primary)]">System Connection Pending</span>
+                          <p className="text-[11px] text-[var(--dash-text-secondary)] max-w-sm">
+                            Recommendations will generate automatically based on compliance scans, latency anomalies, and cost optimization opportunities once systems are linked.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* TAB CONTENT: Cost Management */}
+                {controlTowerTab === 'cost' && (
+                  <div className="space-y-6">
+                    {/* KPI Tiles */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
+                      {[
+                        { label: 'Gemini Cost', val: '—', desc: 'Total accrued Google Vertex AI inference spend' },
+                        { label: 'Estimated Savings', val: '—', desc: 'Calculated savings from automated processing' },
+                        { label: 'Cost per Agent', val: '—', desc: 'Average cost across deployed C-suite agents' },
+                        { label: 'Budget Utilization', val: '—', desc: 'Spend vs allocated organizational limits' }
+                      ].map((card, i) => (
+                        <div key={i} className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-6 flex flex-col justify-between h-36 shadow-sm">
+                          <span className="text-[10px] font-bold tracking-widest text-[var(--dash-text-secondary)] uppercase">
+                            {card.label}
+                          </span>
+                          <span className="text-4xl font-extrabold text-[var(--dash-text-primary)] py-2">
+                            {card.val}
+                          </span>
+                          <span className="text-[10px] text-[var(--dash-text-secondary)] font-medium">
+                            {card.desc}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Gemini Usage Summary Table */}
+                    <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-6 shadow-sm w-full">
+                      <span className="text-sm font-bold text-[var(--dash-text-primary)] mb-4 block">Gemini Usage Summary</span>
+                      <div className="overflow-x-auto w-full">
+                        <table className="w-full text-left text-xs border-collapse">
+                          <thead>
+                            <tr className="border-b border-[var(--dash-border)] text-[var(--dash-text-secondary)] font-bold">
+                              <th className="py-2.5">Metric</th>
+                              <th className="py-2.5 text-right">Value</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-[var(--dash-border)]/50 text-[var(--dash-text-primary)]">
+                            {[
+                              { name: 'Pro Requests', desc: 'Gemini 2.5 Pro model invocations' },
+                              { name: 'Flash Requests', desc: 'Gemini 2.5 Flash model invocations' },
+                              { name: 'Input Tokens', desc: 'Total processed prompt tokens' },
+                              { name: 'Output Tokens', desc: 'Total generated response tokens' }
+                            ].map((row, idx) => (
+                              <tr key={idx} className="hover:bg-[var(--dash-hover-bg)]/25 transition">
+                                <td className="py-3 pr-4">
+                                  <div className="font-semibold">{row.name}</div>
+                                  <div className="text-[10px] text-[var(--dash-text-secondary)]">{row.desc}</div>
+                                </td>
+                                <td className="py-3 text-right font-extrabold text-sm">—</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* TAB CONTENT: LLM Recommendations */}
+                {controlTowerTab === 'llm' && (
+                  <div className="space-y-6">
+                    <span className="text-sm font-bold text-[var(--dash-text-primary)] block">LLM Performance & Optimization Recommendations</span>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
+                      {[
+                        { title: 'Token Amortization', metric: 'Model Tiering Opportunity', desc: 'Optimize cost by routing low-complexity tasks from Gemini Pro to Gemini Flash based on routing heuristics.' },
+                        { title: 'Context Window Caching', metric: 'Context Window Cache', desc: 'Configure prompt caching for large static RAG files in knowledge base to reduce token costs.' },
+                        { title: 'Temperature Optimization', metric: 'Deterministic Controls', desc: 'Reduce model temperature configurations on compliance triage agents to prevent hallucination drifts.' }
+                      ].map((card, i) => (
+                        <div key={i} className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-6 shadow-sm flex flex-col justify-between min-h-[200px]">
+                          <div>
+                            <span className="text-[9px] font-bold text-[var(--dash-accent)] uppercase tracking-wider block mb-1">{card.metric}</span>
+                            <h4 className="text-xs font-bold text-[var(--dash-text-primary)] mb-2">{card.title}</h4>
+                            <p className="text-[11px] text-[var(--dash-text-secondary)] leading-relaxed">{card.desc}</p>
+                          </div>
+                          <div className="pt-4 border-t border-[var(--dash-border)]/50 mt-4 text-[10px] text-[var(--dash-text-secondary)] font-semibold flex items-center gap-1.5">
+                            <i className="ti ti-link text-xs"></i>
+                            <span>Awaiting connection</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* TAB CONTENT: Data Lineage & Quality */}
+                {controlTowerTab === 'data' && (
+                  <div className="space-y-6">
+                    {/* KPI Tiles */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
+                      {[
+                        { label: 'Data Lineage Chains', val: '—', desc: 'Sovereign database lineage pathways mapped' },
+                        { label: 'Provenance Coverage', val: '—', desc: 'System-wide knowledge tracking index' },
+                        { label: 'Source Systems Connected', val: '—', desc: 'Linked directories, portals, and repositories' },
+                        { label: 'Quality Score', val: '—', desc: 'Average confidence score of indexed documents' }
+                      ].map((card, i) => (
+                        <div key={i} className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-6 flex flex-col justify-between h-36 shadow-sm">
+                          <span className="text-[10px] font-bold tracking-widest text-[var(--dash-text-secondary)] uppercase">
+                            {card.label}
+                          </span>
+                          <span className="text-4xl font-extrabold text-[var(--dash-text-primary)] py-2">
+                            {card.val}
+                          </span>
+                          <span className="text-[10px] text-[var(--dash-text-secondary)] font-medium">
+                            {card.desc}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Data Lineage Visualization Map Frame */}
+                    <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-6 shadow-sm w-full flex flex-col justify-between min-h-[360px]">
+                      <span className="text-sm font-bold text-[var(--dash-text-primary)] mb-4">Sovereign Data Provenance & Lineage Map</span>
+                      <div className="flex-grow flex items-center justify-center border-2 border-dashed border-[var(--dash-border)] rounded-xl bg-[var(--dash-hover-bg)]/30 min-h-[260px]">
+                        <span className="text-xs text-[var(--dash-text-secondary)] font-medium font-sans">
+                          Preview · connect systems to activate
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* TAB CONTENT: Governance */}
+                {controlTowerTab === 'governance' && (
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
+                      {/* Governance Summary Table */}
+                      <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-6 shadow-sm flex flex-col justify-between min-h-[360px]">
+                        <span className="text-sm font-bold text-[var(--dash-text-primary)] mb-4">Governance Safety Indicators</span>
+                        <div className="overflow-x-auto w-full flex-grow">
+                          <table className="w-full text-left text-xs border-collapse">
+                            <thead>
+                              <tr className="border-b border-[var(--dash-border)] text-[var(--dash-text-secondary)] font-bold">
+                                <th className="py-2.5">Safety Rule</th>
+                                <th className="py-2.5 text-right">Incidents</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-[var(--dash-border)]/50 text-[var(--dash-text-primary)]">
+                              {[
+                                { name: 'Prompt Injection Attempts', desc: 'Malicious inputs intercepted by security proxy' },
+                                { name: 'Policy Violations', desc: 'Agent outputs failing governance rulesets' },
+                                { name: 'Blocked Responses', desc: 'Deterministic filter overrides triggered' },
+                                { name: 'Human Escalations', desc: 'Queries routed to human in the loop reviews' },
+                                { name: 'Audit Coverage', desc: 'Proportion of executions stored with full traces' }
+                              ].map((row, idx) => (
+                                <tr key={idx} className="hover:bg-[var(--dash-hover-bg)]/25 transition">
+                                  <td className="py-3 pr-4">
+                                    <div className="font-semibold">{row.name}</div>
+                                    <div className="text-[10px] text-[var(--dash-text-secondary)]">{row.desc}</div>
+                                  </td>
+                                  <td className="py-3 text-right font-extrabold text-sm">—</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+
+                      {/* Governance Risk Mix Empty Chart */}
+                      <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-6 shadow-sm flex flex-col justify-between min-h-[360px]">
+                        <span className="text-sm font-bold text-[var(--dash-text-primary)] mb-4">Governance Risk Mix</span>
+                        <div className="flex-grow flex items-center justify-center border-2 border-dashed border-[var(--dash-border)] rounded-xl bg-[var(--dash-hover-bg)]/30 min-h-[260px]">
+                          <span className="text-xs text-[var(--dash-text-secondary)] font-medium font-sans">
+                            Preview · connect systems to activate
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* TAB CONTENT: Audit Trail */}
+                {controlTowerTab === 'audit' && (
+                  <div className="space-y-6">
+                    {/* Activity Log Table */}
+                    <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-6 shadow-sm w-full">
+                      <span className="text-sm font-bold text-[var(--dash-text-primary)] mb-4 block">Compliance Observability Audit Log</span>
+                      <div className="overflow-x-auto w-full">
+                        <table className="w-full text-left text-xs border-collapse">
+                          <thead>
+                            <tr className="border-b border-[var(--dash-border)] text-[var(--dash-text-secondary)] font-bold">
+                              <th className="py-3 px-2">Time</th>
+                              <th className="py-3 px-2">User</th>
+                              <th className="py-3 px-2">Agent</th>
+                              <th className="py-3 px-2">Model</th>
+                              <th className="py-3 px-2 text-right">Latency</th>
+                              <th className="py-3 px-2 text-right">Tokens</th>
+                              <th className="py-3 px-2 text-right">Cost</th>
+                              <th className="py-3 px-2 text-center">Risk</th>
+                              <th className="py-3 px-2 text-center">Status</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr className="text-[var(--dash-text-secondary)] hover:bg-[var(--dash-hover-bg)]/10 transition">
+                              <td colSpan="9" className="py-8 text-center italic text-xs font-semibold">
+                                No connected agent activity yet · Preview
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    {/* Agent Health Registry */}
+                    <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-6 shadow-sm w-full">
+                      <span className="text-sm font-bold text-[var(--dash-text-primary)] mb-4 block">Agent Operational Health Status</span>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {[
+                          { name: 'Vendor Risk Triage Agent', desc: 'CISO Compliance Engine' },
+                          { name: 'AI ROI Analyzer Agent', desc: 'CFO Valuation Engine' },
+                          { name: 'AI Readiness Copilot Agent', desc: 'Enterprise Assessment Engine' }
+                        ].map((agent, i) => (
+                          <div key={i} className="p-4 border border-[var(--dash-border)] rounded-xl bg-[var(--dash-hover-bg)]/10 flex flex-col justify-between min-h-[100px]">
+                            <div>
+                              <h5 className="font-bold text-xs text-[var(--dash-text-primary)]">{agent.name}</h5>
+                              <span className="text-[10px] text-[var(--dash-text-secondary)] block mb-2">{agent.desc}</span>
+                            </div>
+                            <div className="flex justify-between items-center text-[10px] font-semibold text-[var(--dash-text-secondary)] pt-2 border-t border-[var(--dash-border)]/30">
+                              <span>Health: <span className="text-[var(--dash-text-secondary)] font-bold">—</span></span>
+                              <span className="italic text-[9px]">Awaiting connection</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* TAB: INTEGRATIONS */}
+            {activeTab === 'integrations' && (
+              <div className="space-y-6 animate-fade-in w-full text-left">
+                <div className="bg-[var(--dash-active-bg)] border border-[var(--dash-active-border)] rounded-2xl p-6 text-sm text-[var(--dash-text-primary)] space-y-2">
+                  <div className="flex items-center gap-2 font-bold text-[var(--dash-accent)] text-base">
+                    <span>🔌 Available Connectors</span>
+                  </div>
+                  <p className="text-xs text-[var(--dash-text-secondary)] leading-relaxed">
+                    Choose from our suite of pre-built connector adapters to link your data warehouse, collaboration workspace, or CRM system to CertaintyAI's secure ontology engine.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 w-full">
+                  {[
+                    'Gemini', 'Microsoft 355', 'Azure OpenAI', 'ServiceNow', 'Snowflake', 
+                    'Databricks', 'Salesforce', 'Google Workspace', 'SharePoint', 'Jira', 'Confluence'
+                  ].map((cName) => (
+                    <div key={cName} className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-5 flex flex-col justify-between space-y-4 hover:border-[var(--dash-accent)]/30 transition duration-150 shadow-sm">
+                      <div>
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-bold text-sm text-[var(--dash-text-primary)]">{cName}</h4>
+                          <span className="text-[9px] uppercase font-bold px-2 py-0.5 rounded-full bg-[var(--dash-hover-bg)] text-[var(--dash-text-secondary)] border border-[var(--dash-border)]">
+                            Not Connected
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-[var(--dash-text-secondary)] mt-2 leading-relaxed">
+                          Synchronize resources, schemas, and credentials with CertaintyAI security envelopes.
+                        </p>
+                      </div>
+
+                      <div className="pt-2 border-t border-[var(--dash-border)]/50 space-y-2">
+                        <div className="flex justify-between text-[9px] text-[var(--dash-text-secondary)]">
+                          <span>Last Sync</span>
+                          <span className="font-mono font-bold">—</span>
+                        </div>
+                        <div className="flex justify-between text-[9px] text-[var(--dash-text-secondary)]">
+                          <span>Permissions</span>
+                          <span className="font-bold">Read-Only</span>
+                        </div>
+                        <button 
+                          onClick={() => setPreviewAlert({
+                            title: `${cName} Connector Preview`,
+                            message: 'System integrations are currently in Preview Mode. Live connection will be enabled in a future release.'
+                          })}
+                          className="w-full bg-[var(--dash-hover-bg)] text-[var(--dash-text-primary)] border border-[var(--dash-border)] hover:bg-[var(--dash-active-bg)] hover:text-[var(--dash-active-text)] hover:border-[var(--dash-active-border)] text-xs font-bold py-1.5 rounded-xl transition duration-150 mt-2 cursor-pointer"
+                        >
+                          Connect (Preview)
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Healthcare Section */}
+                <div className="space-y-4 pt-4">
+                  <h3 className="text-base font-bold text-white flex items-center gap-2">
+                    <span>🏥</span> Healthcare Systems
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 w-full">
+                    {[
+                      { name: 'Epic', desc: 'Electronic health record (planned connector)' },
+                      { name: 'Oracle Health (Cerner)', desc: 'Electronic health record (planned connector)' },
+                      { name: 'athenahealth', desc: 'Electronic health record (planned connector)' },
+                      { name: 'DynaMed', desc: 'Clinical decision support / evidence (planned connector)' },
+                      { name: 'Electronic Prior Authorization', desc: 'CMS interoperability / FHIR-based prior-auth framework (planned connector)' }
+                    ].map((conn) => (
+                      <div key={conn.name} className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-5 flex flex-col justify-between space-y-4 hover:border-[var(--dash-accent)]/30 transition duration-150 shadow-sm text-left">
+                        <div>
+                          <div className="flex items-center justify-between gap-2">
+                            <h4 className="font-bold text-sm text-[var(--dash-text-primary)]">{conn.name}</h4>
+                            <span className="text-[9px] uppercase font-bold px-2 py-0.5 rounded-full bg-[var(--dash-hover-bg)] text-[var(--dash-text-secondary)] border border-[var(--dash-border)] shrink-0">
+                              Not Connected
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-[var(--dash-text-secondary)] mt-2 leading-relaxed">
+                            {conn.desc}
+                          </p>
+                        </div>
+
+                        <div className="pt-2 border-t border-[var(--dash-border)]/50 space-y-2">
+                          <div className="flex justify-between text-[9px] text-[var(--dash-text-secondary)]">
+                            <span>Last Sync</span>
+                            <span className="font-mono font-bold">—</span>
+                          </div>
+                          <div className="flex justify-between text-[9px] text-[var(--dash-text-secondary)]">
+                            <span>Permissions</span>
+                            <span className="font-bold">Read-Only</span>
+                          </div>
+                          <button
+                            onClick={() => setPreviewAlert({
+                              title: `${conn.name} Connector Preview`,
+                              message: 'System integrations are currently in Preview Mode. Live connection will be enabled in a future release.'
+                            })}
+                            className="w-full bg-[var(--dash-hover-bg)] text-[var(--dash-text-primary)] border border-[var(--dash-border)] hover:bg-[var(--dash-active-bg)] hover:text-[var(--dash-active-text)] hover:border-[var(--dash-active-border)] text-xs font-bold py-1.5 rounded-xl transition duration-150 mt-2 cursor-pointer"
+                          >
+                            Connect (Preview)
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Data Governance & Catalog Section */}
+                <div className="space-y-4 pt-4">
+                  <h3 className="text-base font-bold text-white flex items-center gap-2">
+                    <span>🛡️</span> Data Governance & Catalog
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 w-full">
+                    {[
+                      { name: 'OpenMetadata', desc: 'Open-source data catalog (planned connector)' },
+                      { name: 'Microsoft Fabric', desc: 'Unified data platform (planned connector)' },
+                      { name: 'Microsoft Purview', desc: 'Data governance & catalog (planned connector)' },
+                      { name: 'Google Cloud Dataplex', desc: 'Data governance & catalog (planned connector)' },
+                      { name: 'IBM watsonx.data intelligence', desc: 'Data governance & lineage (planned connector)' },
+                      { name: 'Amazon SageMaker Catalog', desc: 'Data governance on Amazon DataZone (planned connector)' }
+                    ].map((conn) => (
+                      <div key={conn.name} className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-5 flex flex-col justify-between space-y-4 hover:border-[var(--dash-accent)]/30 transition duration-150 shadow-sm text-left">
+                        <div>
+                          <div className="flex items-center justify-between gap-2">
+                            <h4 className="font-bold text-sm text-[var(--dash-text-primary)]">{conn.name}</h4>
+                            <span className="text-[9px] uppercase font-bold px-2 py-0.5 rounded-full bg-[var(--dash-hover-bg)] text-[var(--dash-text-secondary)] border border-[var(--dash-border)] shrink-0">
+                              Not Connected
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-[var(--dash-text-secondary)] mt-2 leading-relaxed">
+                            {conn.desc}
+                          </p>
+                        </div>
+
+                        <div className="pt-2 border-t border-[var(--dash-border)]/50 space-y-2">
+                          <div className="flex justify-between text-[9px] text-[var(--dash-text-secondary)]">
+                            <span>Last Sync</span>
+                            <span className="font-mono font-bold">—</span>
+                          </div>
+                          <div className="flex justify-between text-[9px] text-[var(--dash-text-secondary)]">
+                            <span>Permissions</span>
+                            <span className="font-bold">Read-Only</span>
+                          </div>
+                          <button
+                            onClick={() => setPreviewAlert({
+                              title: `${conn.name} Connector Preview`,
+                              message: 'System integrations are currently in Preview Mode. Live connection will be enabled in a future release.'
+                            })}
+                            className="w-full bg-[var(--dash-hover-bg)] text-[var(--dash-text-primary)] border border-[var(--dash-border)] hover:bg-[var(--dash-active-bg)] hover:text-[var(--dash-active-text)] hover:border-[var(--dash-active-border)] text-xs font-bold py-1.5 rounded-xl transition duration-150 mt-2 cursor-pointer"
+                          >
+                            Connect (Preview)
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Trademark Disclaimer line at the bottom */}
+                <div className="pt-8 pb-2 border-t border-[var(--dash-border)]/20 text-center w-full">
+                  <p className="text-[10px] text-[var(--dash-text-secondary)] max-w-2xl mx-auto leading-relaxed">
+                    All product names and trademarks are the property of their respective owners. Connector availability is on our roadmap and does not imply partnership, endorsement, or certification.
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Voice Agent AI Assistant Widget in Right Column */}
@@ -4188,7 +5168,9 @@ export default function Dashboard() {
                   <button
                     onClick={() => {
                       setVoiceEnabled(!voiceEnabled)
-                      if (voiceEnabled) window.speechSynthesis.cancel()
+                      if (voiceEnabled && typeof window !== 'undefined' && window.speechSynthesis) {
+                        window.speechSynthesis.cancel()
+                      }
                     }}
                     className={`p-1.5 rounded-lg border transition ${
                       voiceEnabled 
@@ -4280,8 +5262,8 @@ export default function Dashboard() {
                   <span className="text-[8px] uppercase tracking-wider text-slate-500 font-semibold mt-0.5">Azure OpenAI</span>
                 </div>
                 <div className="bg-slate-900/60 border border-slate-800/80 p-2 rounded-lg text-center flex flex-col justify-center items-center">
-                  <span className="text-xs font-extrabold text-purple-400">IBM</span>
-                  <span className="text-[8px] uppercase tracking-wider text-slate-500 font-semibold mt-0.5">WatsonX.ai</span>
+                  <span className="text-xs font-extrabold text-purple-400">Google</span>
+                  <span className="text-[8px] uppercase tracking-wider text-slate-500 font-semibold mt-0.5">Vertex AI</span>
                 </div>
                 <div className="bg-slate-900/60 border border-slate-800/80 p-2 rounded-lg text-center flex flex-col justify-center items-center">
                   <span className="text-xs font-extrabold text-sky-400">Snowflake</span>
@@ -4330,7 +5312,9 @@ export default function Dashboard() {
                 <button
                   onClick={() => {
                     setVoiceEnabled(!voiceEnabled)
-                    if (voiceEnabled) window.speechSynthesis.cancel()
+                    if (voiceEnabled && typeof window !== 'undefined' && window.speechSynthesis) {
+                      window.speechSynthesis.cancel()
+                    }
                   }}
                   className={`p-1.5 rounded-lg border transition ${
                     voiceEnabled 
@@ -4667,6 +5651,27 @@ export default function Dashboard() {
             </div>
           </div>
         )}
+        
+        {previewAlert && (
+          <div className="fixed bottom-4 right-4 z-50 bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-4 shadow-xl max-w-sm font-sans animate-fade-in">
+            <div className="flex items-start justify-between gap-3">
+              <div className="space-y-1">
+                <h4 className="text-xs font-bold text-[var(--dash-text-primary)] uppercase tracking-wider">
+                  {previewAlert.title}
+                </h4>
+                <p className="text-[11px] text-[var(--dash-text-secondary)] leading-relaxed">
+                  {previewAlert.message}
+                </p>
+              </div>
+              <button 
+                onClick={() => setPreviewAlert(null)}
+                className="text-[var(--dash-text-secondary)] hover:text-[var(--dash-text-primary)] font-bold text-sm cursor-pointer"
+              >
+                ×
+              </button>
+            </div>
+          </div>
+        )}
       </div>
-    )
-  }
+  )
+}
