@@ -1,134 +1,109 @@
-# CertaintyAI — Devpost Submission & Complete Project Description
+# CertaintyAI — Defensible AI for Regulated Industries
 
-This document serves as the official project proposal and submission draft for **CertaintyAI** in the **Google for Startups AI Agents Challenge 2026**. 
+**Google for Startups AI Agents Challenge 2026 · Track 3 (Enterprise distribution via Google Cloud Marketplace / Gemini Enterprise)**
+By **MDxBlocks Inc.**
 
 ---
 
 ## Elevator Pitch
-> **"CertaintyAI is the first ontology-driven Enterprise AI assessment framework designed for mid-market regulated industries. By positioning a defined semantic ontology structure between raw enterprise categories and Google Cloud's Gemini models, we eliminate hallucinations and deliver completely auditable, explainable, and containerized multi-agent decisions designed for future direct deployment via the Google Cloud Marketplace."**
+
+CertaintyAI is an ontology-driven, auditable **AI Readiness Assessment** for regulated mid-market enterprises — healthcare first. It is built as a multi-agent system on **Google's Agent Development Kit (ADK)**: a deterministic scoring engine and a generative insights engine cooperate inside an ADK `SequentialAgent` pipeline, and a second agent runs in a **separate process and exchanges work over the open Agent-to-Agent (A2A) protocol**. The result is an assessment whose every on-screen number is either real computed data or an honest empty state — defensible AI for industries that have to answer to auditors.
 
 ---
 
-## 1. Project Requirements Checklist
+## Submission Checklist
 
-| Requirement | CertaintyAI Status & Verification Path | Details |
-| :--- | :--- | :--- |
-| **Code** | **COMPLETED & PACKAGED**<br>[certaintyai-public Repository](https://github.com/mdxblocks-ai/certaintyai-public) | Production-hardened FastAPI backend and Vite+React frontend. Contains multi-stage `Dockerfiles` and PostgreSQL support for secure containerized operations. |
-| **Architecture Diagram** | **COMPLETED & PNG GENERATED**<br>[Architecture Diagram](Docs/architecture.png) | Full-scale **10-Layer Enterprise AI Stack with Ontology Layer** context guide compiled as high-resolution PNGs and print-ready PDF documents. |
-| **Video** | **PROPOSED STORYBOARD & WALKTHROUGH**<br>[Video Demonstration]([VIDEO URL - TBD]) | A structured 2.5-minute video walkthrough showcasing: (a) The B2B problem of semantic fragmentation, (b) The interactive 3D Isometric Stack and centered SVG canvas, and (c) The live multi-agent execution and generation of McKinsey-grade PDF reports. |
-| **Testing Access** | **COMPLETED & LIVE**<br>[Live Demo URL](https://certaintyai-frontend-217783557903.us-central1.run.app) | Live production B2B web application hosted on Google Cloud Run. Local production simulation supported via [docker-compose.prod.yml](file:///c:/Project/MDx-CoPilots/Copilots/AntiGravity/MDxCAI/Source/Deploymentstrategy/docker-compose.prod.yml). |
+| Requirement | Status |
+|---|---|
+| Public repository + OSS license | ✅ `https://github.com/mdxblocks-ai/certaintyai-public` — Apache-2.0 |
+| Deployed, publicly accessible build | ✅ Frontend: `https://certaintyai-frontend-217783557903.us-central1.run.app` |
+| | ✅ Backend: `https://certaintyai-backend-217783557903.us-central1.run.app` |
+| Architecture diagram | ✅ `Docs/architecture.png` (in repo) |
+| Demo video (≤3 min, public) | [VIDEO URL — TBD] |
+| Track 3 alignment | ✅ See below |
 
----
+**Live demo login** (intended public credentials — not a secret): `demo@mdxblocks.com` / `Certainty2026!`
 
-## 2. Project Categories & Track 3 Architectural Mandates
-
-CertaintyAI is submitted exclusively under **Track 3: Refactor for Google Cloud Marketplace & Gemini Enterprise**. 
-
-### 🛡️ How CertaintyAI Meets Track 3 Mandates:
-
-*   **B2B Focus (Healthcare, BFSI, Cybersecurity):**
-    Unlike generic B2C wrappers, CertaintyAI solves the multi-billion dollar **B2B challenge of semantic fragmentation**—unifying transactional enterprise classifications (SAP ERP, Snowflake, Oracle, DB2, EHRs) under a single, governed semantic ontology structure to generate instant, auditable **AI Readiness Assessments** for executive boards.
-*   **Cloud-Native Runtime (Cloud Run):**
-    CertaintyAI's operational environment has been completely refactored into a cloud-native, microservice architecture. Deployed via **Google Cloud Run** and communicating with a hosted PostgreSQL instance, it leverages Secret Manager for API keys. Enterprise roadmap paths (e.g., GKE deployment, Helm packaging, and Private Service Connect) are planned and documented.
-*   **Google Cloud Powered Intelligence (Gemini & Vertex AI):**
-    Our multi-agent reasoning layer (`ReadinessReportAgent`) utilizes Gemini via Google Vertex AI to orchestrate cognitive planning. The long context window of Gemini is leveraged to digest user intake payloads and map them to standard taxonomies in a single reasoning pass.
+> Deployment runs on **Cloud Run** in project `certaintyai-prod` (`us-central1`), as two separate services. Vertex AI access is via **Application Default Credentials (a service account)** — **no API keys are committed** anywhere in the repository.
 
 ---
 
-## 3. Technical Implementation (30% Evaluation Weight)
+## Track 3 Alignment
 
-CertaintyAI represents an architectural framework that introduces **Ontology as a structured layer** between enterprise classifications and AI reasoning.
+CertaintyAI is purpose-built for the Google Cloud distribution motion that Track 3 targets:
 
-```
-+-------------------------------------------------------------+
-|              Layer 9: Application & Experience              |
-|        (Vite Frontend / Centered 3D Interactive Stack)       |
-+-------------------------------------------------------------+
-                               | 
-+-------------------------------------------------------------+
-|            Layer 6: AI & Orchestration (AIP Core)            |
-|     (Multi-Agent Orchestrator: Router -> Tracker -> Val)    |
-+-------------------------------------------------------------+
-                               | (Gemini Grounding)
-+-------------------------------------------------------------+
-|             Layer 5 & 4: Intelligence & Ontology            |
-|      (Domain Ontologies / GraphRAG / Evidence Pack Builder) |
-+-------------------------------------------------------------+
-                               | (C-Shaped Bezier Data Bridge)
-+-------------------------------------------------------------+
-|                Layer 1: Open Enterprise Data                |
-|      (SAP, Snowflake, Oracle, DB2 - Target Data Sources)    |
-+-------------------------------------------------------------+
-```
-
-### Key Technical Pillars:
-1.  **Multi-Agent Orchestrator:**
-    The core runtime is built using a custom multi-agent orchestrator. It coordinates specialized sub-agents:
-    *   `ScoreCalculationAgent`: A deterministic Python engine that mathematically calculates the Semantic Fragmentation Score and Executive Score based on industry constraints.
-    *   `InsightsGenerationAgent`: A Gemini-powered agent that evaluates the calculated scores against the enterprise ontology to compile risks, gaps, and recommendations.
-    *   `NarrativeAgent`: Synthesizes scores and insights into professional, McKinsey-style prose.
-    *   `ReadinessReportAgent`: Co-coordinates the workflow, verifying outputs at each step.
-    *(Note: Integration with the formal Google Vertex AI Agent Development Kit (ADK) / Agent Builder SDK is planned as future work).*
-2.  **Semantic Grounding & Planned GraphRAG (Layer 5 Roadmap):**
-    Our architecture is designed to integrate a custom GraphRAG engine that maps raw database schemas onto standard taxonomies (SNOMED-CT for Healthcare, ISO27001 for Cybersecurity, and FinOps expense indices). On our roadmap, this semantic layer will ground Gemini via Vertex AI Search and private data catalogs, bypassing standard flat-vector limitations.
-3.  **The Evidence Pack Builder (Roadmap):**
-    We have designed an explainability-first pipeline where recommendations can be trace-backed to raw database records. On our technical roadmap, the **Evidence Pack Builder** (Layer 5) will compile these citations and cryptographically log them in an immutable **Audit Trail Database** (Layer 8) to guarantee tamper-proof provenance for regulatory review.
+- **Built on Google's agent stack.** ADK `SequentialAgent` orchestration, Gemini 2.5 Flash reasoning via Vertex AI, and native **A2A** interoperability — the same validations Google Cloud Marketplace surfaces for AI agents.
+- **Marketplace-ready packaging.** The product is a self-contained, deployable agent service designed to list on Google Cloud Marketplace and integrate with Gemini Enterprise.
+- **Regulated-industry focus.** Auditability, provenance, and governance scoring are the core deliverable — exactly the buyer concern that gates enterprise AI adoption.
 
 ---
 
-## 4. Business Case & Monetization (30% Evaluation Weight)
+## Technical Implementation
 
-### The B2B Problem:
-Regulated mid-market enterprises (Healthcare, BFSI, Cybersecurity) want to adopt Generative AI, but are stalled by massive blockers: data silos, fear of hallucinations, and compliance risks. Standard consulting agencies charge upwards of $50,000 to perform a manual "AI Readiness Assessment," taking 4 to 6 weeks. 
+CertaintyAI is a multi-agent system, not a single prompt wrapper.
 
-Meanwhile, organizations are pouring billions into AI initiatives. However, **MIT's Project NANDA (2025)** found that roughly **95% of generative AI pilots show no measurable P&L impact** (only ~5% succeed). Furthermore, **Gartner forecasts that 60% of enterprise AI projects are abandoned or fail to progress** due to a lack of AI-ready data, and that more than 40% of agentic AI projects will be abandoned by 2027.
+**1. Deterministic scoring engine (`app/agents/score_agent.py`).**
+The assessment's numeric backbone is fully deterministic and unit-tested. Functions `calculate_scores` and `calculate_dynamic_scores` produce five sub-scores — **Semantic Alignment, RAG Accuracy, Audit & Provenance, Governance Oversight, Data Maturity** — and a maturity band: **Foundational (0–39) / Piloting (40–74) / Scaling (75–100)**. Because scoring is deterministic and test-gated, the same inputs always produce the same auditable result.
 
-### The CertaintyAI Solution:
-CertaintyAI automates this assessment. By taking a 2-minute governed survey (dynamically tailored to CFO or Security Director/CISO concerns), our multi-agent stack generates a print-ready, McKinsey-grade **AI Readiness Report** with verifiable data lineages.
+**2. ADK `SequentialAgent` pipeline (`app/agents/adk_pipeline.py`).**
+The deterministic scorer and a generative insights agent are composed as cooperating stages inside an ADK `SequentialAgent`, orchestrated via `orchestrator.py` → `generate_readiness_report`. Generative reasoning runs on **Gemini 2.5 Flash through Vertex AI**.
 
-### Commercialization & Monetization Model:
-1.  **Designed for Google Cloud Marketplace:**
-    CertaintyAI is designed to be packaged as a standard Helm chart deployable with one click inside a customer's secure GCP perimeter via the Google Cloud Marketplace. This drives massive GCP infrastructure consumption, making Google Cloud our natural, primary distribution partner. Under this model, we benefit from Google's Marketplace economics:
-    *   A low **3% standard take rate** (scaling down to 2% or 1.5% on large private offers).
-    *   **100% committed-spend drawdown capability** (up to a 25% cap), allowing enterprise buyers to fund CertaintyAI directly from their existing Google Cloud commits.
-    *   A Google-published **co-sell uplift** demonstrating **112% larger deals and up to 50% faster cycles** (based on the Futurum/Google study, June 2025).
-2.  **SaaS Licensing Tier:**
-    *   **Assess (Free/POC):** Self-service 2-minute wizard generating the Executive Scorecard.
-    *   **Govern (Enterprise Tier Roadmap):** Direct integration of data connectors (SAP, Oracle, Snowflake) to run continuous, real-time semantic audits and automated compliance mapping.
+**3. Live, cross-process A2A interoperability — the key differentiator.**
+A second agent (`ProducerInsightsAgent`) is wrapped with ADK `to_a2a` and served by `run_a2a_producer.py` as an independent process on port 8001. It publishes a standards-compliant agent card at `/.well-known/agent-card.json`, and the main application consumes it as an A2A **consumer** (`RemoteA2aAgent`). This is verified working **cross-process**: agent-card discovery (`GET 200`), A2A task submission (`POST 200`), and Gemini-backed responses over the wire. This is genuine open-protocol agent interoperability, not an in-process function call.
 
----
+**4. Deployment.**
+React/Vite frontend and FastAPI backend deploy as two separate Cloud Run services from local builds (`gcloud builds submit` + `gcloud run deploy`). State is a SQLite store that re-seeds the demo user on launch.
 
-## 5. Innovation & Creativity (20% Evaluation Weight)
+**Test gate:** the backend suite passes at **52 passing, 3 skipped, 0 failed**. The deterministic scoring logic is held under a strict change-firewall and verified zero-diff at every checkpoint.
 
-### Radical Differentiators:
-1.  **Ontology as Infrastructure:** 
-    Most current AI apps bolt metadata or prompts on top of an LLM. CertaintyAI is innovative because it treats the **Ontology Layer (Layer 4)** as real, active architectural middleware. The ontology governs how data is ingested, how the database is structured, how agents think, and how actions are validated.
-2.  **Interactive SVG Stack Interface:**
-    The user interface features a centered, responsive **3D Isometric SVG Stack Canvas** (hosted live at `/architecture`). Users hover over distinct glass plates (Data Sources, Cloud Infra, Ontology, Trust Engine, and Orchestrator) to visually inspect planned data streams, active connections, and database templates (Snowflake, SAP, Oracle). It brings the backend architecture to life, making complex data systems approachable to C-suite buyers.
-3.  **Explainability-First Design:**
-    We replace black-box neural reasoning with a transparent, trace-backed model. If Gemini recommends a compliance change, the **Evidence Pack Builder** links it directly to the exact W3C ontology constraint, the exact database row (e.g., from SAP SCM), and the relevant regulatory paragraph (e.g., HIPAA §164.308).
+### Roadmap (honestly scoped — written but not yet wired)
+
+- **MCP server** (`app/mcp_server.py`): the module is written but **not yet operational** (no runtime entrypoint, nothing imports it). Listed here as roadmap, not as a claimed live feature.
+- **Gemini Enterprise endpoint integration** for Marketplace listing.
+- **Persistent multi-tenant storage** (current SQLite store is ephemeral by design for the demo).
 
 ---
 
-## 6. Demo, Testing Access & Presentation (20% Evaluation Weight)
+## Business Case
 
-CertaintyAI is fully hosted, validated, and ready for immediate judging evaluation:
+**The problem.** Enterprises are pouring money into AI and getting almost nothing back — and the failures trace to readiness, not models.
 
-*   **Live Web Portal:** Visit the live deployment at **`https://certaintyai-frontend-217783557903.us-central1.run.app`** (Frontend served on Cloud Run, communicating securely with the backend API on Cloud Run).
-*   **Video Demonstration:** [VIDEO URL - TBD]
-*   **Demo Login Credentials:** 
-    *   **Email:** `demo@mdxblocks.com`
-    *   **Password:** `Certainty2026!`
-*   **The Guided Walkthrough:**
-    1.  Navigate to the live URL: `https://certaintyai-frontend-217783557903.us-central1.run.app`
-    2.  Access the survey wizard:
-        *   **As a Guest:** Click the **"AI Readiness"** link in the top navbar (or click the CTA buttons on the home page) to open the survey wizard.
-        *   **As a Logged-In User:** Click **"Sign In"** in the top navbar and log in with `demo@mdxblocks.com` and password `Certainty2026!`. Then click **"New Assessment"** or **"Start AI Readiness Assessment"** in the dashboard.
-    3.  Select your organization sector (Private or Public), organization name, role (**Security Director / CISO** or **CFO**), and your industry/mandate.
-    4.  Click **"Tailor my scenario assessment →"**.
-    5.  Go through the 5 tailored questions. Select your organization's options and click **"Continue →"** at each step.
-    6.  Provide an optional email address and click **"🚀 Generate Report"** on the dispatch screen.
-    7.  Inspect the print-ready, high-resolution McKinsey deliverable containing the **Executive Scorecard**, **Three Boardroom Decisions**, and **Peers Benchmark**.
-*   **Local Simulation Instructions:**
-    To run the entire PostgreSQL-backed microservice stack locally on your computer with a single command, navigate to `Source/Deploymentstrategy` and run:
-    `docker-compose -f docker-compose.prod.yml up --build`
+- MIT's Project NANDA report *The GenAI Divide: State of AI in Business 2025* (July 2025) found that despite an estimated $30–40B in enterprise GenAI investment, **95% of organizations saw no measurable P&L impact**; only 5% of integrated pilots extracted real value.
+- Gartner predicts that **through 2026, organizations will abandon 60% of AI projects unsupported by AI-ready data** (Gartner, Feb 2025).
+- Gartner further forecasts that **over 40% of agentic AI projects will be canceled by the end of 2027**, citing escalating costs, unclear business value, and inadequate risk controls (Gartner, June 2025).
+
+For **regulated** mid-market enterprises the bar is higher still: an AI initiative that can't show provenance, governance, and auditability doesn't just underperform — it can't be deployed at all.
+
+**The status quo** is a one-off consulting engagement: roughly **$50K and 4–6 weeks** for a manual readiness assessment that is stale the day it's delivered. CertaintyAI productizes that into a repeatable, auditable, agent-driven assessment.
+
+**Go-to-market: Google Cloud Marketplace.** Track 3's distribution channel is also strong unit economics for an ISV:
+
+- **Standard Marketplace revenue share is 3%**, dropping to as low as **1.5%** for large private offers (Google Cloud, 2025) — versus the historical 20%.
+- Buyers can apply **committed Google Cloud spend** toward the purchase, removing budget friction in enterprise accounts.
+- A Futurum Research study commissioned by Google Cloud (*Scaling Smarter*, June 2025) found Marketplace partners see **112% larger deal sizes**, close deals **2–4 weeks faster (up to 50% time savings)**, and a **14% improvement in customer retention**.
+
+**Revenue model:** SaaS subscription tiers (self-serve → team → enterprise) plus Marketplace private offers for committed-spend enterprise deals, with services attach for regulated-industry onboarding.
+
+---
+
+## Innovation
+
+- **Deterministic + generative as cooperating agents.** Most "AI assessment" tools let an LLM invent the numbers. CertaintyAI separates concerns: a deterministic, test-gated engine owns every score, and the generative agent only explains and contextualizes. Same inputs, same auditable output.
+- **Open protocol over walled garden.** A2A runs cross-process between two independently deployable agents — interoperability by standard, not by monolith. This is what makes the system extensible and Marketplace-validatable.
+- **Honesty as an enforced product property, not an aspiration.** Every fabricated metric was **removed at its source in the code and verified live** in a clean incognito session with a freshly generated report. Where a value isn't computed, the UI shows an honest `—` / "Not computed" / "Roadmap" — never a plausible-looking fake. For a product whose entire thesis is *defensible* AI for auditors, that property is the product.
+
+---
+
+## Demo
+
+- **Live app:** `https://certaintyai-frontend-217783557903.us-central1.run.app`
+- **Login:** `demo@mdxblocks.com` / `Certainty2026!`
+- **Video (≤3 min):** [VIDEO URL — TBD]
+
+The video centers on the **live two-terminal A2A proof** (producer process serving an agent card; consumer process discovering and invoking it over the wire, with real Gemini responses), then walks an honest, freshly generated readiness report and the assistant experience. All on-screen numbers in the demo match the narration.
+
+---
+
+## A Note for Judges on Honesty Boundaries
+
+We held this submission — including this document — to the same honesty standard as the product. The five statistics cited in the Business Case (MIT NANDA, the two Gartner forecasts, the Marketplace revenue-share schedule, and the Futurum study) are quoted in their sources' own framing and are traceable to MIT Project NANDA, Gartner press releases, Google Cloud's partner documentation, and the Google-commissioned Futurum whitepaper respectively. Inside the application, no number is shown unless it is genuinely computed; everything else is an explicit empty state. The MCP server is described as written-but-not-wired because that is precisely its status. We would rather under-claim and be verifiable than over-claim and be wrong — which is, after all, the entire point of CertaintyAI.
