@@ -19,7 +19,7 @@ CertaintyAI is an ontology-driven, auditable **AI Readiness Assessment** for reg
 | Deployed, publicly accessible build | ✅ Frontend: `https://certaintyai-frontend-217783557903.us-central1.run.app` |
 | | ✅ Backend: `https://certaintyai-backend-217783557903.us-central1.run.app` |
 | Architecture diagram | ✅ `Docs/architecture.png` (in repo) |
-| Demo video (≤3 min, public) | [VIDEO URL — TBD] |
+| Demo video (≤2 min, public) | https://www.youtube.com/watch?v=VwuKJTi20PU |
 | Track 3 alignment | ✅ See below |
 
 **Live demo login** (intended public credentials — not a secret): `demo@mdxblocks.com` / `Certainty2026!`
@@ -98,7 +98,7 @@ For **regulated** mid-market enterprises the bar is higher still: an AI initiati
 
 - **Live app:** `https://certaintyai-frontend-217783557903.us-central1.run.app`
 - **Login:** `demo@mdxblocks.com` / `Certainty2026!`
-- **Video (≤3 min):** [VIDEO URL — TBD]
+- **Video (≤2 min):** https://www.youtube.com/watch?v=VwuKJTi20PU
 
 The video centers on the **live two-terminal A2A proof** (producer process serving an agent card; consumer process discovering and invoking it over the wire, with real Gemini responses), then walks an honest, freshly generated readiness report and the assistant experience. All on-screen numbers in the demo match the narration.
 
