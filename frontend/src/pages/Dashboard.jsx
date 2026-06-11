@@ -1314,9 +1314,6 @@ export default function Dashboard() {
 
   // Tab switching helper
   const handleTabChange = (tabName) => {
-    if (user && !user.first_assessment_completed && tabName !== 'readiness') {
-      return
-    }
     setSearchParams({ tab: tabName })
   }
 
