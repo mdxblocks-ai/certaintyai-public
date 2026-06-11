@@ -2186,7 +2186,7 @@ export default function Dashboard() {
       .catch((err) => { console.error(err) })
       .finally(() => { if (!cancelled) setReportsLoading(false) })
     return () => { cancelled = true }
-  }, [])
+  }, [activeTab])
 
   const activeReportId = selectedReportId || (reports && reports.length > 0 ? reports[0].id : null);
 
