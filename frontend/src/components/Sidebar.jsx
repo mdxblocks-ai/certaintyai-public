@@ -97,7 +97,7 @@ export default function Sidebar({ activeTab, onTabChange }) {
     }
   }
 
-  const disableNav = user && !user.first_assessment_completed
+  const disableNav = false
 
   return (
     <aside className={`w-full transition-all duration-300 bg-[var(--dash-sidebar-bg)] border-b lg:border-b-0 lg:border-r border-[var(--dash-border)] p-5 flex flex-col justify-between shrink-0 lg:h-full lg:overflow-y-auto ${
