@@ -4077,25 +4077,25 @@ export default function Dashboard() {
                       }) : 'N/A';
                       const domains = r.domains || [];
                       
-                      let scoreColor = 'text-rose-400 border-rose-500/20 bg-rose-950/20';
+                      let scoreColor = 'text-rose-700 border-rose-300 bg-rose-100';
                       if (r.total_score >= 80) {
-                        scoreColor = 'text-emerald-400 border-emerald-500/20 bg-emerald-950/20';
+                        scoreColor = 'text-emerald-700 border-emerald-300 bg-emerald-100';
                       } else if (r.total_score >= 50) {
-                        scoreColor = 'text-amber-400 border-amber-500/20 bg-amber-950/20';
+                        scoreColor = 'text-amber-700 border-amber-300 bg-amber-100';
                       }
 
                       return (
                         <div 
                           key={r.id} 
-                          className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-5 hover:border-cyan-500/40 hover:bg-slate-900/90 transition duration-300 flex flex-col justify-between space-y-4 shadow-lg group"
+                          className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl p-5 hover:border-[var(--dash-accent)] transition duration-300 flex flex-col justify-between space-y-4 shadow-sm group"
                         >
                           <div className="space-y-3">
                             <div className="flex items-start justify-between">
                               <div>
-                                <h4 className="text-base font-bold text-white group-hover:text-cyan-400 transition duration-200">
+                                <h4 className="text-base font-bold text-[var(--dash-text-primary)] group-hover:text-[var(--dash-accent)] transition duration-200">
                                   {r.company_name || 'Acme Corporation'}
                                 </h4>
-                                <span className="text-[10px] text-slate-500 uppercase tracking-widest block mt-0.5 font-sans">
+                                <span className="text-[10px] text-[var(--dash-text-secondary)] uppercase tracking-widest block mt-0.5 font-sans">
                                   Generated {dateStr}
                                 </span>
                               </div>
@@ -4105,23 +4105,23 @@ export default function Dashboard() {
                             </div>
 
                             <div className="space-y-1">
-                              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block font-sans">Maturity Level</span>
-                              <span className="text-xs font-semibold text-slate-300 font-sans block">
+                              <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-wider block font-sans">Maturity Level</span>
+                              <span className="text-xs font-semibold text-[var(--dash-text-primary)] font-sans block">
                                 {r.maturity_tier || 'Low / Foundational'}
                               </span>
-                              <span className="text-[11px] text-slate-400 italic block leading-relaxed font-sans">
+                              <span className="text-[11px] text-[var(--dash-text-secondary)] italic block leading-relaxed font-sans">
                                 "{r.maturity_tagline || 'AI is a discussion, not yet a discipline.'}"
                               </span>
                             </div>
 
                             {domains.length > 0 && (
                               <div className="space-y-1 pt-1">
-                                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block font-sans">Target Industries</span>
+                                <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-wider block font-sans">Target Industries</span>
                                 <div className="flex flex-wrap gap-1.5 mt-1">
                                   {domains.map((dom, i) => (
                                     <span 
                                       key={i} 
-                                      className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-slate-950/60 border border-slate-800 text-slate-400 font-sans"
+                                      className="px-2 py-0.5 rounded-md text-[10px] font-medium bg-[var(--dash-hover-bg)] border border-[var(--dash-border)] text-[var(--dash-text-secondary)] font-sans"
                                     >
                                       {dom}
                                     </span>
@@ -4131,7 +4131,7 @@ export default function Dashboard() {
                             )}
                           </div>
 
-                          <div className="flex items-center gap-3 pt-2 border-t border-slate-800/60">
+                          <div className="flex items-center gap-3 pt-2 border-t border-[var(--dash-border)]">
                             <button
                               onClick={() => {
                                 // Load this report in the Dashboard Tab
@@ -4142,7 +4142,7 @@ export default function Dashboard() {
                                   })
                                   .catch((err) => console.error("Error activating report:", err));
                               }}
-                              className="flex-1 py-2 px-3 rounded-lg text-center bg-slate-950 border border-slate-800 text-xs font-bold text-slate-300 hover:text-white hover:border-slate-700 hover:bg-slate-900 transition duration-200 font-sans"
+                              className="flex-1 py-2 px-3 rounded-lg text-center bg-[var(--dash-hover-bg)] border border-[var(--dash-border)] text-xs font-bold text-[var(--dash-text-primary)] hover:text-[var(--dash-hover-text)] hover:border-[var(--dash-accent)] hover:bg-[var(--dash-active-bg)] transition duration-200 font-sans"
                             >
                               📊 Load Dashboard
                             </button>
@@ -4150,7 +4150,7 @@ export default function Dashboard() {
                               href={`/report/${r.anon_token}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="flex-1 py-2 px-3 rounded-lg text-center bg-cyan-950/40 border border-cyan-800/30 text-xs font-bold text-cyan-400 hover:bg-cyan-900/30 hover:border-cyan-700/50 transition duration-200 font-sans block"
+                              className="flex-1 py-2 px-3 rounded-lg text-center bg-[var(--dash-active-bg)] border border-[var(--dash-active-border)] text-xs font-bold text-[var(--dash-active-text)] hover:border-[var(--dash-accent)] transition duration-200 font-sans block"
                             >
                               👁 View Report
                             </a>
