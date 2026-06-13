@@ -6,7 +6,6 @@ import ArchitectureStack from '../components/ArchitectureStack'
 import NarrativeChain from '../components/NarrativeChain'
 import ProofStrip from '../components/ProofStrip'
 import ExecutiveEngagement from '../components/ExecutiveEngagement'
-import MaturityProgression from '../components/MaturityProgression'
 import { BRAND, CTA } from '../lib/branding'
 
 const WHY_CARDS = [
@@ -212,11 +211,62 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ===== Stat Strip (preserved, honest macro stats) ===== */}
-      <section className="border-t border-b border-[#14161A]/10 bg-[#ECE5D6]/30 py-16">
+      {/* ===== Designed For (executive audiences) ===== */}
+      <section id="designed-for" className="max-w-7xl mx-auto px-6 py-16">
+        <div className="max-w-3xl mb-10">
+          <span className="text-[11px] font-semibold tracking-[0.22em] text-[#7C5723] uppercase block mb-3">
+            Designed For
+          </span>
+          <h2 className="font-serif-brand text-3xl sm:text-4xl text-[#14161A] font-normal leading-tight">
+            Built for the executives regulators ask hard questions of.
+          </h2>
+          <p className="text-sm text-[#3B3D42] mt-3 max-w-2xl">
+            Six leadership roles. One open architecture they can all defend.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[
+            { abbr: 'CEO',     full: 'Chief Executive Officer',                outcome: 'Defensible AI strategy',     accent: '#14161A' },
+            { abbr: 'CIO/CTO', full: 'Chief Information / Technology Officer', outcome: 'Operationalize at scale',    accent: '#A87C3C' },
+            { abbr: 'CISO',    full: 'Chief Information Security Officer',     outcome: 'Continuous risk visibility', accent: '#2F7D6B' },
+            { abbr: 'CFO',     full: 'Chief Financial Officer',                outcome: 'Value & cost transparency',  accent: '#3A7E92' },
+            { abbr: 'CDO',     full: 'Chief Data Officer',                     outcome: 'Governed semantic layer',    accent: '#D8B061' },
+            { abbr: 'AI GOV',  full: 'AI Governance Council',                  outcome: 'Audit-ready oversight',      accent: '#A8506A' },
+          ].map((r) => (
+            <article
+              key={r.abbr}
+              className="bg-[#FBF8F0] border border-[#14161A]/10 rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-[#A87C3C]/45 transition duration-200 flex items-center gap-4"
+              style={{ borderLeft: `3px solid ${r.accent}` }}
+            >
+              <div
+                className="shrink-0 w-14 h-14 rounded-xl flex items-center justify-center font-serif-brand text-[#FBF8F0] font-semibold"
+                style={{ backgroundColor: r.accent }}
+                aria-hidden
+              >
+                <span className={r.abbr.length > 4 ? 'text-[10px] tracking-widest' : 'text-base tracking-wide'}>
+                  {r.abbr}
+                </span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="font-serif-brand text-base font-semibold text-[#14161A] leading-tight">{r.full}</div>
+                <div className="text-[12px] text-[#3B3D42] mt-1 leading-snug">{r.outcome}</div>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      {/* ===== Why Organizations Struggle With AI (honest macro stats) ===== */}
+      <section id="why-struggle" className="border-t border-b border-[#14161A]/10 bg-[#ECE5D6]/30 py-16">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="font-serif-brand text-2xl sm:text-3xl lg:text-4xl text-[#14161A] max-w-4xl leading-tight font-normal mb-12">
-            In regulated industries, your data is your most valuable asset — and your <em>largest liability.</em>
+          <div className="max-w-3xl mb-12">
+            <span className="text-[11px] font-semibold tracking-[0.22em] text-[#7C5723] uppercase block mb-3">
+              Why Organizations Struggle With AI
+            </span>
+            <h2 className="font-serif-brand text-3xl sm:text-4xl lg:text-5xl text-[#14161A] font-normal leading-tight">
+              The gap is governance and readiness — <em>not models.</em>
+            </h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="border-t border-[#14161A]/10 pt-6">
@@ -250,6 +300,108 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* ===== Executive Outcomes (condensed — 3 outcome CTAs) ===== */}
+      <section id="executive-outcomes" className="border-t border-[#14161A]/10 py-20">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="max-w-3xl mx-auto mb-12 text-center">
+            <span className="text-[11px] font-semibold tracking-[0.22em] text-[#7C5723] uppercase block mb-3">
+              Executive Outcomes
+            </span>
+            <h2 className="font-serif-brand text-3xl sm:text-4xl text-[#14161A] font-normal leading-tight">
+              Move from AI experimentation to <em>measurable business value.</em>
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 max-w-5xl mx-auto">
+            {[
+              {
+                title: 'Govern AI Risk',
+                blurb: 'Vendor, model, prompt, and policy risk surfaced in one auditable view — mapped to NIST AI RMF, ISO 27001, EU AI Act.',
+                accent: '#A87C3C',
+                href: '/ai-readiness',
+                cta: 'Assess governance',
+              },
+              {
+                title: 'Operationalize AI',
+                blurb: 'From disconnected pilots to a governed enterprise platform — ontology, orchestration, and a control tower on open standards.',
+                accent: '#2F7D6B',
+                href: '/architecture',
+                cta: 'See the architecture',
+              },
+              {
+                title: 'Measure Business Value',
+                blurb: 'Concrete domain copilots with cited outcomes per role — defensible numbers for the board, every quarter.',
+                accent: '#3A7E92',
+                href: '/copilots',
+                cta: 'Explore copilots',
+              },
+            ].map((o) => (
+              <Link
+                key={o.title}
+                to={o.href}
+                className="bg-[#FBF8F0] border border-[#14161A]/10 rounded-2xl p-7 shadow-sm hover:shadow-md hover:border-[#A87C3C]/55 transition duration-200 group flex flex-col"
+                style={{ borderTop: `4px solid ${o.accent}` }}
+              >
+                <h3 className="font-serif-brand text-xl text-[#14161A] font-semibold leading-snug mb-3">
+                  {o.title}
+                </h3>
+                <p className="text-[13px] text-[#3B3D42] leading-relaxed mb-6 flex-1">
+                  {o.blurb}
+                </p>
+                <span
+                  className="inline-flex items-center text-[13px] font-bold transition group-hover:translate-x-0.5"
+                  style={{ color: o.accent }}
+                >
+                  {o.cta} →
+                </span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ===== Trusted Frameworks ===== */}
+      <section id="trusted-frameworks" className="border-t border-[#14161A]/10 py-16 bg-[#1E3A36]/4">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="max-w-3xl mb-10">
+            <span className="text-[11px] font-semibold tracking-[0.22em] text-[#A87C3C] uppercase block mb-3">
+              Trusted Frameworks
+            </span>
+            <h2 className="font-serif-brand text-3xl sm:text-4xl text-[#14161A] font-normal leading-tight">
+              Built on the standards your auditors already use.
+            </h2>
+            <p className="text-sm text-[#3B3D42] mt-3 max-w-2xl">
+              Run on Google Cloud's production-grade Vertex AI. Scored against NIST AI RMF. Mapped to ISO 42001 and EU AI Act. Defensible at every join.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+            {[
+              { name: 'Google Cloud', category: 'Platform',       role: 'Production runtime' },
+              { name: 'Vertex AI',    category: 'Model',          role: 'Gemini · ADC auth' },
+              { name: 'NIST AI RMF',  category: 'Risk framework', role: 'GOVERN · MEASURE scored' },
+              { name: 'ISO 42001',    category: 'Standard',       role: 'AI management system' },
+              { name: 'EU AI Act',    category: 'Regulation',     role: 'Risk-tier mapping' },
+            ].map((f) => (
+              <article
+                key={f.name}
+                className="bg-[#FBF8F0] border border-[#14161A]/10 rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-[#A87C3C]/45 transition duration-200 text-center flex flex-col items-center"
+              >
+                <div className="text-[10px] uppercase tracking-widest text-[#A87C3C] font-bold mb-2">
+                  {f.category}
+                </div>
+                <div className="font-serif-brand text-base font-semibold text-[#14161A] leading-tight mb-2">
+                  {f.name}
+                </div>
+                <div className="text-[11px] text-[#73706A] leading-snug">
+                  {f.role}
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ===== The 7-step Narrative Chain ===== */}
       <section id="narrative-chain" className="max-w-7xl mx-auto px-6 py-20">
         <div className="max-w-3xl mx-auto mb-12 text-center">
@@ -265,116 +417,6 @@ export default function Landing() {
         </div>
 
         <NarrativeChain />
-      </section>
-
-      {/* ===== Executive Outcomes ===== */}
-      <section id="executive-outcomes" className="border-t border-[#14161A]/10 py-20">
-        <div className="max-w-7xl mx-auto px-6">
-
-          <div className="max-w-3xl mb-12">
-            <span className="text-[11px] font-semibold tracking-[0.22em] text-[#7C5723] uppercase block mb-3">
-              Executive Outcomes
-            </span>
-            <h2 className="font-serif-brand text-3xl sm:text-4xl text-[#14161A] font-normal leading-tight">
-              Move from AI experimentation to trusted operationalization.
-            </h2>
-            <p className="text-sm text-[#3B3D42] mt-3 max-w-2xl">
-              Four executive questions. Four answerable next steps. One open architecture underneath all of them — so a CIO, CFO, CTO, CISO, board member, or investor can see business value and the next move at a glance.
-            </p>
-          </div>
-
-          {/* Four outcome cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 mb-20">
-            {[
-              {
-                index: '01',
-                question: 'Where Am I Today?',
-                description: 'Assess AI maturity, governance readiness, operational risk, and organizational preparedness.',
-                ctaLabel: 'Run AI Readiness Assessment',
-                ctaHref: '/survey',
-                audience: 'CIO · CFO · Board',
-              },
-              {
-                index: '02',
-                question: 'What Should I Do Next?',
-                description: 'Receive a prioritized roadmap aligned to governance, compliance, architecture, and business outcomes.',
-                ctaLabel: 'View Recommended Roadmap',
-                ctaHref: '/survey',
-                audience: 'CTO · CIO · Head of AI',
-              },
-              {
-                index: '03',
-                question: 'What Business Value Will I Gain?',
-                description: 'Reduce risk, improve productivity, control costs, accelerate adoption, and increase confidence in AI decisions.',
-                ctaLabel: 'Explore Business Outcomes',
-                ctaHref: '/copilots',
-                audience: 'CFO · COO · Board',
-              },
-              {
-                index: '04',
-                question: 'How Do I Operationalize AI?',
-                description: "Move from disconnected pilots to governed enterprise-wide AI operations using CertaintyAI's control tower and governance framework.",
-                ctaLabel: 'See Operationalization Journey',
-                ctaHref: '#architecture-stack',
-                audience: 'CTO · CISO · Head of AI',
-              },
-            ].map((o) => {
-              const isAnchor = o.ctaHref.startsWith('#')
-              const handleAnchor = (e) => {
-                if (!isAnchor) return
-                e.preventDefault()
-                const el = document.querySelector(o.ctaHref)
-                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-              }
-              return (
-                <article
-                  key={o.index}
-                  className="bg-[#FBF8F0] border border-[#14161A]/10 rounded-2xl p-7 shadow-sm hover:shadow-md hover:border-[#A87C3C]/55 transition duration-200 flex flex-col"
-                >
-                  <div className="flex items-start justify-between gap-3 mb-5">
-                    <div
-                      className="w-11 h-11 rounded-xl bg-[#14161A] text-[#D8B679] flex items-center justify-center font-serif-brand text-base font-semibold shrink-0"
-                      aria-hidden
-                    >
-                      {o.index}
-                    </div>
-                    <span className="text-[10px] font-semibold tracking-widest uppercase text-[#73706A] mt-2 text-right">
-                      {o.audience}
-                    </span>
-                  </div>
-
-                  <h3 className="font-serif-brand text-xl font-semibold text-[#14161A] leading-snug mb-3">
-                    {o.question}
-                  </h3>
-                  <p className="text-[13px] text-[#3B3D42] leading-relaxed mb-6 flex-1">
-                    {o.description}
-                  </p>
-
-                  {isAnchor ? (
-                    <a
-                      href={o.ctaHref}
-                      onClick={handleAnchor}
-                      className="inline-flex items-center text-[13px] font-bold text-[#7C5723] hover:text-[#14161A] transition mt-auto"
-                    >
-                      {o.ctaLabel} →
-                    </a>
-                  ) : (
-                    <Link
-                      to={o.ctaHref}
-                      className="inline-flex items-center text-[13px] font-bold text-[#7C5723] hover:text-[#14161A] transition mt-auto"
-                    >
-                      {o.ctaLabel} →
-                    </Link>
-                  )}
-                </article>
-              )
-            })}
-          </div>
-
-          {/* Maturity progression (shared component) */}
-          <MaturityProgression />
-
-        </div>
       </section>
 
       {/* ===== Embedded Architecture Stack canvas ===== */}
