@@ -1,8 +1,9 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import api from '../lib/api'
 
-export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }) {
+export default function AuthModal({ isOpen, onClose, initialMode = 'signin', claimToken = null }) {
   const { login, signup, changePassword, user, refreshUser } = useAuth()
   const navigate = useNavigate()
   const [mode, setMode] = useState(initialMode) // 'signin' | 'signup' | 'forgot' | 'sent' | 'changepass' | 'changed'
@@ -52,11 +53,20 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin' }) {
     setLoading(true)
     try {
       const signedUpUser = await signup({ email, password, full_name: fullName })
-      onClose()
-      if (signedUpUser && !signedUpUser.first_assessment_completed) {
-        navigate('/dashboard?tab=readiness', { replace: true })
+      if (claimToken) {
+        try {
+          await api.post(`/auth/claim-report/${claimToken}`)
+          await refreshUser()
+        } catch { /* fall through to navigation; report still viewable by token */ }
+        onClose()
+        navigate(`/dashboard?tab=readiness&reportToken=${claimToken}`, { replace: true })
       } else {
-        navigate('/dashboard?tab=home', { replace: true })
+        onClose()
+        if (signedUpUser && !signedUpUser.first_assessment_completed) {
+          navigate('/dashboard?tab=readiness', { replace: true })
+        } else {
+          navigate('/dashboard?tab=home', { replace: true })
+        }
       }
     } catch (err) {
       const detail = err.response?.data?.detail
