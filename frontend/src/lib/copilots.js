@@ -3,7 +3,7 @@ export const DOMAINS = [
     id: 'healthcare',
     name: 'Healthcare',
     accent: '#A8506A',
-    glow: 'rgba(168, 80, 106, 0.18)',
+    glow: 'rgba(168, 80, 106, 0.22)',
     blurb:
       'AI that clinicians, payers, and regulators can defend — grounded in SNOMED, LOINC, ICD-10 and a real evidence trail.',
   },
@@ -11,7 +11,7 @@ export const DOMAINS = [
     id: 'finance',
     name: 'Finance',
     accent: '#3A7E92',
-    glow: 'rgba(58, 126, 146, 0.18)',
+    glow: 'rgba(58, 126, 146, 0.22)',
     blurb:
       'Governed financial intelligence — every recommendation cites the rule, the source row, and the policy that allows it.',
   },
@@ -19,7 +19,7 @@ export const DOMAINS = [
     id: 'education',
     name: 'Education',
     accent: '#D8B061',
-    glow: 'rgba(216, 176, 97, 0.22)',
+    glow: 'rgba(216, 176, 97, 0.26)',
     blurb:
       'Personalized learning that respects FERPA and COPPA, with faculty-in-the-loop on every consequential decision.',
   },
@@ -27,13 +27,14 @@ export const DOMAINS = [
     id: 'cybersecurity',
     name: 'Cybersecurity',
     accent: '#2F7D6B',
-    glow: 'rgba(47, 125, 107, 0.18)',
+    glow: 'rgba(47, 125, 107, 0.22)',
     blurb:
       'Continuous, audit-ready scrutiny of your AI estate — controls, vendors, models, prompts, and policy attestation.',
   },
 ]
 
 export const COPILOTS = [
+  // ---------- Healthcare ----------
   {
     id: 'ai-cdss',
     domain: 'healthcare',
@@ -46,8 +47,23 @@ export const COPILOTS = [
       'Hallucination guardrails enforced against the ontology layer',
     ],
     frameworks: ['HIPAA', 'FDA AI/ML', 'NIST AI RMF', 'ISO 42001'],
-    status: 'roadmap',
+    status: 'pilot',
     persona: 'CMIO · CMO · Clinical Quality',
+  },
+  {
+    id: 'ai-pfis',
+    domain: 'healthcare',
+    name: 'AI-PFIS Copilot',
+    tagline: 'Patient Financial Information System — pre-eligibility, estimation, and propensity-to-pay, governed.',
+    capabilities: [
+      'Real-time eligibility and benefits verification across payer rules',
+      'Patient cost estimates with policy citations and confidence bands',
+      'Propensity-to-pay scoring with bias guardrails',
+      'Audit trail for every estimate that touches a billed encounter',
+    ],
+    frameworks: ['HIPAA', 'HITECH', 'NIST AI RMF', 'State Billing Rules'],
+    status: 'pilot',
+    persona: 'CFO · Revenue Cycle · Patient Access',
   },
   {
     id: 'prior-auth',
@@ -61,9 +77,11 @@ export const COPILOTS = [
       'End-to-end decision lineage for downstream appeals',
     ],
     frameworks: ['HIPAA', 'HITECH', 'NIST AI RMF', 'State Payer Rules'],
-    status: 'roadmap',
+    status: 'coming-soon',
     persona: 'Utilization Mgmt · Revenue Cycle · Payer Operations',
   },
+
+  // ---------- Finance ----------
   {
     id: 'tax-planner',
     domain: 'finance',
@@ -76,13 +94,45 @@ export const COPILOTS = [
       'Policy guardrails for advice scope and disclaimer language',
     ],
     frameworks: ['SOX', 'GAAP / IFRS', 'IRC', 'NIST AI RMF'],
-    status: 'roadmap',
+    status: 'available',
     persona: 'CFO · Corporate Tax · Treasury',
+  },
+  {
+    id: 'quanto-finops',
+    domain: 'finance',
+    name: 'Quanto FinOps Copilot',
+    tagline: 'Govern cloud and AI spend — show every dollar a cited reason.',
+    capabilities: [
+      'Unit-economics view across model runs, workloads, and teams',
+      'Anomaly detection with policy guardrails before alerts page',
+      'Committed-spend optimization recommendations with cited tradeoffs',
+      'FinOps-board-ready monthly close with traceable lineage',
+    ],
+    frameworks: ['FinOps Framework', 'SOX', 'NIST AI RMF', 'ISO 42001'],
+    status: 'coming-soon',
+    persona: 'CFO · FinOps · Cloud Operations',
+  },
+
+  // ---------- Education ----------
+  {
+    id: 'gradeup',
+    domain: 'education',
+    name: 'GradeUP Copilot',
+    tagline: 'Faculty-grade assistant for assessment design, grading, and learner feedback — without bias drift.',
+    capabilities: [
+      'Rubric-grounded assessment generation with evidence citations',
+      'Bias and equity monitoring across student cohorts',
+      'Faculty-in-the-loop on every grade-impacting decision',
+      'Lineage on every model output for academic appeal',
+    ],
+    frameworks: ['FERPA', 'COPPA', 'NIST AI RMF', 'ISO 42001'],
+    status: 'available',
+    persona: 'Provost · Dean · Faculty Council',
   },
   {
     id: 'skillup',
     domain: 'education',
-    name: 'SkillUP AI Copilot',
+    name: 'SkillUP Copilot',
     tagline: 'Personalized learning and readiness guidance.',
     capabilities: [
       'Personalized learning paths from competency-to-curriculum mapping',
@@ -91,9 +141,11 @@ export const COPILOTS = [
       'Equity & bias monitoring across cohorts',
     ],
     frameworks: ['FERPA', 'COPPA', 'NIST AI RMF', 'ISO 42001'],
-    status: 'roadmap',
+    status: 'available',
     persona: 'Provost · Dean · Workforce Development',
   },
+
+  // ---------- Cybersecurity ----------
   {
     id: 'security-auditor',
     domain: 'cybersecurity',
@@ -106,7 +158,7 @@ export const COPILOTS = [
       'Red-team prompt and data-exfiltration pattern checks',
     ],
     frameworks: ['NIST AI RMF', 'ISO 27001', 'SOC 2', 'EU AI Act'],
-    status: 'roadmap',
+    status: 'pilot',
     persona: 'CISO · Security Architect · GRC',
   },
 ]
