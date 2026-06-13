@@ -190,7 +190,7 @@ export default function Landing() {
                 Get Started →
               </Link>
               <Link
-                to="/ai-readiness"
+                to="/survey"
                 className="py-4 px-7 rounded-lg border border-[#D8B679]/30 text-[#F4F0E6] hover:bg-[#D8B679]/8 hover:border-[#D8B679]/55 transition font-bold text-sm"
               >
                 Assess Your AI Readiness →

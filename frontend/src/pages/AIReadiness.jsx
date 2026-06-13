@@ -595,38 +595,27 @@ export default function AIReadiness() {
               A two-minute, role-tailored assessment that turns disconnected AI experiments into a board-defensible readiness score, a prioritized 90-day roadmap, and a path to AI operationalization.
             </p>
 
-            <div className="flex flex-wrap gap-3 items-center">
+            {/* Dominant primary CTA — single point of focus */}
+            <div className="mt-2">
               <Link
                 to="/survey"
-                className="py-4 px-7 rounded-lg bg-[#14161A] text-[#F4F0E6] hover:bg-[#7C5723] transition font-bold text-sm shadow"
+                className="inline-flex items-center gap-3 py-5 px-9 rounded-xl bg-[#14161A] text-[#F4F0E6] hover:bg-[#7C5723] transition font-bold text-base shadow-[0_12px_36px_-10px_rgba(20,22,26,0.45)] hover:shadow-[0_14px_44px_-8px_rgba(124,87,35,0.55)] group"
               >
-                Start the 2-minute Assessment →
-              </Link>
-              <a
-                href="#sample-report"
-                onClick={(e) => { e.preventDefault(); document.getElementById('sample-report')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }}
-                className="py-4 px-7 rounded-lg border border-[#14161A]/16 text-[#14161A] hover:bg-[#ECE5D6] hover:border-[#14161A]/30 transition font-bold text-sm"
-              >
-                See a sample report
-              </a>
-              <Link
-                to={CTA.exploreArchitecture.href}
-                className="py-4 px-7 rounded-lg text-[#7C5723] hover:text-[#14161A] transition font-bold text-sm"
-              >
-                Skip — explore the architecture →
+                <span>Start the 2-minute Assessment</span>
+                <span aria-hidden className="transition-transform group-hover:translate-x-0.5">→</span>
               </Link>
             </div>
 
-            <div className="mt-6 flex items-center gap-3 text-[11.5px] text-[#73706A]">
-              <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-[#FBF8F0] border border-[#14161A]/10">
+            <div className="mt-5 flex flex-wrap items-center gap-3 text-[11.5px] text-[#73706A]">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#FBF8F0] border border-[#14161A]/10">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#2F7D6B]" />
                 Anonymous
               </span>
-              <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-[#FBF8F0] border border-[#14161A]/10">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#FBF8F0] border border-[#14161A]/10">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#A87C3C]" />
                 No account required
               </span>
-              <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-[#FBF8F0] border border-[#14161A]/10">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#FBF8F0] border border-[#14161A]/10">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#D8B061]" />
                 Deterministic scoring
               </span>
@@ -638,6 +627,24 @@ export default function AIReadiness() {
           </div>
         </div>
       </section>
+
+      {/* ===== Below-fold secondary exits (low-emphasis link bar) ===== */}
+      <div className="max-w-7xl mx-auto px-6 pb-10 -mt-2">
+        <div className="text-[12px] text-[#73706A] tracking-wide">
+          Or:{' '}
+          <a
+            href="#sample-report"
+            onClick={(e) => { e.preventDefault(); document.getElementById('sample-report')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }}
+            className="text-[#7C5723] font-bold hover:text-[#14161A] transition"
+          >
+            see a sample report ↓
+          </a>
+          <span className="mx-2 text-[#14161A]/20">·</span>
+          <Link to={CTA.exploreArchitecture.href} className="text-[#7C5723] font-bold hover:text-[#14161A] transition">
+            explore the architecture →
+          </Link>
+        </div>
+      </div>
 
       {/* ===== Q2: Why am I here? ===== */}
       <section id="why-here" className="border-t border-b border-[#14161A]/10 bg-[#ECE5D6]/30 py-16">
