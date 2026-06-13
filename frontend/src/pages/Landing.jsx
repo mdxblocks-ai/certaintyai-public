@@ -184,7 +184,7 @@ export default function Landing() {
               to="/ai-readiness"
               className="py-4 px-7 rounded-lg border border-[#14161A]/16 text-[#14161A] hover:bg-[#ECE5D6] hover:border-[#14161A]/30 transition font-bold text-sm"
             >
-              Assess My Organization's AI Readiness →
+              Assess Your AI Readiness →
             </Link>
           </div>
 
