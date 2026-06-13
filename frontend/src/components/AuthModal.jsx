@@ -25,11 +25,20 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin', cla
     setLoading(true)
     try {
       const loggedInUser = await login(email, password)
-      onClose()
-      if (loggedInUser && !loggedInUser.first_assessment_completed) {
-        navigate('/dashboard?tab=readiness', { replace: true })
+      if (claimToken) {
+        try {
+          await api.post(`/auth/claim-report/${claimToken}`)
+          await refreshUser()
+        } catch { /* fall through to navigation; report still viewable by token */ }
+        onClose()
+        navigate(`/dashboard?tab=readiness&reportToken=${claimToken}`, { replace: true })
       } else {
-        navigate('/dashboard?tab=home', { replace: true })
+        onClose()
+        if (loggedInUser && !loggedInUser.first_assessment_completed) {
+          navigate('/dashboard?tab=readiness', { replace: true })
+        } else {
+          navigate('/dashboard?tab=home', { replace: true })
+        }
       }
     } catch (err) {
       const detail = err.response?.data?.detail
