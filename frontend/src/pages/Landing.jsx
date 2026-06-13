@@ -164,15 +164,15 @@ export default function Landing() {
             {BRAND.tagline.split(' for ')[0]} <em>for regulated industries.</em>
           </h1>
           <p className="text-lg sm:text-xl text-[#3B3D42] leading-relaxed mt-7 mb-9 max-w-2xl">
-            An open architecture — ontology, governance, orchestration, copilots, and a control tower — that lets enterprises run agentic AI they can actually defend in front of an auditor.
+            Assess your organization's AI maturity, explore industry-specific AI copilots, and establish a trusted path from experimentation to operationalization.
           </p>
 
           <div className="flex flex-wrap gap-3 items-center">
             <Link
-              to={CTA.exploreArchitecture.href}
+              to="/copilots"
               className="py-4 px-7 rounded-lg bg-[#14161A] text-[#F4F0E6] hover:bg-[#7C5723] transition font-bold text-sm shadow"
             >
-              {CTA.exploreArchitecture.label} →
+              Explore AI Copilots →
             </Link>
             <Link
               to={CTA.startFree.href}
@@ -181,10 +181,10 @@ export default function Landing() {
               Get Started →
             </Link>
             <Link
-              to={CTA.readinessCheck.href}
+              to="/ai-readiness"
               className="py-4 px-7 rounded-lg border border-[#14161A]/16 text-[#14161A] hover:bg-[#ECE5D6] hover:border-[#14161A]/30 transition font-bold text-sm"
             >
-              {CTA.readinessCheck.label} →
+              Assess My Organization's AI Readiness →
             </Link>
           </div>
 
