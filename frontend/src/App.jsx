@@ -13,6 +13,7 @@ import Report from './pages/Report'
 import Dashboard from './pages/Dashboard'
 import Foundry from './pages/Foundry'
 import Architecture from './pages/Architecture'
+import Copilots from './pages/Copilots'
 
 export default function App() {
   return (
@@ -28,6 +29,7 @@ export default function App() {
                 <Route path="/signup" element={<Signup />} />
                 <Route path="/foundry" element={<Foundry />} />
                 <Route path="/architecture" element={<Architecture />} />
+                <Route path="/copilots" element={<Copilots />} />
                 {/* Survey + Report are public (anonymous flow). */}
                 <Route path="/survey" element={<Survey />} />
                 <Route path="/report/:token" element={<Report />} />

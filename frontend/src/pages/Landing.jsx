@@ -1,14 +1,18 @@
 import React, { useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import LogoMark from '../components/LogoMark'
 import Footer from '../components/Footer'
+import ArchitectureStack from '../components/ArchitectureStack'
+import NarrativeChain from '../components/NarrativeChain'
+import ProofStrip from '../components/ProofStrip'
+import CTABand from '../components/CTABand'
+import { BRAND, CTA } from '../lib/branding'
 
 const WHY_CARDS = [
   {
-    title: 'Ontology as a layer',
+    title: 'Open standards on every seam',
     blurb:
-      'A real architectural layer between your data and your AI — open, domain-tuned, and explainable end to end.',
+      'A2A across processes. MCP for tools. W3C semantics for meaning. OpenLineage for provenance. Apache-2.0 for the whole thing.',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className="w-6 h-6">
         <circle cx="12" cy="5" r="2.2" /><circle cx="5" cy="18" r="2.2" /><circle cx="19" cy="18" r="2.2" />
@@ -17,9 +21,9 @@ const WHY_CARDS = [
     ),
   },
   {
-    title: 'Explainable agentic AI',
+    title: 'Ontology as a real layer',
     blurb:
-      'Multi-agent reasoning with retrieval-augmented generation and human-in-the-loop. Every recommendation cites the evidence behind it.',
+      'A deployable middleware layer between databases and agent prompts — domain-tuned, versioned, and queryable. Not a prompt-time afterthought.',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className="w-6 h-6">
         <rect x="3" y="4" width="18" height="14" rx="2" />
@@ -30,7 +34,7 @@ const WHY_CARDS = [
   {
     title: 'Governance-first for regulated industries',
     blurb:
-      'HIPAA, GDPR, SOC 2, FERPA, EU AI Act — controls baked in. Built for the sectors where AI must defend its answers.',
+      'HIPAA, GDPR, SOC 2, FERPA, EU AI Act, NIST AI RMF, ISO 42001 — controls baked in. Built for the sectors where AI must defend its answers.',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className="w-6 h-6">
         <path d="M12 3l8 3v5c0 5-3.5 9-8 10-4.5-1-8-5-8-10V6l8-3z" />
@@ -41,17 +45,17 @@ const WHY_CARDS = [
 ]
 
 const INDUSTRIES = [
-  { 
-    name: 'Healthcare & Life Sciences', 
+  {
+    name: 'Healthcare & Life Sciences',
     slug: 'healthcare',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className="w-6 h-6">
         <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
       </svg>
-    )
+    ),
   },
-  { 
-    name: 'Banking & Financial Services', 
+  {
+    name: 'Banking & Financial Services',
     slug: 'finance',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className="w-6 h-6">
@@ -61,10 +65,10 @@ const INDUSTRIES = [
         <line x1="9" y1="16" x2="15" y2="16" />
         <path d="M8 6h2v2H8V6zm0 4h2v2H8v-2zm0 4h2v2H8v-2zm6-8h2v2h-2V6zm0 4h2v2h-2v-2zm0 4h2v2h-2v-2z" />
       </svg>
-    )
+    ),
   },
-  { 
-    name: 'Government & Public Sector', 
+  {
+    name: 'Government & Public Sector',
     slug: 'other',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className="w-6 h-6">
@@ -75,60 +79,58 @@ const INDUSTRIES = [
         <line x1="18" y1="18" x2="18" y2="11" />
         <path d="M3 11h18L12 2Z" />
       </svg>
-    )
+    ),
   },
-  { 
-    name: 'Education', 
+  {
+    name: 'Education',
     slug: 'education',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className="w-6 h-6">
         <path d="M22 10v6M2 10l10-5 10 5-10 5z" />
         <path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5" />
       </svg>
-    )
+    ),
   },
-  { 
-    name: 'Cybersecurity', 
+  {
+    name: 'Cybersecurity',
     slug: 'cyber',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className="w-6 h-6">
         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
       </svg>
-    )
+    ),
   },
-  { 
-    name: 'IT Consulting', 
+  {
+    name: 'IT Consulting',
     slug: 'consulting',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className="w-6 h-6">
         <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
         <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
       </svg>
-    )
+    ),
   },
 ]
 
 const FRAMEWORKS = [
-  'Gartner AI Maturity',
-  'NIST AI RMF',
-  'EU AI Act',
-  'ISO/IEC 42001',
-  'ISO/IEC 27001',
-  'HIPAA',
-  'HITECH',
-  'FDA AI/ML',
-  'PCI DSS',
-  'SOX',
-  'GLBA',
-  'Basel III',
-  'FedRAMP',
-  'FISMA',
-  'NIST 800-53',
-  'FERPA',
-  'COPPA',
-  'GDPR',
-  'SOC 2',
-  'CMMC',
+  'Gartner AI Maturity', 'NIST AI RMF', 'EU AI Act', 'ISO/IEC 42001', 'ISO/IEC 27001',
+  'HIPAA', 'HITECH', 'FDA AI/ML', 'PCI DSS', 'SOX', 'GLBA', 'Basel III', 'FedRAMP',
+  'FISMA', 'NIST 800-53', 'FERPA', 'COPPA', 'GDPR', 'SOC 2', 'CMMC',
+]
+
+const HONESTY_PILLARS = [
+  {
+    title: 'Every visible number is computed',
+    body: 'No fabricated metrics. Where data isn’t real, the UI says so — “Not computed” / “Roadmap” — never a plausible-looking fake.',
+  },
+  {
+    title: 'Deterministic scoring, generative explanation',
+    body: 'A test-gated deterministic engine owns every score. Generative agents only explain and contextualize. Same inputs always produce the same auditable result.',
+  },
+  {
+    title: 'Open source, open protocols, open seams',
+    body: 'Apache-2.0. A2A on the wire. MCP for tools. Provider-agnostic LLM client. Built so a regulator can read every join in the architecture.',
+  },
 ]
 
 export default function Landing() {
@@ -141,84 +143,75 @@ export default function Landing() {
     }
   }, [user, navigate])
 
-  const handleScrollToExplorer = () => {
-    const el = document.getElementById('explorer')
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }
+  const scrollToChain = (e) => {
+    e.preventDefault()
+    const el = document.getElementById('narrative-chain')
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
   return (
     <div className="theme-parchment min-h-screen bg-[#F4F0E6] text-[#14161A] font-sans-brand relative isolate">
-      {/* Hero Section */}
-      <section className="max-w-7xl mx-auto px-6 pt-10 pb-20">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
-          {/* Hero Content */}
-          <div className="lg:col-span-7 max-w-2xl">
-            <div className="inline-flex items-center gap-2 text-xs font-semibold tracking-widest text-[#7C5723] uppercase">
-              <span className="w-6 h-px bg-[#A87C3C]" />
-              The AI Governance Layer
-            </div>
-            <h1 className="font-serif-brand text-5xl sm:text-6xl lg:text-7xl font-normal leading-none tracking-tight mt-6 text-[#14161A]">
-              Make every AI decision <em>defensible.</em>
-            </h1>
-            <p className="text-lg sm:text-xl text-[#3B3D42] leading-relaxed mt-6 mb-8 max-w-xl">
-              CertaintyAI is the governance layer for regulated industries — turning fragmented, siloed data into explainable, audit-ready intelligence your board, your auditors, and your regulators can trust.
-            </p>
-            <div className="flex flex-wrap gap-4 items-center">
-              <Link 
-                to="/survey" 
-                className="py-4 px-8 rounded-lg bg-[#14161A] text-[#F4F0E6] hover:bg-[#7C5723] hover:text-white transition font-bold text-sm shadow"
-              >
-                Take the 2-minute readiness assessment
-              </Link>
-              <button 
-                onClick={handleScrollToExplorer}
-                className="py-4 px-8 rounded-lg border border-[#14161A]/14 text-[#14161A] hover:bg-[#ECE5D6] hover:border-[#14161A]/30 transition font-bold text-sm"
-              >
-                See how it works
-              </button>
-            </div>
-            <div className="mt-10 pb-12 text-xs text-[#73706A] tracking-wide font-sans-brand">
-              <b>Aligned to</b> NIST AI RMF <span className="mx-1.5 text-[#14161A]/10">·</span> EU AI Act <span class="mx-1.5 text-[#14161A]/10">·</span> ISO 42001 <span class="mx-1.5 text-[#14161A]/10">·</span> HIPAA <span class="mx-1.5 text-[#14161A]/10">·</span> SOC 2
-            </div>
+
+      {/* ===== Hero ===== */}
+      <section className="max-w-7xl mx-auto px-6 pt-12 pb-16">
+        <div className="max-w-4xl">
+          <div className="inline-flex items-center gap-2 text-xs font-semibold tracking-widest text-[#7C5723] uppercase">
+            <span className="w-6 h-px bg-[#A87C3C]" />
+            {BRAND.positioningEyebrow}
+          </div>
+          <h1 className="font-serif-brand text-5xl sm:text-6xl lg:text-7xl font-normal leading-[1.02] tracking-tight mt-6 text-[#14161A]">
+            {BRAND.tagline.split(' for ')[0]} <em>for regulated industries.</em>
+          </h1>
+          <p className="text-lg sm:text-xl text-[#3B3D42] leading-relaxed mt-7 mb-9 max-w-2xl">
+            An open architecture — ontology, governance, orchestration, copilots, and a control tower — that lets enterprises run agentic AI they can actually defend in front of an auditor.
+          </p>
+
+          <div className="flex flex-wrap gap-3 items-center">
+            <Link
+              to={CTA.exploreArchitecture.href}
+              className="py-4 px-7 rounded-lg bg-[#14161A] text-[#F4F0E6] hover:bg-[#7C5723] transition font-bold text-sm shadow"
+            >
+              {CTA.exploreArchitecture.label} →
+            </Link>
+            <Link
+              to={CTA.startFree.href}
+              className="py-4 px-7 rounded-lg bg-[#D8B679] text-[#14161A] hover:bg-[#A87C3C] hover:text-white transition font-bold text-sm shadow"
+            >
+              {CTA.startFree.label} →
+            </Link>
+            <Link
+              to={CTA.readinessCheck.href}
+              className="py-4 px-7 rounded-lg border border-[#14161A]/16 text-[#14161A] hover:bg-[#ECE5D6] hover:border-[#14161A]/30 transition font-bold text-sm"
+            >
+              {CTA.readinessCheck.label} →
+            </Link>
           </div>
 
-          {/* Hero Sample Card */}
-          <div className="lg:col-span-5 flex justify-center">
-            <div className="report">
-              <div className="report-head">AI Readiness Report</div>
-              <div className="report-org">ACME Corporation</div>
-              <div className="report-sub">Prepared for the Board · Jane Okafor, Chief Risk Officer</div>
-              <div className="score-row">
-                <div className="score-ring">
-                  <svg viewBox="0 0 92 92">
-                    <circle cx="46" cy="46" r="40" fill="none" stroke="#E4DCC9" strokeWidth="7"/>
-                    <circle cx="46" cy="46" r="40" fill="none" stroke="#A87C3C" strokeWidth="7" strokeLinecap="round" strokeDasharray="251" strokeDashoffset="161" transform="rotate(-90 46 46)"/>
-                  </svg>
-                  <div className="num">64</div>
-                </div>
-                <div className="score-meta">
-                  <div className="lvl">Developing</div>
-                  <div className="lvl-sub">Moderate readiness · 3 priority gaps</div>
-                </div>
-              </div>
-              <div className="fw-chips">
-                <span className="fw-chip">HIPAA</span>
-                <span className="fw-chip">GDPR</span>
-                <span className="fw-chip">SOC 2</span>
-                <span className="fw-chip">ISO 42001</span>
-                <span className="fw-chip">EU AI Act</span>
-              </div>
-              <div className="rec">
-                <b>Top recommendation:</b> Establish a formal AI governance committee and an evidence-pack standard before scaling pilots into production decisions.
-              </div>
-            </div>
+          <div className="mt-10 text-[11.5px] text-[#73706A] tracking-wide font-sans-brand flex flex-wrap items-center gap-x-2 gap-y-1">
+            <b className="uppercase tracking-widest text-[#14161A]/70">Built on</b>
+            {BRAND.trustStrip.map((t, i) => (
+              <React.Fragment key={t}>
+                <span>{t}</span>
+                {i < BRAND.trustStrip.length - 1 && (
+                  <span className="text-[#14161A]/20">·</span>
+                )}
+              </React.Fragment>
+            ))}
+          </div>
+
+          <div className="mt-8">
+            <a
+              href="#narrative-chain"
+              onClick={scrollToChain}
+              className="text-[12px] font-bold text-[#7C5723] hover:text-[#14161A] transition tracking-wide"
+            >
+              See the 7-step architecture narrative ↓
+            </a>
           </div>
         </div>
       </section>
 
-      {/* Stat Strip */}
+      {/* ===== Stat Strip (preserved, honest macro stats) ===== */}
       <section className="border-t border-b border-[#14161A]/10 bg-[#ECE5D6]/30 py-16">
         <div className="max-w-7xl mx-auto px-6">
           <div className="font-serif-brand text-2xl sm:text-3xl lg:text-4xl text-[#14161A] max-w-4xl leading-tight font-normal mb-12">
@@ -245,10 +238,10 @@ export default function Landing() {
             </div>
             <div className="border-t border-[#14161A]/10 pt-6">
               <div className="font-serif-brand text-5xl font-normal text-[#14161A]">
-                63<span className="text-[#7C5723] text-2xl font-sans-brand font-normal">%</span>
+                40<span className="text-[#7C5723] text-2xl font-sans-brand font-normal">%</span>
               </div>
               <div className="text-sm text-[#3B3D42] mt-2.5">
-                of organizations don&apos;t have, or are unsure they have, the right data management practices for AI.
+                of agentic-AI projects are forecast to be canceled by end of 2027 — for cost, value, or risk-control gaps.
               </div>
               <div className="text-[10px] text-[#73706A] mt-1.5 italic font-serif-brand">Source: Gartner (2025)</div>
             </div>
@@ -256,21 +249,310 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Why Section */}
-      <section className="max-w-7xl mx-auto px-6 py-20">
-        <div className="max-w-3xl mb-12">
-          <span className="text-[11px] font-semibold tracking-[0.22em] text-[#7C5723] uppercase block mb-3">Why CertaintyAI</span>
+      {/* ===== The 7-step Narrative Chain ===== */}
+      <section id="narrative-chain" className="max-w-7xl mx-auto px-6 py-20">
+        <div className="max-w-3xl mx-auto mb-12 text-center">
+          <span className="text-[11px] font-semibold tracking-[0.22em] text-[#7C5723] uppercase block mb-3">
+            The Open Architecture
+          </span>
           <h2 className="font-serif-brand text-3xl sm:text-4xl text-[#14161A] font-normal leading-tight">
-            Ontology as an explicit, deployable layer.
+            Seven layers. One audit trail.
           </h2>
           <p className="text-sm text-[#3B3D42] mt-3">
-            We treat vocabulary and logic constraints as a real middleware layer between databases and agent prompts, bypass high-risk database migrations, and yield explainable outcomes.
+            Each layer is open at its seams. Each step compounds — from the data you already own all the way through to a board-defensible outcome.
+          </p>
+        </div>
+
+        <NarrativeChain />
+      </section>
+
+      {/* ===== Executive Outcomes ===== */}
+      <section id="executive-outcomes" className="border-t border-[#14161A]/10 py-20">
+        <div className="max-w-7xl mx-auto px-6">
+
+          <div className="max-w-3xl mb-12">
+            <span className="text-[11px] font-semibold tracking-[0.22em] text-[#7C5723] uppercase block mb-3">
+              Executive Outcomes
+            </span>
+            <h2 className="font-serif-brand text-3xl sm:text-4xl text-[#14161A] font-normal leading-tight">
+              Move from AI experimentation to trusted operationalization.
+            </h2>
+            <p className="text-sm text-[#3B3D42] mt-3 max-w-2xl">
+              Four executive questions. Four answerable next steps. One open architecture underneath all of them — so a CIO, CFO, CTO, CISO, board member, or investor can see business value and the next move at a glance.
+            </p>
+          </div>
+
+          {/* Four outcome cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 mb-20">
+            {[
+              {
+                index: '01',
+                question: 'Where Am I Today?',
+                description: 'Assess AI maturity, governance readiness, operational risk, and organizational preparedness.',
+                ctaLabel: 'Run AI Readiness Assessment',
+                ctaHref: '/survey',
+                audience: 'CIO · CFO · Board',
+              },
+              {
+                index: '02',
+                question: 'What Should I Do Next?',
+                description: 'Receive a prioritized roadmap aligned to governance, compliance, architecture, and business outcomes.',
+                ctaLabel: 'View Recommended Roadmap',
+                ctaHref: '/survey',
+                audience: 'CTO · CIO · Head of AI',
+              },
+              {
+                index: '03',
+                question: 'What Business Value Will I Gain?',
+                description: 'Reduce risk, improve productivity, control costs, accelerate adoption, and increase confidence in AI decisions.',
+                ctaLabel: 'Explore Business Outcomes',
+                ctaHref: '/copilots',
+                audience: 'CFO · COO · Board',
+              },
+              {
+                index: '04',
+                question: 'How Do I Operationalize AI?',
+                description: "Move from disconnected pilots to governed enterprise-wide AI operations using CertaintyAI's control tower and governance framework.",
+                ctaLabel: 'See Operationalization Journey',
+                ctaHref: '#architecture-stack',
+                audience: 'CTO · CISO · Head of AI',
+              },
+            ].map((o) => {
+              const isAnchor = o.ctaHref.startsWith('#')
+              const handleAnchor = (e) => {
+                if (!isAnchor) return
+                e.preventDefault()
+                const el = document.querySelector(o.ctaHref)
+                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+              }
+              return (
+                <article
+                  key={o.index}
+                  className="bg-[#FBF8F0] border border-[#14161A]/10 rounded-2xl p-7 shadow-sm hover:shadow-md hover:border-[#A87C3C]/55 transition duration-200 flex flex-col"
+                >
+                  <div className="flex items-start justify-between gap-3 mb-5">
+                    <div
+                      className="w-11 h-11 rounded-xl bg-[#14161A] text-[#D8B679] flex items-center justify-center font-serif-brand text-base font-semibold shrink-0"
+                      aria-hidden
+                    >
+                      {o.index}
+                    </div>
+                    <span className="text-[10px] font-semibold tracking-widest uppercase text-[#73706A] mt-2 text-right">
+                      {o.audience}
+                    </span>
+                  </div>
+
+                  <h3 className="font-serif-brand text-xl font-semibold text-[#14161A] leading-snug mb-3">
+                    {o.question}
+                  </h3>
+                  <p className="text-[13px] text-[#3B3D42] leading-relaxed mb-6 flex-1">
+                    {o.description}
+                  </p>
+
+                  {isAnchor ? (
+                    <a
+                      href={o.ctaHref}
+                      onClick={handleAnchor}
+                      className="inline-flex items-center text-[13px] font-bold text-[#7C5723] hover:text-[#14161A] transition mt-auto"
+                    >
+                      {o.ctaLabel} →
+                    </a>
+                  ) : (
+                    <Link
+                      to={o.ctaHref}
+                      className="inline-flex items-center text-[13px] font-bold text-[#7C5723] hover:text-[#14161A] transition mt-auto"
+                    >
+                      {o.ctaLabel} →
+                    </Link>
+                  )}
+                </article>
+              )
+            })}
+          </div>
+
+          {/* Maturity progression */}
+          <div className="max-w-3xl mb-10">
+            <span className="text-[11px] font-semibold tracking-[0.22em] text-[#A87C3C] uppercase block mb-3">
+              Maturity Progression
+            </span>
+            <h3 className="font-serif-brand text-2xl sm:text-3xl text-[#14161A] font-normal leading-tight">
+              Foundational → Piloting → Scale.
+            </h3>
+            <p className="text-sm text-[#3B3D42] mt-3">
+              The same three-tier model your AI Readiness score lands in — and the same three tiers your board will track quarter to quarter.
+            </p>
+          </div>
+
+          <div className="flex flex-col md:flex-row items-stretch gap-4">
+            {[
+              {
+                name: 'Foundational',
+                range: '0 – 39',
+                tone: 'bg-[#FBF8F0] border-[#A87C3C]/35',
+                badgeBg: '#A87C3C',
+                badgeText: '#FBF8F0',
+                eyebrowColor: 'text-[#7C5723]',
+                bullets: ['No governance', 'Disconnected data', 'Experimental AI'],
+              },
+              {
+                name: 'Piloting',
+                range: '40 – 74',
+                tone: 'bg-[#FBF8F0] border-[#D8B061]/55',
+                badgeBg: '#D8B061',
+                badgeText: '#1E3A36',
+                eyebrowColor: 'text-[#7C5723]',
+                bullets: ['Initial copilots', 'Governance controls', 'Business validation'],
+              },
+              {
+                name: 'Scale',
+                range: '75 – 100',
+                tone: 'bg-[#1E3A36] border-[#1E3A36]/60 text-[#F4F0E6]',
+                badgeBg: '#D8B679',
+                badgeText: '#1E3A36',
+                eyebrowColor: 'text-[#D8B679]',
+                bullets: ['Enterprise AI platform', 'AI Control Tower', 'Continuous governance'],
+                dark: true,
+              },
+            ].map((stage, i, arr) => (
+              <React.Fragment key={stage.name}>
+                <article
+                  className={`flex-1 border rounded-2xl p-6 shadow-sm transition duration-200 hover:shadow-md ${stage.tone}`}
+                >
+                  <div className="flex items-center justify-between gap-3 mb-4">
+                    <span
+                      className={`text-[10px] font-bold tracking-[0.22em] uppercase ${stage.eyebrowColor}`}
+                    >
+                      Stage {String(i + 1).padStart(2, '0')}
+                    </span>
+                    <span
+                      className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
+                      style={{ backgroundColor: stage.badgeBg, color: stage.badgeText }}
+                    >
+                      {stage.range}
+                    </span>
+                  </div>
+                  <h4
+                    className={`font-serif-brand text-2xl font-semibold leading-tight mb-4 ${
+                      stage.dark ? 'text-[#F4F0E6]' : 'text-[#14161A]'
+                    }`}
+                  >
+                    {stage.name}
+                  </h4>
+                  <ul className="space-y-2">
+                    {stage.bullets.map((b) => (
+                      <li
+                        key={b}
+                        className={`flex items-start gap-2 text-[13px] leading-snug ${
+                          stage.dark ? 'text-[#F4F0E6]/88' : 'text-[#3B3D42]'
+                        }`}
+                      >
+                        <span
+                          className="mt-1.5 w-1.5 h-1.5 rounded-full shrink-0"
+                          style={{ backgroundColor: stage.badgeBg }}
+                          aria-hidden
+                        />
+                        <span>{b}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </article>
+
+                {i < arr.length - 1 && (
+                  <div
+                    className="flex items-center justify-center text-[#A87C3C] shrink-0 select-none"
+                    aria-hidden
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="w-6 h-6 md:hidden"
+                    >
+                      <line x1="12" y1="5" x2="12" y2="19" />
+                      <polyline points="5 12 12 19 19 12" />
+                    </svg>
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="hidden md:block w-6 h-6"
+                    >
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                      <polyline points="12 5 19 12 12 19" />
+                    </svg>
+                  </div>
+                )}
+              </React.Fragment>
+            ))}
+          </div>
+
+          <div className="mt-8 text-[12px] text-[#73706A] tracking-wide">
+            <b className="uppercase tracking-widest text-[#14161A]/70">Tier bands</b>
+            <span className="mx-2 text-[#14161A]/20">·</span>
+            Foundational <span className="text-[#14161A]/30">0–39</span>
+            <span className="mx-2 text-[#14161A]/20">·</span>
+            Piloting <span className="text-[#14161A]/30">40–74</span>
+            <span className="mx-2 text-[#14161A]/20">·</span>
+            Scale <span className="text-[#14161A]/30">75–100</span>
+            <span className="mx-2 text-[#14161A]/20">·</span>
+            <i>Matches the deterministic AI Readiness scoring engine.</i>
+          </div>
+
+        </div>
+      </section>
+
+      {/* ===== Embedded Architecture Stack canvas ===== */}
+      <section id="architecture-stack" className="border-t border-[#14161A]/10 bg-[#1E3A36]/4 py-20">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="max-w-3xl mb-10">
+            <span className="text-[11px] font-semibold tracking-[0.22em] text-[#A87C3C] uppercase block mb-3">
+              Live Architecture Canvas
+            </span>
+            <h2 className="font-serif-brand text-3xl sm:text-4xl text-[#14161A] font-normal leading-tight">
+              Hover any layer. Lock the view. Inspect the components.
+            </h2>
+            <p className="text-sm text-[#3B3D42] mt-3 max-w-2xl">
+              The same 6-layer stack you read about above — explorable in business or technical view. Click a layer to lock; click it again to release.
+            </p>
+          </div>
+
+          <ArchitectureStack />
+
+          <div className="mt-8 text-center">
+            <Link
+              to={CTA.exploreArchitecture.href}
+              className="text-[13px] font-bold text-[#7C5723] hover:text-[#14161A] transition"
+            >
+              Open the full-page canvas →
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ===== Proof Strip ===== */}
+      <ProofStrip />
+
+      {/* ===== Why an Open Architecture ===== */}
+      <section className="max-w-7xl mx-auto px-6 py-20">
+        <div className="max-w-3xl mb-12">
+          <span className="text-[11px] font-semibold tracking-[0.22em] text-[#7C5723] uppercase block mb-3">Why open</span>
+          <h2 className="font-serif-brand text-3xl sm:text-4xl text-[#14161A] font-normal leading-tight">
+            Closed AI stacks fail regulated audits.
+          </h2>
+          <p className="text-sm text-[#3B3D42] mt-3 max-w-2xl">
+            An auditable AI program needs portable agents, portable data, and portable governance. Every seam in CertaintyAI is an open standard so nothing about your future depends on a single vendor.
           </p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {WHY_CARDS.map((card) => (
-            <div 
-              key={card.title} 
+            <div
+              key={card.title}
               className="bg-[#FBF8F0] border border-[#14161A]/10 rounded-2xl p-7 shadow-sm hover:border-[#A87C3C] transition duration-200"
             >
               <div className="w-11 h-11 rounded-xl bg-[#1E3A36] text-[#D8B679] flex items-center justify-center">
@@ -283,21 +565,21 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Industries Section */}
+      {/* ===== Industries ===== */}
       <section id="explorer" className="border-t border-[#14161A]/10 py-20">
         <div className="max-w-7xl mx-auto px-6">
           <div className="max-w-3xl mb-12">
             <span className="text-[11px] font-semibold tracking-[0.22em] text-[#7C5723] uppercase block mb-3">Industries &amp; Domains</span>
             <h2 className="font-serif-brand text-3xl sm:text-4xl text-[#14161A] font-normal leading-tight">
-              Pre-built models for regulated sectors.
+              Pre-built ontologies for regulated sectors.
             </h2>
             <p className="text-sm text-[#3B3D42] mt-3">
-              Deploy in weeks rather than months. Choose your sector below to see the pre-loaded standards and entities.
+              Each sector ships with its own vocabulary pack, framework mapping, and copilot template — so you deploy in weeks, not months.
             </p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {INDUSTRIES.map((ind) => (
-              <div 
+              <div
                 key={ind.name}
                 className="bg-[#FBF8F0] border border-[#14161A]/10 rounded-2xl p-6 shadow-sm hover:border-[#A87C3C] transition cursor-pointer flex flex-col justify-between"
                 onClick={() => navigate('/foundry')}
@@ -317,21 +599,44 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Frameworks Wall */}
+      {/* ===== Honesty Contract ===== */}
+      <section className="border-t border-[#14161A]/10 py-20 bg-[#1E3A36] text-[#F4F0E6]">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="max-w-3xl mb-12">
+            <span className="text-[11px] font-semibold tracking-[0.22em] text-[#D8B679] uppercase block mb-3">The Honesty Contract</span>
+            <h2 className="font-serif-brand text-3xl sm:text-4xl font-normal leading-tight">
+              Defensible isn’t a marketing word here. It’s an enforced product property.
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {HONESTY_PILLARS.map((h) => (
+              <div
+                key={h.title}
+                className="bg-[#14161A]/40 border border-[#D8B679]/20 rounded-2xl p-7 backdrop-blur-sm"
+              >
+                <h3 className="font-serif-brand text-lg font-semibold text-[#D8B679] mb-2.5 leading-snug">{h.title}</h3>
+                <p className="text-[13px] text-[#F4F0E6]/85 leading-relaxed">{h.body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ===== Frameworks Wall ===== */}
       <section className="border-t border-[#14161A]/10 py-20 bg-[#ECE5D6]/10">
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-12">
             <div className="max-w-3xl">
               <span className="text-[11px] font-semibold tracking-[0.22em] text-[#7C5723] uppercase block mb-3">Auditable Compliance</span>
               <h2 className="font-serif-brand text-3xl sm:text-4xl text-[#14161A] font-normal leading-tight">
-                Aligned to audit frameworks.
+                Aligned to twenty global audit frameworks.
               </h2>
               <p className="text-sm text-[#3B3D42] mt-3">
-                Pre-mapped to twenty global privacy, healthcare, cybersecurity, and public policy rules, tailored dynamically during your readiness assessment.
+                Pre-mapped to privacy, healthcare, cybersecurity, and public-sector rules, tailored dynamically during your readiness assessment.
               </p>
             </div>
-            <Link 
-              to="/survey" 
+            <Link
+              to="/survey"
               className="text-[#A87C3C] hover:text-[#7C5723] font-bold text-sm shrink-0"
             >
               Analyze your rules list →
@@ -339,7 +644,7 @@ export default function Landing() {
           </div>
           <div className="flex flex-wrap gap-2.5">
             {FRAMEWORKS.map((fw) => (
-              <span 
+              <span
                 key={fw}
                 className="px-4 py-2 text-xs rounded-lg border border-[#14161A]/10 text-[#3B3D42] bg-[#FBF8F0] shadow-sm font-semibold select-none hover:border-[#A87C3C] transition duration-150"
               >
@@ -350,24 +655,8 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Final CTA Banner */}
-      <section className="max-w-7xl mx-auto px-6 py-16">
-        <div className="bg-[#14161A] text-[#F4F0E6] rounded-3xl p-10 sm:p-12 text-center relative overflow-hidden isolate shadow-2xl">
-          <div aria-hidden className="absolute inset-0 -z-10 opacity-60 bg-[radial-gradient(500px_260px_at_50%_120%,rgba(168,124,60,0.3),transparent)]" />
-          <h2 className="font-serif-brand text-3xl sm:text-4xl font-normal leading-tight mb-4">
-            Defensive enterprise AI in two minutes.
-          </h2>
-          <p className="text-sm text-[#F4F0E6]/78 max-w-xl mx-auto mb-8 leading-relaxed">
-            Answer a short, role-tailored assessment to get a board-ready report on your gaps, scores, and priority actions.
-          </p>
-          <Link 
-            to="/survey" 
-            className="inline-block py-3.5 px-8 rounded-lg bg-[#F4F0E6] text-[#14161A] font-bold text-sm hover:bg-[#D8B679] hover:text-[#14161A] transition shadow"
-          >
-            Start your free assessment
-          </Link>
-        </div>
-      </section>
+      {/* ===== Final CTA Band ===== */}
+      <CTABand />
 
       <Footer />
     </div>
