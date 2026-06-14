@@ -581,11 +581,29 @@ const getExpertResponse = (text, modelName, activeLanguage = 'English (US)', lat
 // ---- Copilot session row helpers (ChatGPT-style list rendering) ----
 const getSessionPreview = (session) => {
   if (!session || !session.messages || session.messages.length === 0) return null
-  const last = session.messages[session.messages.length - 1]
-  const raw = (last && last.content) ? String(last.content) : ''
-  const text = raw.replace(/[#*`>\-\n]+/g, ' ').replace(/\s+/g, ' ').trim()
-  if (!text) return null
-  return text.length > 70 ? text.slice(0, 70) + '…' : text
+  // Prefer the latest assistant reply (the opening line gives the most
+  // scannable summary). Fall back to the first user message for sessions
+  // where the assistant hasn't replied yet.
+  const msgs = session.messages
+  let source = null
+  for (let i = msgs.length - 1; i >= 0; i--) {
+    if (msgs[i] && msgs[i].role === 'assistant' && msgs[i].content) {
+      source = msgs[i]
+      break
+    }
+  }
+  if (!source) {
+    source = msgs.find(m => m && m.role === 'user' && m.content) || null
+  }
+  if (!source) return null
+  const raw = String(source.content)
+  // Strip markdown decorations + collapse whitespace.
+  const clean = raw.replace(/[#*`>\-\n]+/g, ' ').replace(/\s+/g, ' ').trim()
+  if (!clean) return null
+  // First sentence where one exists; otherwise whole string.
+  const sentenceMatch = clean.match(/^[^.!?]+[.!?]/)
+  const firstSentence = sentenceMatch ? sentenceMatch[0].trim() : clean
+  return firstSentence.length > 80 ? firstSentence.slice(0, 80) + '…' : firstSentence
 }
 
 const getRelativeTime = (iso) => {
@@ -594,8 +612,8 @@ const getRelativeTime = (iso) => {
   if (isNaN(date.getTime())) return ''
   const diffSec = Math.max(0, (Date.now() - date.getTime()) / 1000)
   if (diffSec < 45) return 'Just now'
-  if (diffSec < 3600) return `${Math.floor(diffSec / 60)}m ago`
-  if (diffSec < 86400) return `${Math.floor(diffSec / 3600)}h ago`
+  if (diffSec < 3600) return `${Math.floor(diffSec / 60)} min ago`
+  if (diffSec < 86400) return `${Math.floor(diffSec / 3600)} hr ago`
   if (diffSec < 172800) return 'Yesterday'
   if (diffSec < 604800) return `${Math.floor(diffSec / 86400)}d ago`
   return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
@@ -2707,19 +2725,17 @@ export default function Dashboard() {
                             </svg>
                             {!copilotSidebarCollapsed && (
                               <div className="flex-1 min-w-0 animate-fade-in">
-                                <div className="flex items-center justify-between gap-2">
-                                  <span className={`text-xs font-semibold truncate ${isEmpty && !isActive ? 'opacity-70' : ''}`}>
-                                    {session.title}
-                                  </span>
-                                  <span className="text-[9px] text-[var(--dash-text-secondary)]/75 shrink-0 ml-1">
-                                    {relTime}
-                                  </span>
+                                <div className={`text-xs font-semibold truncate ${isEmpty && !isActive ? 'opacity-70' : ''}`}>
+                                  {session.title}
                                 </div>
                                 {preview && (
-                                  <div className="text-[10.5px] text-[var(--dash-text-secondary)]/85 truncate mt-0.5 leading-snug">
+                                  <div className="text-[11px] text-[var(--dash-text-secondary)]/85 truncate mt-0.5 leading-snug">
                                     {preview}
                                   </div>
                                 )}
+                                <div className="text-[10px] text-[var(--dash-text-secondary)]/75 mt-0.5">
+                                  {relTime}
+                                </div>
                               </div>
                             )}
                             {!copilotSidebarCollapsed && (
