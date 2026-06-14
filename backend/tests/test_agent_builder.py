@@ -662,3 +662,339 @@ def test_followups_never_repeat_within_session(client, db_session, monkeypatch):
     assert any(any(kw in s.lower() for kw in deeper_anchors) for s in turn3), (
         f"Expected turn-3 suggestions to surface deeper-ladder anchors, got: {turn3!r}"
     )
+
+
+# ============================================================
+# Phase: All-file-type extraction (P0 + P1 fixes — RC #4/5/6/7/8/9/10)
+# ============================================================
+
+def test_extract_text_endpoint_with_md(client):
+    """Markdown file extracts as plain text (UTF-8)."""
+    body = b"# Title\n\n- Bullet one\n- Bullet two with **bold**"
+    response = client.post(
+        "/agents/extract-text",
+        files={"file": ("readme.md", body, "text/markdown")},
+    )
+    assert response.status_code == 200, response.text
+    data = response.json()
+    assert data["format"] == "md"
+    assert "Bullet one" in data["text"]
+    assert "**bold**" in data["text"]
+    assert data["chars"] > 0
+
+
+def test_extract_text_endpoint_with_csv_pretty_print(client):
+    """CSV is rendered as an aligned table with a separator under the header row."""
+    body = b"name,role,department\nAlice,CISO,Security\nBob,CFO,Finance\nClaudia,CIO,Technology\n"
+    response = client.post(
+        "/agents/extract-text",
+        files={"file": ("staff.csv", body, "text/csv")},
+    )
+    assert response.status_code == 200, response.text
+    data = response.json()
+    assert data["format"] == "csv"
+    text = data["text"]
+    # Header row contains all three column names
+    assert "name" in text and "role" in text and "department" in text
+    # Separator line of dashes separates header from data
+    assert "-" in text.split("\n")[1]
+    # All three rows present
+    assert "Alice" in text and "Bob" in text and "Claudia" in text
+    # Pipes used as column delimiters
+    assert "|" in text
+
+
+def test_extract_text_endpoint_with_csv_semicolon_delimiter(client):
+    """Sniffer detects semicolon-delimited CSV (common in European Excel exports)."""
+    body = b"name;role;department\nAlice;CISO;Security\nBob;CFO;Finance\n"
+    response = client.post(
+        "/agents/extract-text",
+        files={"file": ("euro.csv", body, "text/csv")},
+    )
+    assert response.status_code == 200, response.text
+    text = response.json()["text"]
+    assert "Alice" in text and "Bob" in text and "CISO" in text
+
+
+def test_extract_text_endpoint_with_json_pretty_print(client):
+    """JSON is parsed and pretty-printed with indent=2."""
+    body = b'{"score":75,"tier":"Strong","gaps":["governance","explainability"]}'
+    response = client.post(
+        "/agents/extract-text",
+        files={"file": ("result.json", body, "application/json")},
+    )
+    assert response.status_code == 200, response.text
+    data = response.json()
+    assert data["format"] == "json"
+    text = data["text"]
+    # Indented (multi-line) output, not minified.
+    assert "\n" in text
+    assert '  "score": 75' in text
+    assert '"governance"' in text and '"explainability"' in text
+
+
+def test_extract_text_endpoint_with_malformed_json_falls_back_to_raw(client):
+    """Malformed JSON returns the raw text rather than 500-ing."""
+    body = b'{"key": this is not valid json'
+    response = client.post(
+        "/agents/extract-text",
+        files={"file": ("bad.json", body, "application/json")},
+    )
+    assert response.status_code == 200, response.text
+    data = response.json()
+    assert data["format"] == "json"
+    assert "key" in data["text"]
+
+
+def test_extract_text_endpoint_doc_extension_rejected(client):
+    """Legacy .doc files are rejected with a clear 415 message."""
+    response = client.post(
+        "/agents/extract-text",
+        files={"file": ("legacy.doc", b"anything", "application/msword")},
+    )
+    assert response.status_code == 415, response.text
+    assert ".doc is not supported" in response.json()["detail"]
+
+
+def test_extract_text_endpoint_doc_renamed_to_docx_rejected(client):
+    """A .doc file renamed to .docx is detected by OLE magic bytes and rejected."""
+    # OLE Compound File Binary magic header — what every real .doc starts with.
+    ole_magic = b"\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1" + b"\x00" * 100
+    response = client.post(
+        "/agents/extract-text",
+        files={"file": (
+            "renamed.docx",
+            ole_magic,
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        )},
+    )
+    assert response.status_code == 415, response.text
+    assert ".doc is not supported" in response.json()["detail"]
+
+
+# --- DOCX deeper checks ---
+
+def _make_docx_with_table_in_middle() -> bytes:
+    """A doc structured Intro paragraph → Table → Conclusion paragraph.
+
+    The old extractor flattened to [Intro, Conclusion, table-cells…], breaking
+    document order. The new extractor walks body in XML order so we should see
+    Conclusion appear AFTER the table content.
+    """
+    from io import BytesIO
+    from docx import Document
+    doc = Document()
+    doc.add_paragraph("Intro paragraph before the financial summary.")
+    t = doc.add_table(rows=2, cols=2)
+    t.cell(0, 0).text = "Metric"
+    t.cell(0, 1).text = "Value"
+    t.cell(1, 0).text = "Revenue"
+    t.cell(1, 1).text = "1234567"
+    doc.add_paragraph("Conclusion paragraph after the financial summary.")
+    buf = BytesIO()
+    doc.save(buf)
+    return buf.getvalue()
+
+
+def test_extract_text_docx_preserves_body_order(client):
+    """Intro paragraph appears before table; table appears before conclusion."""
+    docx_bytes = _make_docx_with_table_in_middle()
+    response = client.post(
+        "/agents/extract-text",
+        files={"file": (
+            "ordered.docx",
+            docx_bytes,
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        )},
+    )
+    assert response.status_code == 200, response.text
+    text = response.json()["text"]
+    i_intro = text.find("Intro paragraph")
+    i_table = text.find("[Table]")
+    i_concl = text.find("Conclusion paragraph")
+    assert -1 < i_intro < i_table < i_concl, (
+        f"Body order violated. intro={i_intro} table={i_table} conclusion={i_concl}\nOutput:\n{text}"
+    )
+
+
+def test_extract_text_docx_marks_tables(client):
+    """Tables are tagged with a [Table] marker so the LLM can distinguish them from prose."""
+    docx_bytes = _make_docx_with_table_in_middle()
+    response = client.post(
+        "/agents/extract-text",
+        files={"file": (
+            "tagged.docx",
+            docx_bytes,
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        )},
+    )
+    text = response.json()["text"]
+    assert "[Table]" in text
+    assert "Metric | Value" in text
+    assert "Revenue | 1234567" in text
+
+
+def test_extract_text_docx_dedupes_merged_cells(client):
+    """Merged cells iterate as duplicates in python-docx; extractor must dedupe."""
+    from io import BytesIO
+    from docx import Document
+    doc = Document()
+    t = doc.add_table(rows=1, cols=3)
+    t.cell(0, 0).text = "Unique cell A"
+    t.cell(0, 1).text = "MERGED CELL B"
+    t.cell(0, 2).text = "Unique cell C"
+    # Merge cells 1 and 2 — python-docx now yields the merged cell twice via row.cells.
+    t.cell(0, 1).merge(t.cell(0, 2))
+    buf = BytesIO()
+    doc.save(buf)
+    docx_bytes = buf.getvalue()
+
+    response = client.post(
+        "/agents/extract-text",
+        files={"file": (
+            "merged.docx",
+            docx_bytes,
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        )},
+    )
+    assert response.status_code == 200, response.text
+    text = response.json()["text"]
+    # The merged cell text must appear exactly once on the row.
+    table_section = text[text.find("[Table]"):]
+    assert table_section.count("MERGED CELL B") == 1, (
+        f"Merged-cell content appeared {table_section.count('MERGED CELL B')} times; expected 1.\n{table_section}"
+    )
+
+
+def test_extract_text_docx_includes_header_and_footer(client):
+    """Headers and footers from each section are appended to the extracted text."""
+    from io import BytesIO
+    from docx import Document
+    doc = Document()
+    doc.add_paragraph("Body paragraph one.")
+    section = doc.sections[0]
+    section.header.paragraphs[0].text = "CONFIDENTIAL - HEADER LINE"
+    section.footer.paragraphs[0].text = "Page footer disclaimer text"
+    buf = BytesIO()
+    doc.save(buf)
+
+    response = client.post(
+        "/agents/extract-text",
+        files={"file": (
+            "hf.docx",
+            buf.getvalue(),
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        )},
+    )
+    text = response.json()["text"]
+    assert "CONFIDENTIAL - HEADER LINE" in text
+    assert "Page footer disclaimer text" in text
+    assert "[Header]" in text
+    assert "[Footer]" in text
+
+
+# --- PPTX checks ---
+
+def _make_pptx_bytes() -> bytes:
+    """A 3-slide deck with text shapes, a table, speaker notes, and a grouped shape."""
+    from io import BytesIO
+    from pptx import Presentation
+    from pptx.util import Inches
+
+    prs = Presentation()
+    blank = prs.slide_layouts[6]
+
+    # Slide 1: a single text box.
+    s1 = prs.slides.add_slide(blank)
+    box1 = s1.shapes.add_textbox(Inches(1), Inches(1), Inches(4), Inches(1))
+    box1.text_frame.text = "AI Governance Council kickoff agenda"
+    s1.notes_slide.notes_text_frame.text = "Speaker note: emphasise the 90-day plan."
+
+    # Slide 2: a 2x2 table.
+    s2 = prs.slides.add_slide(blank)
+    rows, cols = 2, 2
+    tbl_shape = s2.shapes.add_table(rows, cols, Inches(1), Inches(1), Inches(4), Inches(1))
+    table = tbl_shape.table
+    table.cell(0, 0).text = "Quarter"
+    table.cell(0, 1).text = "Spend"
+    table.cell(1, 0).text = "Q1"
+    table.cell(1, 1).text = "$120,000"
+
+    # Slide 3: text box for a simple sanity check on slide numbering.
+    s3 = prs.slides.add_slide(blank)
+    box3 = s3.shapes.add_textbox(Inches(1), Inches(1), Inches(4), Inches(1))
+    box3.text_frame.text = "Closing remarks slide content"
+
+    buf = BytesIO()
+    prs.save(buf)
+    return buf.getvalue()
+
+
+def test_extract_text_endpoint_with_pptx_basic(client):
+    """PPTX extraction returns slide content including slide markers."""
+    pptx_bytes = _make_pptx_bytes()
+    response = client.post(
+        "/agents/extract-text",
+        files={"file": (
+            "deck.pptx",
+            pptx_bytes,
+            "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        )},
+    )
+    assert response.status_code == 200, response.text
+    data = response.json()
+    assert data["format"] == "pptx"
+    text = data["text"]
+    assert "AI Governance Council kickoff agenda" in text
+    assert "Closing remarks slide content" in text
+
+
+def test_extract_text_pptx_marks_slide_numbers(client):
+    """Each slide gets a [Slide N] marker for grounding."""
+    pptx_bytes = _make_pptx_bytes()
+    response = client.post(
+        "/agents/extract-text",
+        files={"file": (
+            "marked.pptx",
+            pptx_bytes,
+            "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        )},
+    )
+    text = response.json()["text"]
+    assert "[Slide 1]" in text
+    assert "[Slide 2]" in text
+    assert "[Slide 3]" in text
+    # Slide markers appear in order.
+    assert text.find("[Slide 1]") < text.find("[Slide 2]") < text.find("[Slide 3]")
+
+
+def test_extract_text_pptx_extracts_tables(client):
+    """Tables embedded in slides are walked cell-by-cell, not silently dropped."""
+    pptx_bytes = _make_pptx_bytes()
+    response = client.post(
+        "/agents/extract-text",
+        files={"file": (
+            "tables.pptx",
+            pptx_bytes,
+            "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        )},
+    )
+    text = response.json()["text"]
+    assert "Quarter | Spend" in text
+    assert "Q1 | $120,000" in text
+
+
+def test_extract_text_pptx_includes_speaker_notes(client):
+    """Speaker notes are extracted when present."""
+    pptx_bytes = _make_pptx_bytes()
+    response = client.post(
+        "/agents/extract-text",
+        files={"file": (
+            "withnotes.pptx",
+            pptx_bytes,
+            "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        )},
+    )
+    text = response.json()["text"]
+    assert "emphasise the 90-day plan" in text
+    assert "[Notes]" in text

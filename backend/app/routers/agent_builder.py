@@ -76,12 +76,204 @@ def ingest_remote_document_stub(source_type: str, source_ref: str) -> str:
     return "linked/queued"
 
 
+# Legacy Word .doc files (OLE Compound File Binary Format) start with this
+# magic header. Used to detect renamed-to-.docx files so we can reject them
+# with a clear message instead of letting python-docx raise BadZipFile.
+_OLE_CFB_MAGIC = b"\xD0\xCF\x11\xE0\xA1\xB1\x1A\xE1"
+
+
+def _extract_docx(content: bytes) -> str:
+    """Extract a DOCX in true body order with merged-cell dedup and headers/footers.
+
+    Walks ``doc.element.body`` so paragraphs and tables appear in the order
+    they live in the document, not paragraphs-first / tables-after. Merged
+    cells (which python-docx returns multiple times when iterating row.cells)
+    are deduped by tracking the underlying ``<w:tc>`` element identity.
+    Headers and footers from every section are appended at the end under
+    clearly labelled markers so the LLM can attribute them.
+    """
+    import io
+    from docx import Document
+    from docx.oxml.ns import qn
+
+    doc = Document(io.BytesIO(content))
+    body = doc.element.body
+    parts: list[str] = []
+
+    p_tag = qn("w:p")
+    tbl_tag = qn("w:tbl")
+
+    # Build paragraph and table lookups so we can map XML elements back to
+    # python-docx wrappers (which carry .text and .rows).
+    from docx.text.paragraph import Paragraph
+    from docx.table import Table
+
+    for child in body.iterchildren():
+        if child.tag == p_tag:
+            text = Paragraph(child, doc).text
+            if text and text.strip():
+                parts.append(text)
+        elif child.tag == tbl_tag:
+            table = Table(child, doc)
+            rendered_rows: list[str] = []
+            for row in table.rows:
+                seen_tc_ids: set[int] = set()
+                cell_texts: list[str] = []
+                for cell in row.cells:
+                    # cell._tc is the underlying <w:tc>; merged cells share
+                    # the same element across multiple row.cells visits.
+                    tc_id = id(cell._tc)
+                    if tc_id in seen_tc_ids:
+                        continue
+                    seen_tc_ids.add(tc_id)
+                    txt = (cell.text or "").strip()
+                    cell_texts.append(txt)
+                if any(cell_texts):
+                    rendered_rows.append(" | ".join(cell_texts))
+            if rendered_rows:
+                parts.append("[Table]\n" + "\n".join(rendered_rows))
+
+    # Headers and footers per section. Most docs have one section, but we
+    # walk all of them to capture different first-page / odd / even headers
+    # where the author has set them up.
+    for section in doc.sections:
+        for label, hf in (("Header", section.header), ("Footer", section.footer)):
+            hf_text = "\n".join(
+                p.text for p in hf.paragraphs if p.text and p.text.strip()
+            )
+            if hf_text.strip():
+                parts.append(f"[{label}]\n{hf_text}")
+
+    return "\n\n".join(parts)
+
+
+def _extract_pptx(content: bytes) -> str:
+    """Extract a PPTX with per-slide markers, table walking, notes, and group recursion."""
+    import io
+    from pptx import Presentation
+    from pptx.enum.shapes import MSO_SHAPE_TYPE
+
+    prs = Presentation(io.BytesIO(content))
+    out: list[str] = []
+
+    def _walk_shapes(shapes) -> list[str]:
+        local: list[str] = []
+        for shape in shapes:
+            # Grouped shape: recurse into children.
+            if shape.shape_type == MSO_SHAPE_TYPE.GROUP:
+                local.extend(_walk_shapes(shape.shapes))
+                continue
+            # Table shape: walk rows × cells.
+            if getattr(shape, "has_table", False):
+                rendered_rows: list[str] = []
+                for row in shape.table.rows:
+                    cells = [(c.text or "").strip() for c in row.cells]
+                    if any(cells):
+                        rendered_rows.append(" | ".join(cells))
+                if rendered_rows:
+                    local.append("[Table]\n" + "\n".join(rendered_rows))
+                continue
+            # Plain text shape (placeholder, text box, etc.).
+            txt = getattr(shape, "text", "")
+            if txt and txt.strip():
+                local.append(txt)
+        return local
+
+    for idx, slide in enumerate(prs.slides, start=1):
+        slide_parts = [f"[Slide {idx}]"]
+        slide_parts.extend(_walk_shapes(slide.shapes))
+        # Speaker notes.
+        if getattr(slide, "has_notes_slide", False) and slide.has_notes_slide:
+            try:
+                notes_text = slide.notes_slide.notes_text_frame.text or ""
+                if notes_text.strip():
+                    slide_parts.append(f"[Notes]\n{notes_text}")
+            except Exception:
+                pass
+        if len(slide_parts) > 1:
+            out.append("\n".join(slide_parts))
+
+    return "\n\n".join(out)
+
+
+def _extract_csv(content: bytes) -> str:
+    """Render a CSV as an aligned table the LLM can read column-by-column.
+
+    Detects the delimiter via csv.Sniffer when possible (handles ``;`` and
+    ``\\t``-separated exports). Falls back to comma. Encoding errors degrade
+    to ``replace`` rather than ``ignore`` so accented characters survive
+    instead of silently disappearing.
+    """
+    import csv
+    import io
+
+    # Try utf-8-sig first to strip BOMs from Excel exports, then cp1252 as
+    # a fallback. Anything still undecodable becomes U+FFFD ("?"), which is
+    # visible rather than silently dropped.
+    text = None
+    for encoding in ("utf-8-sig", "cp1252"):
+        try:
+            text = content.decode(encoding)
+            break
+        except UnicodeDecodeError:
+            continue
+    if text is None:
+        text = content.decode("utf-8", errors="replace")
+
+    sample = text[:4096]
+    try:
+        dialect = csv.Sniffer().sniff(sample, delimiters=",;\t|")
+    except csv.Error:
+        dialect = csv.excel  # comma
+
+    reader = csv.reader(io.StringIO(text), dialect=dialect)
+    rows = [row for row in reader if any((c or "").strip() for c in row)]
+    if not rows:
+        return ""
+
+    # Aligned columns. Cap width per column so a single huge cell doesn't
+    # blow the prompt; the LLM only needs structure, not pixel alignment.
+    n_cols = max(len(r) for r in rows)
+    widths = [0] * n_cols
+    for r in rows:
+        for i, cell in enumerate(r):
+            widths[i] = min(60, max(widths[i], len(cell)))
+
+    def fmt_row(r):
+        return " | ".join(
+            (cell if len(cell) <= 60 else cell[:57] + "...").ljust(widths[i])
+            for i, cell in enumerate(r + [""] * (n_cols - len(r)))
+        )
+
+    header = fmt_row(rows[0])
+    sep = "-+-".join("-" * w for w in widths)
+    body_rows = "\n".join(fmt_row(r) for r in rows[1:])
+    return f"{header}\n{sep}\n{body_rows}" if body_rows else header
+
+
+def _extract_json(content: bytes) -> str:
+    """Pretty-print JSON with indent=2. Falls back to raw text on parse failure."""
+    raw = content.decode("utf-8", errors="replace")
+    try:
+        parsed = json.loads(raw)
+        return json.dumps(parsed, indent=2, ensure_ascii=False)
+    except Exception as exc:
+        logger.warning("[upload.extract] json parse failed; shipping raw text: %s", exc)
+        return raw
+
+
 def _extract_text_from_upload(content: bytes, filename: str = "", content_type: str = "") -> str:
     """Extract UTF-8 plain text from an uploaded file's raw bytes.
 
-    Supports .pdf (pypdf), .docx (python-docx), .pptx (python-pptx), and
-    plain-text family (.txt, .md, .csv, .json) via UTF-8 decode. Dispatches
-    on filename extension first, falls back to content_type sniffing.
+    Supports .pdf (pypdf → pdfminer chain), .docx (python-docx, body-order),
+    .pptx (python-pptx, with slide numbers + notes + tables + group recursion),
+    .csv (sniffed delimiter + aligned table), .json (pretty-printed), and
+    plain-text family (.txt, .md) via UTF-8 decode. Dispatches on filename
+    extension first, falls back to content_type sniffing.
+
+    Legacy .doc files (OLE Compound File Binary) are detected by extension
+    and by magic-byte sniff (in case the user renamed .doc → .docx) and
+    rejected with a clear 415 message.
 
     Returns extracted text. Raises HTTPException(415) on parse failure.
     """
@@ -90,6 +282,13 @@ def _extract_text_from_upload(content: bytes, filename: str = "", content_type: 
 
     def _ext_matches(*exts):
         return any(name.endswith(e) for e in exts)
+
+    # --- Legacy .doc rejection (extension OR OLE CFB magic on a .docx-named file) ---
+    if _ext_matches(".doc") or content[: len(_OLE_CFB_MAGIC)] == _OLE_CFB_MAGIC:
+        raise HTTPException(
+            status_code=415,
+            detail=".doc is not supported. Please upload .docx.",
+        )
 
     # --- PDF ---
     if _ext_matches(".pdf") or "pdf" in ct:
@@ -143,16 +342,9 @@ def _extract_text_from_upload(content: bytes, filename: str = "", content_type: 
     # --- DOCX ---
     if _ext_matches(".docx") or "wordprocessingml" in ct:
         try:
-            import io
-            from docx import Document
-            doc = Document(io.BytesIO(content))
-            parts = [p.text for p in doc.paragraphs if p.text and p.text.strip()]
-            for table in doc.tables:
-                for row in table.rows:
-                    for cell in row.cells:
-                        if cell.text and cell.text.strip():
-                            parts.append(cell.text)
-            return "\n\n".join(parts)
+            return _extract_docx(content)
+        except HTTPException:
+            raise
         except Exception as exc:
             logger.warning("DOCX extraction failed for %r: %s", filename, exc)
             raise HTTPException(status_code=415, detail=f"Failed to parse DOCX: {exc}")
@@ -160,19 +352,18 @@ def _extract_text_from_upload(content: bytes, filename: str = "", content_type: 
     # --- PPTX ---
     if _ext_matches(".pptx") or "presentationml" in ct:
         try:
-            import io
-            from pptx import Presentation
-            prs = Presentation(io.BytesIO(content))
-            parts = []
-            for slide in prs.slides:
-                for shape in slide.shapes:
-                    txt = getattr(shape, "text", "")
-                    if txt and txt.strip():
-                        parts.append(txt)
-            return "\n\n".join(parts)
+            return _extract_pptx(content)
         except Exception as exc:
             logger.warning("PPTX extraction failed for %r: %s", filename, exc)
             raise HTTPException(status_code=415, detail=f"Failed to parse PPTX: {exc}")
+
+    # --- CSV (pretty-print) ---
+    if _ext_matches(".csv") or "csv" in ct:
+        return _extract_csv(content)
+
+    # --- JSON (pretty-print) ---
+    if _ext_matches(".json") or "json" in ct:
+        return _extract_json(content)
 
     # --- Plain-text family + fallback ---
     return content.decode("utf-8", errors="ignore")

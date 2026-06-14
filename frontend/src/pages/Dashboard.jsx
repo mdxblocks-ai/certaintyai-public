@@ -8,6 +8,13 @@ import SurveyWizard from '../components/survey/SurveyWizard'
 import AgentBuilder from './AgentBuilder'
 import Sidebar from '../components/Sidebar'
 
+// Single source of truth for chat-attachment file types. Drives the file
+// picker accept= filter, the drop-target allow-list, the "Supported:" hint,
+// and the alert shown when a user picks an unsupported file.
+const SUPPORTED_ATTACHMENT_EXTS = ['txt', 'md', 'csv', 'json', 'pdf', 'docx', 'pptx']
+const SUPPORTED_ATTACHMENT_LABEL = SUPPORTED_ATTACHMENT_EXTS.map(e => '.' + e).join(', ')
+const SUPPORTED_ATTACHMENT_ACCEPT = SUPPORTED_ATTACHMENT_EXTS.map(e => '.' + e).join(',')
+
 
 const SHOW_AI_READINESS_NAV = false;
 
@@ -1123,14 +1130,13 @@ export default function Dashboard() {
     const files = Array.from(e.target.files)
     if (files.length === 0) return
 
-    const allowedExtensions = ['txt', 'md', 'csv', 'json', 'pdf', 'docx', 'pptx']
     const validFiles = files.filter(file => {
       const ext = file.name.split('.').pop().toLowerCase()
-      return allowedExtensions.includes(ext)
+      return SUPPORTED_ATTACHMENT_EXTS.includes(ext)
     })
 
     if (validFiles.length < files.length) {
-      alert("Some files were skipped. Supported: .txt, .md, .csv, .json, .pdf, .docx, .pptx")
+      alert("Some files were skipped. Supported: " + SUPPORTED_ATTACHMENT_LABEL)
     }
 
     if (validFiles.length === 0) return
@@ -1170,14 +1176,13 @@ export default function Dashboard() {
     const files = Array.from(e.dataTransfer.files)
     if (files.length === 0) return
 
-    const allowedExtensions = ['txt', 'md', 'csv', 'json', 'pdf', 'docx', 'pptx']
     const validFiles = files.filter(file => {
       const ext = file.name.split('.').pop().toLowerCase()
-      return allowedExtensions.includes(ext)
+      return SUPPORTED_ATTACHMENT_EXTS.includes(ext)
     })
 
     if (validFiles.length < files.length) {
-      alert("Some files were skipped. Supported: .txt, .md, .csv, .json, .pdf, .docx, .pptx")
+      alert("Some files were skipped. Supported: " + SUPPORTED_ATTACHMENT_LABEL)
     }
 
     if (validFiles.length === 0) return
@@ -1196,8 +1201,13 @@ export default function Dashboard() {
     // Returns { text, b64, mime }. b64/mime are non-null only for PDFs whose
     // server-side text extraction yielded <50 chars — those are routed to
     // Vertex/Gemini multimodal in the backend (Layer C).
+    //
+    // Only .txt and .md run in-browser via FileReader. Every other type goes
+    // through /agents/extract-text so the backend can apply format-specific
+    // pretty-printing (.csv aligned table, .json indent=2) and so server-side
+    // diagnostic logs fire for every upload.
     const ext = (file.name || '').split('.').pop().toLowerCase()
-    const inBrowserFormats = ['txt', 'md', 'csv', 'json']
+    const inBrowserFormats = ['txt', 'md']
     if (inBrowserFormats.includes(ext)) {
       const text = await new Promise((resolve, reject) => {
         const reader = new FileReader()
@@ -1207,7 +1217,7 @@ export default function Dashboard() {
       })
       return { text, b64: null, mime: null }
     }
-    // Binary formats (.pdf, .docx, .pptx): server-side extract.
+    // Server-side extract for .pdf, .docx, .pptx, .csv, .json.
     // Content-Type MUST be undefined so the browser auto-sets
     // `multipart/form-data; boundary=...` with the real boundary param.
     const formData = new FormData()
@@ -3071,7 +3081,7 @@ export default function Dashboard() {
                         onChange={handleCopilotFileChange}
                         multiple
                         className="hidden"
-                        accept=".txt,.md,.csv,.json,.pdf,.docx,.pptx,text/plain,application/pdf"
+                        accept={SUPPORTED_ATTACHMENT_ACCEPT}
                       />
                       
                       {/* Attach Document (paperclip) Button */}
@@ -3184,7 +3194,7 @@ export default function Dashboard() {
                     {/* Supported formats helper note */}
                     <div className="text-[10px] text-[var(--dash-text-secondary)]/75 max-w-[95%] ml-2 mr-auto md:ml-4 px-1.5 flex items-center gap-1 font-medium font-sans mt-1">
                       <i className="ti ti-info-circle text-xs"></i>
-                      <span>Supported: .txt, .md, .csv, .json, .pdf, .docx, .pptx</span>
+                      <span>Supported: {SUPPORTED_ATTACHMENT_LABEL}</span>
                     </div>
                   </div>
                 </div>
