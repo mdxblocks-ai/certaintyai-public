@@ -793,41 +793,22 @@ export default function Dashboard() {
     if (saved) {
       try {
         const parsed = JSON.parse(saved)
-        // Strip out legacy sessions containing preloaded reports or auto-generated assessment content
-        const cleaned = parsed.map(session => {
-          if (session.messages) {
-            return {
-              ...session,
-              messages: session.messages.filter(msg => 
-                !msg.content.includes('Assessment Report') && 
-                !msg.content.includes('Executive Summary') &&
-                !msg.content.includes('Pillars of Assessment')
-              )
-            }
-          }
-          return session
-        }).filter(session => session.id !== 'default-session-1' || (session.messages && session.messages.length > 0))
-
-        if (cleaned.length > 0) {
-          return cleaned
-        }
+        // One-time cleanup of the legacy seeded "default-session-1" placeholder.
+        // Any user-typed messages on it are preserved; only the empty placeholder
+        // from older app versions is dropped.
+        return parsed.filter(session =>
+          session.id !== 'default-session-1' ||
+          (session.messages && session.messages.length > 0)
+        )
       } catch (e) {
         console.error(e)
       }
     }
-    return [
-      {
-        id: 'default-session-1',
-        title: 'New Chat Session',
-        selectedModel: 'Gemini 2.5 Flash',
-        createdDate: new Date().toISOString(),
-        messages: []
-      }
-    ]
+    return []
   })
 
   const [copilotActiveSessionId, setCopilotActiveSessionId] = useState(() => {
-    return localStorage.getItem('copilot_active_session_id') || 'default-session-1'
+    return localStorage.getItem('copilot_active_session_id') || null
   })
 
   // Persist copilot sessions to localStorage on every change. Cap persistence at
@@ -836,7 +817,13 @@ export default function Dashboard() {
   useEffect(() => {
     try {
       const COPILOT_SESSIONS_PERSIST_CAP = 50
-      const toPersist = (copilotSessions || []).slice(0, COPILOT_SESSIONS_PERSIST_CAP)
+      const all = copilotSessions || []
+      // Persist every non-empty session first so real chat history never falls
+      // off the cap. Empty placeholder sessions get the remaining slots.
+      const nonEmpty = all.filter(s => s.messages && s.messages.length > 0)
+      const empty = all.filter(s => !s.messages || s.messages.length === 0)
+      const remaining = Math.max(0, COPILOT_SESSIONS_PERSIST_CAP - nonEmpty.length)
+      const toPersist = [...nonEmpty, ...empty.slice(0, remaining)]
       localStorage.setItem('copilot_sessions', JSON.stringify(toPersist))
     } catch (e) {
       console.warn('[copilot] Failed to persist copilot_sessions:', e)
@@ -957,30 +944,23 @@ export default function Dashboard() {
     }
   }, [copilotActiveSessionId])
 
-  // Sync sessions when activeAgentId changes
+  // Select an existing session when activeAgentId changes. Never auto-create:
+  // landing on an agent with no sessions shows the empty-state UI and the user
+  // either clicks "New Chat" or types directly into the input (handleCopilotSend
+  // creates the session on first message).
   useEffect(() => {
     if (!activeAgentId) return;
-    
+
     const agentSessions = copilotSessions.filter(s => s.agentId === activeAgentId);
-    if (agentSessions.length > 0) {
-      const lastActiveId = localStorage.getItem(`last_active_session_for_agent_${activeAgentId}`)
-      if (lastActiveId && agentSessions.some(s => s.id === lastActiveId)) {
-        setCopilotActiveSessionId(lastActiveId)
-      } else {
-        setCopilotActiveSessionId(agentSessions[0].id)
-      }
+    if (agentSessions.length === 0) {
+      setCopilotActiveSessionId(null)
+      return
+    }
+    const lastActiveId = localStorage.getItem(`last_active_session_for_agent_${activeAgentId}`)
+    if (lastActiveId && agentSessions.some(s => s.id === lastActiveId)) {
+      setCopilotActiveSessionId(lastActiveId)
     } else {
-      const fallbackId = `session-${activeAgentId}-${Date.now()}`
-      const newSession = {
-        id: fallbackId,
-        title: 'New Chat Session',
-        selectedModel: copilotModel,
-        createdDate: new Date().toISOString(),
-        messages: [],
-        agentId: activeAgentId
-      }
-      setCopilotSessions(prev => [newSession, ...prev])
-      setCopilotActiveSessionId(fallbackId)
+      setCopilotActiveSessionId(agentSessions[0].id)
     }
   }, [activeAgentId])
 
@@ -1003,6 +983,24 @@ export default function Dashboard() {
   }
 
   const handleCopilotNewChat = () => {
+    // ChatGPT-style: if there is already an empty session for this agent,
+    // reuse it instead of stacking another. The currently-active empty wins;
+    // otherwise pick any empty agent-scoped session.
+    const isEmpty = (s) => !s.messages || s.messages.length === 0
+    const activeIsEmptyForAgent =
+      activeCopilotSession &&
+      activeCopilotSession.agentId === activeAgentId &&
+      isEmpty(activeCopilotSession)
+    if (activeIsEmptyForAgent) {
+      return
+    }
+    const existingEmpty = copilotSessions.find(
+      s => s.agentId === activeAgentId && isEmpty(s)
+    )
+    if (existingEmpty) {
+      setCopilotActiveSessionId(existingEmpty.id)
+      return
+    }
     const newId = `session-${activeAgentId}-${Date.now()}`
     const newSession = {
       id: newId,
