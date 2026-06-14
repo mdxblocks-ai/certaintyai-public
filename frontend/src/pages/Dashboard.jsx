@@ -1076,6 +1076,7 @@ export default function Dashboard() {
   const fileInputRef = useRef(null)
   const copilotSpeechRecognitionRef = useRef(null)
   const voiceBottomRef = useRef(null)
+  const copilotInputRef = useRef(null)
 
   const [allAgents, setAllAgents] = useState([])
   const [activeAgentId, setActiveAgentId] = useState(0)
@@ -1148,18 +1149,15 @@ export default function Dashboard() {
 
   const activeCopilotSession = displayedSessions.find(s => s.id === copilotActiveSessionId) || displayedSessions[0] || null
 
-  // Sessions rendered in the sidebar list. An empty "New Chat" placeholder
-  // IS shown (so the user sees their click of "+" immediately and can rename
-  // by sending a message). Only orphan-titled empties (legacy '', 'Untitled',
-  // the long-gone 'CertaintyAI / MDx' badge string) are hidden — those
-  // never come from the current code path and only show up as stale rows
-  // in older localStorage snapshots.
-  const _ORPHAN_EMPTY_TITLES = new Set(['', 'untitled', 'certaintyai / mdx'])
-  const sidebarSessions = displayedSessions.filter(s => {
-    const isEmpty = !s.messages || s.messages.length === 0
-    const titleKey = String(s.title || '').trim().toLowerCase()
-    return !(isEmpty && _ORPHAN_EMPTY_TITLES.has(titleKey))
-  })
+  // Sessions rendered in the sidebar list. ChatGPT-style: only
+  // conversations with at least one message appear here. The pinned
+  // "+ New Chat" button at the top of the panel is the affordance for
+  // starting a fresh chat — the empty placeholder session itself does
+  // not get a list row until the user sends a first message (at which
+  // point handleCopilotSend renames the title and the row materialises).
+  const sidebarSessions = displayedSessions.filter(s =>
+    s.messages && s.messages.length > 0
+  )
 
   // Ensure active model is updated when session changes
   useEffect(() => {
@@ -1210,12 +1208,16 @@ export default function Dashboard() {
     // ChatGPT-style: if there is already an empty session for this agent,
     // reuse it instead of stacking another. The currently-active empty wins;
     // otherwise pick any empty agent-scoped session.
+    // After any of the three branches the chat input is focused so the user
+    // can start typing immediately (matches ChatGPT's "+" UX).
     const isEmpty = (s) => !s.messages || s.messages.length === 0
+    const focusInput = () => setTimeout(() => copilotInputRef.current?.focus(), 0)
     const activeIsEmptyForAgent =
       activeCopilotSession &&
       activeCopilotSession.agentId === activeAgentId &&
       isEmpty(activeCopilotSession)
     if (activeIsEmptyForAgent) {
+      focusInput()
       return
     }
     const existingEmpty = copilotSessions.find(
@@ -1223,6 +1225,7 @@ export default function Dashboard() {
     )
     if (existingEmpty) {
       setCopilotActiveSessionId(existingEmpty.id)
+      focusInput()
       return
     }
     const newId = `session-${activeAgentId}-${Date.now()}`
@@ -1236,6 +1239,7 @@ export default function Dashboard() {
     }
     setCopilotSessions(prev => [newSession, ...prev])
     setCopilotActiveSessionId(newId)
+    focusInput()
   }
 
   const handleCopilotDeleteSession = (id, e) => {
@@ -3511,6 +3515,7 @@ export default function Dashboard() {
 
                       {/* Text Input area */}
                       <input
+                        ref={copilotInputRef}
                         type="text"
                         value={copilotInput}
                         onChange={(e) => setCopilotInput(e.target.value)}
