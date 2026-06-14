@@ -501,24 +501,34 @@ def generate_dynamic_follow_ups(
     FIREWALL CONFIRMATION: this is conversational guidance only and never
     interacts with the scoring engine.
 
-    Fix 1: intent is now detected from `last_answer` first, falling back to
-    `last_user_input` only when the response classifies as "general". This
-    stops the bug where clicking a templated follow-up (whose text matches
-    one bucket) re-anchored the user to the same bucket turn after turn.
+    Bug A fix: detect intent from `last_user_input` first, falling back to
+    `last_answer` only when the user prompt classifies as "general". The
+    prior order was the reverse, which funneled almost every reply to
+    governance_recommendations because the agent's stock system-prompt
+    phrase "security, governance, and financial dimensions" gets quoted
+    verbatim in nearly every long-form Gemini answer, triggering a
+    "governance" substring match.
 
-    Fix 2: `previous_follow_ups` is an exclusion set — entries already shown
+    `previous_follow_ups` is an exclusion set — entries already shown
     in this conversation are removed from both the LLM-generated set and the
     fallback ladder, so suggestions evolve and never repeat within a session.
     """
     previous_follow_ups = previous_follow_ups or []
     seen_norm: set = {_normalize_followup(s) for s in previous_follow_ups if s}
 
-    # ----- Fix 1: detect intent from assistant response first -----
-    intent = _detect_intent(last_answer)
-    intent_source = "assistant_response"
-    if intent == "general" and last_user_input:
+    # ----- Bug A fix: detect intent from user prompt first -----
+    # Special case: user asks about an uploaded document AND the assistant
+    # replies with score / readiness language. The conversation is about
+    # interpreting the doc against the readiness model -> explain_score.
+    if _has_upload_with_score_anchor(last_user_input, last_answer):
+        intent = "explain_score"
+        intent_source = "upload+score_anchor"
+    else:
         intent = _detect_intent(last_user_input)
         intent_source = "user_prompt"
+        if intent == "general" and last_answer:
+            intent = _detect_intent(last_answer)
+            intent_source = "assistant_response"
 
     fallbacks = _resolve_fallback_followups(agent_role, intent, seen_norm=set(seen_norm))
 
@@ -1026,11 +1036,19 @@ SIMULATED_INTENT_KEYWORDS: dict[str, list[str]] = {
         "cost", "costs", "roi", "budget", "spend", "spending", "finops",
         "savings", "save", "payback", "reduce ai", "optimize", "optimise",
         "spending money",
+        # Bug A keyword expansion: business-value vocabulary lives here so
+        # questions about value / benefits / return route to the cost-and-
+        # value-realization bucket rather than falling to assistant fallback.
+        "business value", "value realization", "return", "benefits",
     ],
     "priority_actions": [
         "priority", "priorities", "next step", "next steps", "do next",
         "what next", "action", "actions", "what should i do",
         "where to start", "first thing",
+        # Bug A keyword expansion: roadmap / planning vocabulary. These are
+        # how executives ask "what's our path forward" — they belong in the
+        # priority-actions bucket alongside next-step language.
+        "roadmap", "plan", "timeline", "milestones", "30-60-90", "implementation",
     ],
 }
 
@@ -1046,9 +1064,43 @@ _INTENT_ORDER = [
     "priority_actions",
 ]
 
+# Stock phrase that the agent's system instruction makes Gemini repeat in
+# almost every long-form reply: "security, governance, and financial
+# dimensions" (and the trailing-noun variants). Without scrubbing, the
+# single substring "governance" funnels every reply into
+# governance_recommendations, defeating intent dispatch. Stripped before
+# substring matching in _detect_intent.
+_AGENT_STOCK_PHRASE = re.compile(
+    r"\bsecurity\s*,?\s+governance\s*,?\s+(?:and\s+)?financial"
+    r"(?:\s+(?:dimensions?|investments?|considerations?|aspects?))?",
+    re.IGNORECASE,
+)
+
+# Upload vocabulary + score-anchor vocabulary for the Bug A special case:
+# when the user explicitly asks about an uploaded document AND the
+# assistant's reply talks about score/readiness, route to explain_score
+# (the user is asking the assistant to interpret the doc against the
+# readiness model).
+_UPLOAD_VOCAB = (
+    "uploaded pdf", "uploaded document", "uploaded file",
+    "attached file", "attached document",
+    "document analysis", "pdf analysis",
+)
+_SCORE_READINESS_ANCHOR = ("score", "readiness")
+
+
+def _has_upload_with_score_anchor(user_input: Optional[str], assistant_answer: Optional[str]) -> bool:
+    u = (user_input or "").lower()
+    a = (assistant_answer or "").lower()
+    return any(t in u for t in _UPLOAD_VOCAB) and any(t in a for t in _SCORE_READINESS_ANCHOR)
+
 
 def _detect_intent(user_input: Optional[str]) -> str:
     text = (user_input or "").lower()
+    # Strip the agent's stock system-prompt phrase before substring matching,
+    # otherwise "security, governance, and financial dimensions" routes
+    # everything to governance_recommendations.
+    text = _AGENT_STOCK_PHRASE.sub(" ", text)
     for intent in _INTENT_ORDER:
         if any(kw in text for kw in SIMULATED_INTENT_KEYWORDS[intent]):
             return intent
