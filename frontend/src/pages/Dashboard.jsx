@@ -2913,10 +2913,12 @@ export default function Dashboard() {
                 <div className={`w-full transition-all duration-300 border-r border-[var(--dash-border)] bg-[var(--dash-sidebar-bg)] flex flex-col shrink-0 ${
                   copilotSidebarCollapsed ? 'md:w-16' : 'md:w-56'
                 }`}>
-                  <div className="overflow-y-auto scrollbar-none flex-1 font-sans">
-                    {/* Sessions header — sticky so it stays visible while
-                        the list below scrolls (ChatGPT-style fixed header). */}
-                    <div className="flex items-center px-2 py-2 border-b border-[var(--dash-border)] sticky top-0 bg-[var(--dash-sidebar-bg)] z-10">
+                  <div className="flex flex-col flex-1 font-sans min-h-0">
+                    {/* Pinned chat history header — flex-shrink-0 so it never
+                        moves. Sits OUTSIDE the scrollable list (which is a
+                        sibling below). New chats are added to the list and
+                        never push this header down. */}
+                    <div className="flex items-center px-2 py-2 border-b border-[var(--dash-border)] shrink-0 bg-[var(--dash-sidebar-bg)]">
                       <div className="flex items-center gap-1.5 w-full">
                         {!copilotSidebarCollapsed && (
                           <button
@@ -2966,9 +2968,12 @@ export default function Dashboard() {
                         )}
                       </button>
                     </div>
+                    </div>
 
-                    {/* Session List (ChatGPT-style — starts immediately under the New Chat button) */}
-                    <div className="space-y-1 px-2 pt-2">
+                    {/* Scrollable conversation list — flex-1 + overflow-y-auto.
+                        Sibling of the header above; new conversations land at the
+                        top of THIS list without affecting the header position. */}
+                    <div className="flex-1 overflow-y-auto scrollbar-none space-y-1 px-2 pt-2 min-h-0">
                       {sidebarSessions.length === 0 && !copilotSidebarCollapsed && (
                         <div className="text-[10.5px] italic text-[var(--dash-text-secondary)] px-2 py-3">
                           No conversations yet. Click <b className="not-italic">+ New Chat</b> above to start.
@@ -3041,7 +3046,6 @@ export default function Dashboard() {
                           </div>
                         )
                       })}
-                    </div>
                   </div>
                 </div>
               </div>
