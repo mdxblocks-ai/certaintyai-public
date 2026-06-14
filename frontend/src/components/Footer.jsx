@@ -61,7 +61,12 @@ export default function Footer() {
           </div>
         </div>
         <div className="foot-bottom">
-          <div className="copy">© {new Date().getFullYear()} CertaintyAI<sup className="text-[8px] ml-0.5 font-sans">™</sup>. All rights reserved.</div>
+          <div className="copy">
+            <div>© {new Date().getFullYear()} MDxBlocks Inc. All Rights Reserved.</div>
+            <div className="text-[10px] text-[#73706A] mt-1">
+              CertaintyAI<sup className="text-[8px] ml-0.5 font-sans">™</sup> is a product of MDxBlocks Inc.
+            </div>
+          </div>
           <div className="flex items-center gap-1.5 text-[10px] text-[var(--dash-text-secondary)] font-sans">
             <span className="text-[8.5px] uppercase tracking-wider font-bold">Built on</span>
             <div className="flex items-center">
@@ -75,7 +80,7 @@ export default function Footer() {
             <span className="mx-0.5 opacity-40">·</span>
             <span>Cloud Run</span>
           </div>
-          <div className="attrib">BY <b>MDxBlocks</b></div>
+          <div className="attrib">A Product of <b>MDxBlocks Inc.</b></div>
         </div>
       </div>
     </footer>

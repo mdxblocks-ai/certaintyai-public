@@ -103,7 +103,7 @@ export default function Navbar() {
                   ? "text-[10px] text-[#73706A] italic font-medium font-serif-brand" 
                   : "text-[9px] uppercase tracking-[0.25em] text-slate-400"
                 }>
-                  {isParchment ? activeRegion.tag : 'by MDxBlocks'}
+                  {isParchment ? activeRegion.tag : 'by MDxBlocks Inc.'}
                 </div>
               </div>
             </Link>

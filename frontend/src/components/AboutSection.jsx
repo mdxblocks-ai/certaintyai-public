@@ -60,9 +60,9 @@ const DIFFERENTIATORS = [
 function PartnersRow() {
   return (
     <section className="py-12 border-t border-slate-800">
-      <h2 className="text-xl font-semibold text-slate-100">Built by MDxBlocks Inc</h2>
+      <h2 className="text-xl font-semibold text-slate-100">Built by MDxBlocks Inc.</h2>
       <p className="mt-3 max-w-3xl text-sm text-slate-400">
-        MDxBlocks is an independent software vendor partnering with the
+        MDxBlocks Inc. is an independent software vendor partnering with the
         cloud and silicon leaders, and with the AI and enterprise SaaS
         platforms our customers already use to run their business.
       </p>

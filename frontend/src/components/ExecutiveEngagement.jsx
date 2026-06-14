@@ -120,7 +120,7 @@ export default function ExecutiveEngagement({
         {/* Powered by attribution */}
         <div className="mt-10 pt-6 border-t border-[#D8B679]/12 flex items-center justify-between relative">
           <span className="text-[10px] uppercase tracking-[0.28em] text-[#F4F0E6]/40">
-            Powered by <span className="text-[#D8B679] font-semibold">MDxBlocks</span>
+            Powered by <span className="text-[#D8B679] font-semibold">MDxBlocks Inc.</span>
           </span>
           <span className="text-[10px] uppercase tracking-[0.22em] text-[#F4F0E6]/30">
             Defensible AI for regulated industries

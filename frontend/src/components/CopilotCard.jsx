@@ -96,13 +96,24 @@ export default function CopilotCard({ copilot, domain }) {
         <span className="text-[10.5px] uppercase tracking-widest text-[#73706A] font-semibold">
           Defensible by design
         </span>
-        <Link
-          to="/signup"
-          className="text-[12.5px] font-bold transition"
-          style={{ color: domain.accent }}
-        >
-          Build this Copilot →
-        </Link>
+        {(() => {
+          const ctaByStatus = {
+            available:     { label: 'View Demo',     href: '/signup?intent=demo',     color: '#047857' },
+            pilot:         { label: 'Request Demo',  href: '/signup?intent=pilot',    color: '#B45309' },
+            'coming-soon': { label: 'Join Waitlist', href: '/signup?intent=waitlist', color: '#334155' },
+          }
+          const cta = ctaByStatus[copilot.status]
+          if (!cta) return null
+          return (
+            <Link
+              to={cta.href}
+              className="text-[12.5px] font-bold transition hover:translate-x-0.5"
+              style={{ color: cta.color }}
+            >
+              {cta.label} →
+            </Link>
+          )
+        })()}
       </div>
     </article>
   )

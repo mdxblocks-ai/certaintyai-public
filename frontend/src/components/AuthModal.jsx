@@ -150,9 +150,10 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin', cla
 
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-[#F4F0E6]/55 hover:text-[#F4F0E6] transition z-10"
+          aria-label="Close"
+          className="absolute top-3.5 right-3.5 w-7 h-7 inline-flex items-center justify-center rounded-md text-[#F4F0E6]/35 hover:text-[#F4F0E6]/90 hover:bg-[#F4F0E6]/8 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#D8B679]/40 transition z-10"
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <line x1="18" y1="6" x2="6" y2="18" />
             <line x1="6" y1="6" x2="18" y2="18" />
           </svg>
@@ -349,7 +350,7 @@ export default function AuthModal({ isOpen, onClose, initialMode = 'signin', cla
           {/* Powered by attribution */}
           <div className="mt-6 pt-4 border-t border-[#D8B679]/8 text-center">
             <span className="text-[9px] uppercase tracking-[0.28em] text-[#F4F0E6]/40">
-              Powered by <span className="text-[#D8B679]/85 font-semibold">MDxBlocks</span>
+              Powered by <span className="text-[#D8B679]/85 font-semibold">MDxBlocks Inc.</span>
             </span>
           </div>
         </div>

@@ -57,16 +57,82 @@ export default function Copilots() {
         </div>
       </section>
 
-      {/* ===== Honest count strip ===== */}
-      <section className="border-t border-b border-[#14161A]/10 bg-[#ECE5D6]/30 py-8">
-        <div className="max-w-7xl mx-auto px-6 flex flex-wrap items-center justify-between gap-4">
-          <div className="text-sm text-[#3B3D42]">
-            <b className="text-[#14161A]">{COPILOTS.length} copilots</b> across <b className="text-[#14161A]">{groups.length} regulated domains</b> — all roadmap, all built on the same open seams.
+      {/* ===== Summary: 7 Industry AI Copilots ===== */}
+      <section id="copilot-summary" className="border-t border-b border-[#14161A]/10 bg-[#ECE5D6]/30 py-10">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6 mb-6">
+            <div>
+              <span className="text-[10px] uppercase tracking-[0.28em] text-[#7C5723] font-bold block mb-2">
+                Product Lineup
+              </span>
+              <h2 className="font-serif-brand text-3xl sm:text-4xl text-[#14161A] font-normal leading-tight">
+                <b className="font-semibold">{COPILOTS.length}</b> Industry AI Copilots
+              </h2>
+            </div>
+            <div className="flex items-center gap-2 text-[11px] text-[#73706A] tracking-wide">
+              <b className="uppercase tracking-widest text-[#14161A]/70">Built on</b>
+              <span>{BRAND.trustStrip.slice(0, 5).join(' · ')}</span>
+            </div>
           </div>
-          <div className="flex items-center gap-2 text-[11px] text-[#73706A] tracking-wide">
-            <b className="uppercase tracking-widest text-[#14161A]/70">Built on</b>
-            <span>{BRAND.trustStrip.slice(0, 5).join(' · ')}</span>
-          </div>
+
+          {(() => {
+            const countBy = COPILOTS.reduce((acc, c) => {
+              acc[c.status] = (acc[c.status] || 0) + 1
+              return acc
+            }, {})
+            const tiles = [
+              {
+                status: 'available',
+                label: 'Available Today',
+                count: countBy.available || 0,
+                bg: 'bg-[#10B981]/12',
+                border: 'border-[#10B981]/40',
+                text: 'text-[#047857]',
+                dot: 'bg-[#10B981]',
+              },
+              {
+                status: 'pilot',
+                label: 'Pilot Available',
+                count: countBy.pilot || 0,
+                bg: 'bg-[#F59E0B]/12',
+                border: 'border-[#F59E0B]/40',
+                text: 'text-[#B45309]',
+                dot: 'bg-[#F59E0B]',
+              },
+              {
+                status: 'coming-soon',
+                label: 'Coming Soon',
+                count: countBy['coming-soon'] || 0,
+                bg: 'bg-[#64748B]/12',
+                border: 'border-[#64748B]/40',
+                text: 'text-[#334155]',
+                dot: 'bg-[#64748B]',
+              },
+            ]
+            return (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {tiles.map((t) => (
+                  <div
+                    key={t.status}
+                    className={`${t.bg} ${t.border} border rounded-xl px-5 py-4 flex items-center gap-4 transition hover:shadow-md`}
+                  >
+                    <div className={`font-serif-brand text-4xl font-semibold ${t.text} leading-none`}>
+                      {t.count}
+                    </div>
+                    <div className="flex flex-col">
+                      <span className={`inline-flex items-center gap-1.5 text-[10.5px] uppercase tracking-widest font-bold ${t.text}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${t.dot}`} />
+                        {t.label}
+                      </span>
+                      <span className="text-[11px] text-[#73706A] mt-0.5">
+                        {t.count === 1 ? 'copilot' : 'copilots'}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )
+          })()}
         </div>
       </section>
 

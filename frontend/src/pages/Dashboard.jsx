@@ -4364,7 +4364,7 @@ export default function Dashboard() {
                           <span>2h ago</span>
                         </div>
                         <p className="text-xs text-slate-200 leading-relaxed font-medium">
-                          "MDx Blocks' multi-cloud partnership framework with **Azure OpenAI, Google Vertex AI, and Snowflake Cortex** establishes a highly secure, sovereign multi-agent deployment blueprint."
+                          "MDxBlocks Inc.'s multi-cloud partnership framework with **Azure OpenAI, Google Vertex AI, and Snowflake Cortex** establishes a highly secure, sovereign multi-agent deployment blueprint."
                         </p>
                       </div>
 

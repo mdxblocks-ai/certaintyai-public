@@ -23,14 +23,6 @@ export const DOMAINS = [
     blurb:
       'Personalized learning that respects FERPA and COPPA, with faculty-in-the-loop on every consequential decision.',
   },
-  {
-    id: 'cybersecurity',
-    name: 'Cybersecurity',
-    accent: '#2F7D6B',
-    glow: 'rgba(47, 125, 107, 0.22)',
-    blurb:
-      'Continuous, audit-ready scrutiny of your AI estate — controls, vendors, models, prompts, and policy attestation.',
-  },
 ]
 
 export const COPILOTS = [
@@ -145,22 +137,6 @@ export const COPILOTS = [
     persona: 'Provost · Dean · Workforce Development',
   },
 
-  // ---------- Cybersecurity ----------
-  {
-    id: 'security-auditor',
-    domain: 'cybersecurity',
-    name: 'AI Security Auditor',
-    tagline: 'Identify AI risks, governance gaps, and compliance issues.',
-    capabilities: [
-      'Control-gap detection against NIST AI RMF GOVERN / MEASURE',
-      'Vendor and model risk triage with provenance scoring',
-      'Continuous policy attestation with evidence-pack export',
-      'Red-team prompt and data-exfiltration pattern checks',
-    ],
-    frameworks: ['NIST AI RMF', 'ISO 27001', 'SOC 2', 'EU AI Act'],
-    status: 'pilot',
-    persona: 'CISO · Security Architect · GRC',
-  },
 ]
 
 export function copilotsByDomain() {
