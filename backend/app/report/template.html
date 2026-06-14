@@ -1072,60 +1072,50 @@
         <div style="background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 14px;">
           <h4 style="color: var(--accent); font-size: 13px; margin: 0 0 8px 0;">Workload Usage Profile (Current State)</h4>
           <p style="font-size: 12px; color: var(--muted); margin-bottom: 12px; text-align: left;">
-            Your organization runs <strong>100%</strong> of AI workloads on premium reasoning models (<strong>{{ scores.provider_model_names.get(scores.finops.primary_provider, scores.finops.primary_provider) }}</strong>). 
-            Auditing your live API traffic reveals that <strong>95% of workloads do NOT require premium reasoning capability</strong>.
+            <strong>Awaiting data.</strong> Your actual AI workload distribution — and the share that does not need premium reasoning capability — is computed from API gateway or LLM-router telemetry. Until that telemetry is connected, this section shows the workload categories CertaintyAI tracks but no organization-specific percentages.
           </p>
           <div style="display: flex; flex-direction: column; gap: 6px;">
             <div>
               <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 2px;">
                 <span>📄 Document Summarization (Low complexity)</span>
-                <span style="font-weight: 600; color: var(--accent);">40%</span>
+                <span style="font-weight: 600; color: var(--muted);">Awaiting data</span>
               </div>
-              <div style="height: 4px; background: var(--border); border-radius: 99px; overflow: hidden; margin-bottom: 8px;">
-                <div style="height: 100%; background: var(--accent); width: 40%;"></div>
-              </div>
+              <div style="height: 4px; background: var(--border); border-radius: 99px; overflow: hidden; margin-bottom: 8px;"></div>
             </div>
 
             <div>
               <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 2px;">
                 <span>🔍 Internal Search &amp; Q&amp;A (Medium complexity)</span>
-                <span style="font-weight: 600; color: var(--accent-2);">25%</span>
+                <span style="font-weight: 600; color: var(--muted);">Awaiting data</span>
               </div>
-              <div style="height: 4px; background: var(--border); border-radius: 99px; overflow: hidden; margin-bottom: 8px;">
-                <div style="height: 100%; background: var(--accent-2); width: 25%;"></div>
-              </div>
+              <div style="height: 4px; background: var(--border); border-radius: 99px; overflow: hidden; margin-bottom: 8px;"></div>
             </div>
 
             <div>
               <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 2px;">
                 <span>✍ Content Generation (Medium complexity)</span>
-                <span style="font-weight: 600; color: var(--accent);">20%</span>
+                <span style="font-weight: 600; color: var(--muted);">Awaiting data</span>
               </div>
-              <div style="height: 4px; background: var(--border); border-radius: 99px; overflow: hidden; margin-bottom: 8px;">
-                <div style="height: 100%; background: var(--accent); width: 20%;"></div>
-              </div>
+              <div style="height: 4px; background: var(--border); border-radius: 99px; overflow: hidden; margin-bottom: 8px;"></div>
             </div>
 
             <div>
               <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 2px;">
                 <span>📊 Standard Reporting &amp; Classification (Low complexity)</span>
-                <span style="font-weight: 600; color: var(--accent-2);">10%</span>
+                <span style="font-weight: 600; color: var(--muted);">Awaiting data</span>
               </div>
-              <div style="height: 4px; background: var(--border); border-radius: 99px; overflow: hidden; margin-bottom: 8px;">
-                <div style="height: 100%; background: var(--accent-2); width: 10%;"></div>
-              </div>
+              <div style="height: 4px; background: var(--border); border-radius: 99px; overflow: hidden; margin-bottom: 8px;"></div>
             </div>
 
             <div>
               <div style="display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 2px;">
                 <span>🧠 Complex Logical Reasoning &amp; Strategy (High complexity)</span>
-                <span style="font-weight: 600; color: var(--amber);">5%</span>
+                <span style="font-weight: 600; color: var(--muted);">Awaiting data</span>
               </div>
-              <div style="height: 4px; background: var(--border); border-radius: 99px; overflow: hidden; margin-bottom: 8px;">
-                <div style="height: 100%; background: var(--amber); width: 5%;"></div>
-              </div>
+              <div style="height: 4px; background: var(--border); border-radius: 99px; overflow: hidden; margin-bottom: 8px;"></div>
             </div>
           </div>
+          <p style="font-size: 9.5px; color: var(--muted); margin-top: 8px; font-style: italic;">Categories shown reflect CertaintyAI's classification taxonomy. Per-category percentages populate once API telemetry is connected.</p>
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 8px;">
@@ -1173,6 +1163,7 @@
       <!-- Smart Workload Routing Table -->
       <div style="margin-top: 12px; background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px; padding: 12px; overflow-x: auto;">
         <h4 style="color: var(--text-heading); font-size: 12px; font-weight: 600; margin: 0 0 6px 0;">Workload Routing Recommendation Engine</h4>
+        <p style="font-size: 10.5px; color: var(--muted); margin: 0 0 8px 0; font-style: italic;">Reference routing policy CertaintyAI applies once your live model-usage data is connected. Current-model and per-workload cost-reduction values populate from your API telemetry — until then they show as <em>Awaiting data</em>.</p>
         <table style="width: 100%; border-collapse: collapse; font-size: 11.5px; text-align: left;">
           <thead>
             <tr style="border-bottom: 1px solid var(--border); color: var(--muted); font-size: 10px; text-transform: uppercase;">
@@ -1185,32 +1176,32 @@
           <tbody>
             <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
               <td style="padding: 6px; font-weight: 600; color: var(--text-heading);">Search &amp; Q&amp;A</td>
-              <td style="padding: 6px; color: var(--rose);">{{ scores.provider_model_names.get(scores.finops.primary_provider, 'GPT-4o') }}</td>
-              <td style="padding: 6px; color: var(--accent); font-weight: 600;">GPT-4o Mini</td>
-              <td style="padding: 6px; text-align: right; color: var(--emerald); font-weight: 700;">Save 35%</td>
+              <td style="padding: 6px; color: var(--muted); font-style: italic;">Awaiting data</td>
+              <td style="padding: 6px; color: var(--accent); font-weight: 600;">Smaller/cheaper model class</td>
+              <td style="padding: 6px; text-align: right; color: var(--muted); font-weight: 500; font-style: italic;">Awaiting data</td>
             </tr>
             <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
               <td style="padding: 6px; font-weight: 600; color: var(--text-heading);">Document Summarization</td>
-              <td style="padding: 6px; color: var(--rose);">{{ scores.provider_model_names.get(scores.finops.primary_provider, 'GPT-4o') }}</td>
-              <td style="padding: 6px; color: var(--accent); font-weight: 600;">Gemini 1.5 Flash</td>
-              <td style="padding: 6px; text-align: right; color: var(--emerald); font-weight: 700;">Save 15%</td>
+              <td style="padding: 6px; color: var(--muted); font-style: italic;">Awaiting data</td>
+              <td style="padding: 6px; color: var(--accent); font-weight: 600;">Fast/lightweight model class</td>
+              <td style="padding: 6px; text-align: right; color: var(--muted); font-weight: 500; font-style: italic;">Awaiting data</td>
             </tr>
             <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
               <td style="padding: 6px; font-weight: 600; color: var(--text-heading);">Text Classification</td>
-              <td style="padding: 6px; color: var(--rose);">{{ scores.provider_model_names.get(scores.finops.primary_provider, 'GPT-4o') }}</td>
-              <td style="padding: 6px; color: var(--accent); font-weight: 600;">Claude 3.5 Haiku</td>
-              <td style="padding: 6px; text-align: right; color: var(--emerald); font-weight: 700;">Save 20%</td>
+              <td style="padding: 6px; color: var(--muted); font-style: italic;">Awaiting data</td>
+              <td style="padding: 6px; color: var(--accent); font-weight: 600;">Small/specialized model class</td>
+              <td style="padding: 6px; text-align: right; color: var(--muted); font-weight: 500; font-style: italic;">Awaiting data</td>
             </tr>
             <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
               <td style="padding: 6px; font-weight: 600; color: var(--text-heading);">Internal Knowledge &amp; Ingestion</td>
-              <td style="padding: 6px; color: var(--rose);">{{ scores.provider_model_names.get(scores.finops.primary_provider, 'GPT-4o') }}</td>
-              <td style="padding: 6px; color: var(--accent-2); font-weight: 600;">Local Llama 3 (Mdx MCP)</td>
-              <td style="padding: 6px; text-align: right; color: var(--emerald); font-weight: 700;">Save 25%</td>
+              <td style="padding: 6px; color: var(--muted); font-style: italic;">Awaiting data</td>
+              <td style="padding: 6px; color: var(--accent-2); font-weight: 600;">Local/open-weights model class</td>
+              <td style="padding: 6px; text-align: right; color: var(--muted); font-weight: 500; font-style: italic;">Awaiting data</td>
             </tr>
             <tr style="border-bottom: 1px solid rgba(255,255,255,0.03);">
               <td style="padding: 6px; font-weight: 600; color: var(--text-heading);">Complex Strategy Decisions</td>
-              <td style="padding: 6px; color: var(--rose);">{{ scores.provider_model_names.get(scores.finops.primary_provider, 'GPT-4o') }}</td>
-              <td style="padding: 6px; color: var(--amber); font-weight: 600;">GPT-4o (No routing)</td>
+              <td style="padding: 6px; color: var(--muted); font-style: italic;">Awaiting data</td>
+              <td style="padding: 6px; color: var(--amber); font-weight: 600;">Premium reasoning (no routing)</td>
               <td style="padding: 6px; text-align: right; color: var(--muted); font-weight: 500;">Best Practice</td>
             </tr>
           </tbody>
@@ -1218,26 +1209,27 @@
       </div>
 
       <!-- 5 Key Strategic Cost Opportunities -->
-      <div style="margin-top: 10px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px;">
+      <p style="font-size: 10.5px; color: var(--muted); margin: 10px 0 6px 0; font-style: italic;">Levers CertaintyAI evaluates once your telemetry is connected. Specific savings per lever populate from your data.</p>
+      <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px;">
         <div style="background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 8px; text-align: center;">
           <div style="font-size: 8px; text-transform: uppercase; font-weight: 700; color: var(--muted); margin-bottom: 2px;">Model Routing</div>
-          <div style="font-size: 14px; font-weight: 700; color: var(--emerald);">Save 35%</div>
+          <div style="font-size: 12px; font-weight: 700; color: var(--muted); font-style: italic;">Awaiting data</div>
         </div>
         <div style="background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 8px; text-align: center;">
           <div style="font-size: 8px; text-transform: uppercase; font-weight: 700; color: var(--muted); margin-bottom: 2px;">RAG Optimization</div>
-          <div style="font-size: 14px; font-weight: 700; color: var(--emerald);">Save 15%</div>
+          <div style="font-size: 12px; font-weight: 700; color: var(--muted); font-style: italic;">Awaiting data</div>
         </div>
         <div style="background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 8px; text-align: center;">
           <div style="font-size: 8px; text-transform: uppercase; font-weight: 700; color: var(--muted); margin-bottom: 2px;">Local OS Models</div>
-          <div style="font-size: 14px; font-weight: 700; color: var(--emerald);">Save 20%</div>
+          <div style="font-size: 12px; font-weight: 700; color: var(--muted); font-style: italic;">Awaiting data</div>
         </div>
         <div style="background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 8px; text-align: center;">
           <div style="font-size: 8px; text-transform: uppercase; font-weight: 700; color: var(--muted); margin-bottom: 2px;">Human-in-the-Loop</div>
-          <div style="font-size: 14px; font-weight: 700; color: var(--accent);">Error -40%</div>
+          <div style="font-size: 12px; font-weight: 700; color: var(--muted); font-style: italic;">Awaiting data</div>
         </div>
         <div style="background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 8px; text-align: center;">
           <div style="font-size: 8px; text-transform: uppercase; font-weight: 700; color: var(--muted); margin-bottom: 2px;">Enterprise Data Standardization</div>
-          <div style="font-size: 14px; font-weight: 700; color: var(--accent-2);">Eng -35-50%</div>
+          <div style="font-size: 12px; font-weight: 700; color: var(--muted); font-style: italic;">Awaiting data</div>
         </div>
       </div>
     </section>
@@ -1614,8 +1606,8 @@
           <div class="trail-col"><h4>Compliance Controls</h4><ul>{% for c in evidence_pack.compliance_controls %}<li>{{ c }}</li>{% endfor %}</ul></div>
         </div>
         <div class="confidence">
-          <span class="conf-pill">{{ (evidence_pack.confidence * 100) | round | int }}% confidence</span>
-          <span>Every AI answer carries this exact lineage — auditors get the same view your operator does.</span>
+          <span class="conf-pill" style="font-style: italic;">Sample lineage — illustrative</span>
+          <span>Every AI answer carries this exact lineage shape; per-answer confidence values populate from your live model + evidence-pack pipeline once connected.</span>
         </div>
       </div>
     </section>
