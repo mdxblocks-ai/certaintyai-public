@@ -245,33 +245,151 @@ def format_history_context(history: list[dict]) -> str:
     return "--- CONVERSATION HISTORY ---\n" + "\n".join(formatted) + "\n----------------------------"
 
 
-def generate_dynamic_follow_ups(agent_role: str, history: list[dict], last_answer: str) -> list[str]:
-    """Contact Gemini to generate 2-3 dynamic follow-up prompts from the conversation.
-    
-    FIREWALL CONFIRMATION: This call is strictly for conversational guidance only
-    and never interacts with the scoring engine (score_agent.py).
-    """
-    # Default fallbacks based on C-suite role
-    default_follow_ups = {
+# Intent × role × follow-ups table — used as the fallback when the LLM
+# is not configured or the live generation fails. The previous version
+# was role-only, which meant role="base" always returned the same three
+# prompts regardless of what the user had just asked. This table is keyed
+# by intent first so the suggestions stay relevant to the conversation.
+INTENT_FOLLOWUPS: dict[str, dict[str, list[str]]] = {
+    "explain_score": {
+        "base": [
+            "What are the priority actions to lift my score?",
+            "How does my score compare to industry benchmarks?",
+            "Which sub-score is driving my tier the most?",
+        ],
+        "ciso": [
+            "Which NIST AI RMF controls drive my Audit & Provenance sub-score?",
+            "What governance gaps are hurting my score the most?",
+            "How does my security posture compare to my sector?",
+        ],
+        "cfo": [
+            "Which sub-score has the largest ROI to fix first?",
+            "What is the cost of inaction at my current tier?",
+            "How do top-quartile peers structure their AI spend?",
+        ],
+    },
+    "priority_actions": {
+        "base": [
+            "How long does each priority action typically take?",
+            "Which action has the highest impact-to-effort ratio?",
+            "How do I get executive buy-in for these actions?",
+        ],
+        "ciso": [
+            "Which actions close the biggest NIST AI RMF gaps?",
+            "What does a 90-day AI governance charter cover?",
+            "How do I sequence vendor and model risk reviews?",
+        ],
+        "cfo": [
+            "What is the 12-month payback on these actions?",
+            "How do I budget for an AI governance committee?",
+            "Which action carries the lowest cost-of-inaction risk?",
+        ],
+    },
+    "industry_benchmarks": {
+        "base": [
+            "How can I close the gap with the top quartile?",
+            "Which sub-score most differentiates leaders from peers?",
+            "What practices do top-quartile organizations have in common?",
+        ],
+        "ciso": [
+            "What controls do top-quartile peers use that we do not?",
+            "How do my NIST GOVERN/MEASURE scores compare to my sector?",
+            "Which framework adoption is the sector median?",
+        ],
+        "cfo": [
+            "What is the typical AI-readiness investment for top-quartile peers?",
+            "How do peers structure committed-spend drawdown?",
+            "Where do laggards leak the most AI spend?",
+        ],
+    },
+    "governance_recommendations": {
+        "base": [
+            "What does an AI Review Committee charter look like?",
+            "How do I prioritize among NIST AI RMF controls?",
+            "Which controls should our auditors see first?",
+        ],
+        "ciso": [
+            "How do I instrument continuous control attestation?",
+            "What is the right cadence for vendor and model risk triage?",
+            "How do I prove policy enforcement at runtime?",
+        ],
+        "cfo": [
+            "What is the year-one budget envelope for the governance program?",
+            "Which governance controls have measurable ROI?",
+            "How do regulators weigh governance vs. model performance?",
+        ],
+    },
+    "cost_optimization": {
+        "base": [
+            "What is the typical payback period for model routing?",
+            "How do I measure AI unit economics?",
+            "Where do most teams overspend on AI?",
+        ],
+        "ciso": [
+            "How do I balance security controls with cost optimization?",
+            "Which security tools have outsized AI cost impact?",
+            "How do I measure security ROI on AI spend?",
+        ],
+        "cfo": [
+            "What is the right baseline metric for AI unit economics?",
+            "How do I structure committed-spend drawdowns?",
+            "What does best-in-class AI gross margin look like?",
+        ],
+    },
+    "general": {
+        "base": [
+            "Explain my AI Readiness Score in more detail.",
+            "What are the priority actions for our organization?",
+            "How do we compare with industry benchmarks?",
+        ],
         "ciso": [
             "Which NIST AI RMF controls should we prioritize next?",
             "What are the top threat-exposure gaps in our current posture?",
-            "How do we establish automated alerting for shadow AI?"
+            "How do we establish automated alerting for shadow AI?",
         ],
         "cfo": [
             "What is our estimated payback period for these AI cost savings?",
             "How can we optimize multi-cloud LLM token spend today?",
-            "Does our current AI spend governance model meet standards?"
+            "Does our current AI spend governance model meet standards?",
         ],
-        "base": [
-            "Explain my AI Readiness Score in more detail.",
-            "What are the priority actions for our organization?",
-            "How do we compare with industry benchmarks?"
-        ]
-    }
-    
-    role_key = agent_role.lower() if agent_role.lower() in ["ciso", "cfo"] else "base"
-    fallbacks = default_follow_ups[role_key]
+    },
+}
+
+
+def _resolve_fallback_followups(role: str, intent: str) -> list[str]:
+    """Look up the intent-and-role-specific fallback follow-ups."""
+    role_key = role.lower() if role and role.lower() in ("ciso", "cfo") else "base"
+    intent_table = INTENT_FOLLOWUPS.get(intent) or INTENT_FOLLOWUPS["general"]
+    return intent_table.get(role_key) or intent_table["base"]
+
+
+def generate_dynamic_follow_ups(
+    agent_role: str,
+    history: list[dict],
+    last_answer: str,
+    last_user_input: str = "",
+) -> list[str]:
+    """Contact Gemini to generate 2-3 dynamic follow-up prompts from the conversation.
+
+    FIREWALL CONFIRMATION: This call is strictly for conversational guidance only
+    and never interacts with the scoring engine (score_agent.py).
+
+    Fallback path is now intent-aware: when the live LLM call is unavailable
+    or fails, the follow-ups are selected by detecting intent from the user's
+    latest prompt (or, failing that, from the answer just produced) and looking
+    up the matching (intent, role) entry in INTENT_FOLLOWUPS.
+    """
+    # ----- Detect intent from the latest user prompt (preferred) or the answer -----
+    intent = _detect_intent(last_user_input)
+    if intent == "general" and last_answer:
+        intent = _detect_intent(last_answer)
+
+    fallbacks = _resolve_fallback_followups(agent_role, intent)
+
+    logger.info(
+        "[follow_ups] role=%r intent=%r user_input_preview=%r",
+        (agent_role or "base").lower(), intent, (last_user_input or "")[:120],
+    )
 
     is_llm_configured = bool(
         (settings.llm_provider == "vertex" and settings.gcp_project_id) or
@@ -294,9 +412,10 @@ def generate_dynamic_follow_ups(agent_role: str, history: list[dict], last_answe
             "Keep the questions concise, strategic, and direct (do not use technical jargon like RAG, pgvector, etc.).\n"
             "You must return a JSON array of strings, e.g. [\"question 1\", \"question 2\"]."
         )
-        
+
         user_message = (
             f"Conversation History:\n{history_snippet}\n\n"
+            f"Latest User Prompt:\n{last_user_input}\n\n"
             f"Last Answer:\n{last_answer}\n\n"
             "Generate 2-3 C-suite follow-up prompts."
         )
@@ -310,8 +429,8 @@ def generate_dynamic_follow_ups(agent_role: str, history: list[dict], last_answe
         if isinstance(questions, list) and len(questions) >= 2:
             return [str(q) for q in questions[:3]]
     except Exception as exc:
-        logger.warning("Failed to generate dynamic follow-up questions: %s. Using role fallbacks.", exc)
-        
+        logger.warning("Failed to generate dynamic follow-up questions: %s. Using intent-aware fallbacks.", exc)
+
     return fallbacks
 
 
@@ -538,8 +657,8 @@ def run_agent_loop(
             )
             status = "completed"
             
-    # Generate dynamic follow-up prompts
-    follow_ups = generate_dynamic_follow_ups(agent.role, history, outcome)
+    # Generate dynamic follow-up prompts (intent-aware fallback if LLM unavailable)
+    follow_ups = generate_dynamic_follow_ups(agent.role, history, outcome, last_user_input=user_input)
             
     # Persist the AgentRun to database
     finished_at = datetime.now(timezone.utc).replace(tzinfo=None)
