@@ -1277,6 +1277,69 @@ export default function Dashboard() {
     }
   }
 
+  // ---- Right-click menu + inline rename state ----------------------
+  // ChatGPT-style minimal context menu: Rename and Delete only.
+  const [contextMenu, setContextMenu] = useState(null)      // { sessionId, x, y } | null
+  const [renamingId, setRenamingId] = useState(null)
+  const [renameDraft, setRenameDraft] = useState('')
+
+  const handleSessionContextMenu = (e, sessionId) => {
+    e.preventDefault()
+    const W = (typeof window !== 'undefined' && window.innerWidth) || 1024
+    const H = (typeof window !== 'undefined' && window.innerHeight) || 768
+    // Clamp so the menu never spills off the viewport.
+    const x = Math.min(e.clientX, Math.max(0, W - 180))
+    const y = Math.min(e.clientY, Math.max(0, H - 90))
+    setContextMenu({ sessionId, x, y })
+  }
+
+  const closeContextMenu = () => setContextMenu(null)
+
+  const requestRename = (sessionId) => {
+    const s = copilotSessions.find(x => x.id === sessionId)
+    if (!s) { setContextMenu(null); return }
+    setRenamingId(sessionId)
+    setRenameDraft(s.title || NEW_CHAT_TITLE)
+    setContextMenu(null)
+  }
+
+  const commitRename = () => {
+    if (renamingId) {
+      // Cap at 80 chars on persist; CSS truncate handles display.
+      const trimmed = (renameDraft || '').trim().slice(0, 80) || NEW_CHAT_TITLE
+      setCopilotSessions(prev => prev.map(s =>
+        s.id === renamingId ? { ...s, title: trimmed } : s
+      ))
+    }
+    setRenamingId(null)
+    setRenameDraft('')
+  }
+
+  const cancelRename = () => {
+    setRenamingId(null)
+    setRenameDraft('')
+  }
+
+  const requestDelete = (sessionId) => {
+    setContextMenu(null)
+    // Delegate to the existing single-delete handler (which already runs
+    // window.confirm + handles last-session-deletion auto-recreate).
+    handleCopilotDeleteSession(sessionId, { stopPropagation: () => {} })
+  }
+
+  // Outside-click / Escape closes the context menu.
+  useEffect(() => {
+    if (!contextMenu) return
+    const onDown = () => setContextMenu(null)
+    const onKey = (e) => { if (e.key === 'Escape') setContextMenu(null) }
+    document.addEventListener('mousedown', onDown)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDown)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [contextMenu])
+
   const handleClearAllSessions = () => {
     if (typeof window !== 'undefined' && typeof window.confirm === 'function') {
       const ok = window.confirm('Delete all conversations? This cannot be undone.')
@@ -1537,11 +1600,16 @@ export default function Dashboard() {
       ? generateSessionTitle(trimmed)
       : currentSession.title
 
-    setCopilotSessions(prev => prev.map(s => 
-      s.id === currentSession.id 
-        ? { ...s, title: titleUpdated, messages: updatedMessages } 
-        : s
-    ))
+    // ChatGPT-style most-recent-first ordering: the session receiving this
+    // user message moves to index 0 of the list. All other ordering is
+    // preserved. Subsequent updates within this same send (assistant
+    // reply, follow-ups, error) use prev.map(...) and keep this position.
+    setCopilotSessions(prev => {
+      const idx = prev.findIndex(s => s.id === currentSession.id)
+      if (idx === -1) return prev
+      const updated = { ...prev[idx], title: titleUpdated, messages: updatedMessages }
+      return [updated, ...prev.slice(0, idx), ...prev.slice(idx + 1)]
+    })
 
     // Clear inputs
     setCopilotInput('')
@@ -2842,7 +2910,9 @@ export default function Dashboard() {
                   copilotSidebarCollapsed ? 'md:w-16' : 'md:w-56'
                 }`}>
                   <div className="space-y-4 overflow-y-auto scrollbar-none flex-1 pr-1 font-sans">
-                    <div className="flex items-center justify-between pb-2 border-b border-[var(--dash-border)] gap-2">
+                    {/* Sessions header — sticky so it stays visible while
+                        the list below scrolls (ChatGPT-style fixed header). */}
+                    <div className="flex items-center justify-between pb-2 border-b border-[var(--dash-border)] gap-2 sticky top-0 bg-[var(--dash-sidebar-bg)] z-10">
                       {!copilotSidebarCollapsed && (
                         <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-wider animate-fade-in">Sessions</span>
                       )}
@@ -2911,6 +2981,7 @@ export default function Dashboard() {
                           <div
                             key={session.id}
                             onClick={() => setCopilotActiveSessionId(session.id)}
+                            onContextMenu={(e) => handleSessionContextMenu(e, session.id)}
                             className={`w-full group flex items-start gap-2 px-2 py-2 rounded-xl text-left cursor-pointer transition duration-150 ${
                               isActive
                                 ? 'bg-[var(--dash-active-bg)] border border-[var(--dash-active-border)] text-[var(--dash-active-text)] shadow-[var(--dash-active-shadow)]'
@@ -2923,9 +2994,25 @@ export default function Dashboard() {
                             </svg>
                             {!copilotSidebarCollapsed && (
                               <div className="flex-1 min-w-0 animate-fade-in">
-                                <div className={`text-xs font-semibold truncate ${isEmpty && !isActive ? 'opacity-70' : ''}`}>
-                                  {session.title}
-                                </div>
+                                {renamingId === session.id ? (
+                                  <input
+                                    autoFocus
+                                    value={renameDraft}
+                                    onChange={(e) => setRenameDraft(e.target.value)}
+                                    onBlur={commitRename}
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') { e.preventDefault(); commitRename() }
+                                      else if (e.key === 'Escape') { e.preventDefault(); cancelRename() }
+                                    }}
+                                    onClick={(e) => e.stopPropagation()}
+                                    maxLength={80}
+                                    className="w-full bg-transparent border-b border-[var(--dash-accent)]/60 text-xs font-semibold text-[var(--dash-text-primary)] focus:outline-none px-0 py-0"
+                                  />
+                                ) : (
+                                  <div className={`text-xs font-semibold truncate ${isEmpty && !isActive ? 'opacity-70' : ''}`}>
+                                    {session.title}
+                                  </div>
+                                )}
                                 {preview && (
                                   <div className="text-[11px] text-[var(--dash-text-secondary)]/85 truncate mt-0.5 leading-snug">
                                     {preview}
@@ -2956,6 +3043,29 @@ export default function Dashboard() {
                   </div>
                 </div>
               </div>
+
+              {/* Right-click context menu — ChatGPT-style minimal: Rename / Delete only. */}
+              {contextMenu && (
+                <div
+                  className="fixed z-[200] bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-lg shadow-xl py-1 min-w-[160px]"
+                  style={{ left: contextMenu.x, top: contextMenu.y }}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <button
+                    onClick={() => requestRename(contextMenu.sessionId)}
+                    className="block w-full text-left px-3 py-1.5 text-xs font-medium text-[var(--dash-text-primary)] hover:bg-[var(--dash-hover-bg)] focus:outline-none focus:bg-[var(--dash-hover-bg)]"
+                  >
+                    Rename
+                  </button>
+                  <button
+                    onClick={() => requestDelete(contextMenu.sessionId)}
+                    className="block w-full text-left px-3 py-1.5 text-xs font-medium text-rose-500 hover:bg-[var(--dash-hover-bg)] focus:outline-none focus:bg-[var(--dash-hover-bg)]"
+                  >
+                    Delete
+                  </button>
+                </div>
+              )}
 
                 {/* Main Chat Workspace Area */}
                 <div 
