@@ -509,10 +509,10 @@ export default function Landing() {
                 accent: '#2F7D6B',
                 href: '/copilots#cybersecurity',
                 copilots: [
-                  { name: 'AI Security Auditor',        status: 'pilot' },
-                  { name: 'SOC Analyst Copilot',        status: null },
-                  { name: 'Threat Intelligence Copilot', status: null },
-                  { name: 'Incident Response Assistant', status: null },
+                  { name: 'AI Security Auditor',        status: 'on-roadmap' },
+                  { name: 'SOC Analyst Copilot',        status: 'on-roadmap' },
+                  { name: 'Threat Intelligence Copilot', status: 'on-roadmap' },
+                  { name: 'Incident Response Assistant', status: 'on-roadmap' },
                 ],
                 icon: (
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
@@ -523,14 +523,14 @@ export default function Landing() {
               },
               {
                 id: 'education',
-                title: 'Education',
+                title: 'Education & Workforce',
                 accent: '#D8B061',
                 href: '/copilots#education',
                 copilots: [
-                  { name: 'GradeUP Copilot',                  status: 'available' },
-                  { name: 'SkillUP Copilot',                  status: 'available' },
-                  { name: 'Curriculum Intelligence Assistant', status: null },
-                  { name: 'Institutional Analytics Assistant', status: null },
+                  { name: 'GradeUP Copilot',                                          status: 'ready-for-demo' },
+                  { name: 'SkillUP Copilot (Workforce & Skills Development)',         status: 'ready-for-demo' },
+                  { name: 'Curriculum Intelligence Assistant',                        status: 'on-roadmap' },
+                  { name: 'Institutional Analytics Assistant',                        status: 'on-roadmap' },
                 ],
                 icon: (
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
@@ -594,13 +594,19 @@ export default function Landing() {
                   ))}
                 </ul>
 
-                <Link
-                  to={ind.href}
-                  className="inline-flex items-center gap-1.5 text-[12.5px] font-bold transition hover:translate-x-0.5 mt-auto self-start"
-                  style={{ color: ind.accent }}
-                >
-                  View Demo →
-                </Link>
+                {/* CTA gating: "Request Demo →" only on industries that have
+                    at least one ready-for-demo copilot. Cyber + IT Consulting
+                    + AI Advisory get no section CTA — the per-row status
+                    chips already say "On Roadmap". */}
+                {['healthcare', 'finance', 'education'].includes(ind.id) && (
+                  <Link
+                    to="/signup?intent=demo"
+                    className="inline-flex items-center gap-1.5 text-[12.5px] font-bold transition hover:translate-x-0.5 mt-auto self-start"
+                    style={{ color: ind.accent }}
+                  >
+                    Request Demo →
+                  </Link>
+                )}
               </article>
             ))}
           </div>

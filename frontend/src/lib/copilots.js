@@ -208,8 +208,7 @@ export const COPILOTS = [
   {
     id: 'skillup',
     domain: 'education',
-    name: 'SkillUP Copilot',
-    subdomainName: 'Workforce & Skills Development',
+    name: 'SkillUP Copilot (Workforce & Skills Development)',
     tagline: 'Personalized learning and workforce readiness guidance for adult learners and re-skillers.',
     capabilities: [
       'Personalized learning paths from competency-to-curriculum mapping',

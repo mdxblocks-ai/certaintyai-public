@@ -192,24 +192,17 @@ export default function Copilots() {
                 <div className="uppercase font-semibold tracking-widest text-[#14161A]/70 mb-1">
                   {group.copilots.length} copilot{group.copilots.length === 1 ? '' : 's'}
                 </div>
-                {/* CTA rule: "Request Demo →" appears only when this domain
-                    has at least one ready-for-demo copilot. Otherwise show
-                    the neutral "Build in Copilot Studio →" link. */}
-                {domainHasReadyForDemo(group.domain.id) ? (
+                {/* CTA rule: "Request Demo →" appears ONLY when this domain
+                    has at least one ready-for-demo copilot. Domains where
+                    everything is roadmap / WIP show no section-level CTA at
+                    all (the per-card chip already communicates status). */}
+                {domainHasReadyForDemo(group.domain.id) && (
                   <Link
                     to="/signup?intent=demo"
                     className="font-bold transition"
                     style={{ color: group.domain.accent }}
                   >
                     Request Demo →
-                  </Link>
-                ) : (
-                  <Link
-                    to={CTA.startFree.href}
-                    className="font-bold transition"
-                    style={{ color: group.domain.accent }}
-                  >
-                    Build in Copilot Studio →
                   </Link>
                 )}
               </div>
