@@ -325,11 +325,18 @@ def run_agent_loop(
     attached_doc_content: Optional[str] = None
 ) -> AgentRun:
     """Execute the config-driven runtime loop for a custom agent.
-    
+
     Logs every step to AgentRun. Connects to Gemini-on-Vertex if configured,
     and falls back gracefully to a trace-logged simulated execution.
     """
     started_at = datetime.now(timezone.utc).replace(tzinfo=None)
+
+    # ----- Structured run logging (User Prompt) -----
+    logger.info(
+        "[agent_run] User Prompt | agent=%r role=%r len=%d preview=%r",
+        agent.name, agent.role, len(user_input or ""), (user_input or "")[:400],
+    )
+
     steps = []
     
     # 1. RAG Retrieval Step (Knowledge Base + ad-hoc document)
@@ -370,6 +377,10 @@ def run_agent_loop(
     if not is_llm_configured:
         logger.info("LLM not fully configured in environment. Generating simulated agent run trace.")
         outcome, steps = _generate_simulated_trace(agent, user_input, len(context_chunks) + (1 if attached_doc_content else 0))
+        logger.info(
+            "[agent_run] Model Response (simulated) | resp_chars=%d preview=%r",
+            len(outcome or ""), (outcome or "")[:600],
+        )
     else:
         # Build prompt guidelines
         system_prompt = (
@@ -398,12 +409,29 @@ def run_agent_loop(
         try:
             while current_step <= agent.max_steps:
                 logger.info("Agent %s: executing step %s", agent.name, current_step)
-                
+
+                # ----- Structured run logging (Final LLM Prompt) -----
+                logger.info(
+                    "[agent_run] Final LLM Prompt | step=%d system_chars=%d user_chars=%d preview=%r",
+                    current_step,
+                    len(system_prompt),
+                    len(current_input),
+                    (system_prompt + " || USER || " + current_input)[:600],
+                )
+
                 # Execute completion
                 raw_response = complete_json(
                     system_prompt=system_prompt,
                     user_message=current_input,
                     max_tokens=1000
+                )
+
+                # ----- Structured run logging (Model Response) -----
+                logger.info(
+                    "[agent_run] Model Response | step=%d resp_chars=%d preview=%r",
+                    current_step,
+                    len(raw_response or ""),
+                    (raw_response or "")[:600],
                 )
                 
                 try:
@@ -504,6 +532,10 @@ def run_agent_loop(
         except Exception as exc:
             logger.warning("Agent execution loop encountered error: %s. Falling back to simulated trace.", exc)
             outcome, steps = _generate_simulated_trace(agent, user_input, len(context_chunks) + (1 if attached_doc_content else 0))
+            logger.info(
+                "[agent_run] Model Response (simulated, after LLM error) | resp_chars=%d preview=%r",
+                len(outcome or ""), (outcome or "")[:600],
+            )
             status = "completed"
             
     # Generate dynamic follow-up prompts
@@ -529,67 +561,259 @@ def run_agent_loop(
     return run_log
 
 
+# ============================================================
+# Intent-aware simulated demo mode
+# ============================================================
+#
+# Fires when (a) no LLM provider key is configured (local dev) or (b) the
+# live LLM call raises mid-loop. Real production traffic uses the full LLM
+# path above. This block exists only so the dev experience stays useful.
+#
+# All responses are clearly marked [Simulated Demo Mode] so no one mistakes
+# them for genuine model output.
+
+SIMULATED_INTENT_KEYWORDS: dict[str, list[str]] = {
+    "industry_benchmarks": [
+        "benchmark", "benchmarks", "compare", "comparison", "peer",
+        "industry", "median", "quartile", "stack up", "how do we stack",
+        "where do we stand",
+    ],
+    "explain_score": [
+        "explain my", "explain the", "my score", "my readiness score",
+        "readiness score", "what does my", "interpret", "my number",
+        "my tier", "my band", "what is my", "in more detail",
+    ],
+    "governance_recommendations": [
+        "governance", "oversight", "policy", "policies", "compliance",
+        "control", "controls", "committee", "audit", "framework",
+        "frameworks", "missing controls",
+    ],
+    "cost_optimization": [
+        "cost", "costs", "roi", "budget", "spend", "spending", "finops",
+        "savings", "save", "payback", "reduce ai", "optimize", "optimise",
+        "spending money",
+    ],
+    "priority_actions": [
+        "priority", "priorities", "next step", "next steps", "do next",
+        "what next", "action", "actions", "what should i do",
+        "where to start", "first thing",
+    ],
+}
+
+# Intent dispatch order — when multiple intents could match, earlier wins.
+# Benchmarks first because "compare my score" should read as benchmark intent
+# rather than score-explanation intent. Priority actions last because "action"
+# is a weak signal that many other intents accidentally trigger.
+_INTENT_ORDER = [
+    "industry_benchmarks",
+    "explain_score",
+    "governance_recommendations",
+    "cost_optimization",
+    "priority_actions",
+]
+
+
+def _detect_intent(user_input: Optional[str]) -> str:
+    text = (user_input or "").lower()
+    for intent in _INTENT_ORDER:
+        if any(kw in text for kw in SIMULATED_INTENT_KEYWORDS[intent]):
+            return intent
+    return "general"
+
+
+def _role_lens(role: str) -> str:
+    """Tiny role-flavored opener that prefixes the body of the simulated reply."""
+    r = (role or "").lower()
+    if r == "ciso":
+        return "Reading your question through a security & risk lens — "
+    if r == "cfo":
+        return "Reading your question through a financial lens — "
+    return ""
+
+
+def _simulated_outcome(intent: str, user_input: str, role: str) -> str:
+    """Return a distinct [Simulated Demo Mode] response per intent."""
+    quoted = (user_input or "(empty)").strip()
+    if len(quoted) > 140:
+        quoted = quoted[:137] + "..."
+    lens = _role_lens(role)
+
+    if intent == "explain_score":
+        return (
+            "[Simulated Demo Mode] AI Readiness Score — Interpretation\n\n"
+            f'Prompt: "{quoted}"\n\n'
+            f"{lens}your readiness score combines five deterministic sub-dimensions, "
+            "each scored 0–100:\n\n"
+            "1. Semantic Alignment — how consistently your systems define the same business entity.\n"
+            "2. RAG Accuracy — how reliably your retrieval grounds AI answers in your own data.\n"
+            "3. Audit & Provenance — whether every AI-generated answer can show its sources.\n"
+            "4. Governance Oversight — formal committee plus named decision rights for AI.\n"
+            "5. Data Maturity — quality, freshness, and structural integrity of the data layer.\n\n"
+            "These roll up to your total score and tier (Foundational 0–39 / Piloting 40–74 / Scale 75–100). "
+            "Your weakest sub-score is usually the highest-leverage fix for the next tier jump.\n\n"
+            "Open the AI Readiness report from the Reports tab for the per-sub-score breakdown with your actual numbers."
+        )
+
+    if intent == "priority_actions":
+        return (
+            "[Simulated Demo Mode] Priority Actions\n\n"
+            f'Prompt: "{quoted}"\n\n'
+            f"{lens}three actions ranked by typical impact-to-effort for organizations at your tier:\n\n"
+            "1. Charter a formal AI governance committee with binding decision rights (not advisory). "
+            "Owner: COO or CIO. 90-day target. Without an oversight body, every downstream initiative is ungoverned.\n\n"
+            "2. Pick one domain — Healthcare, Finance, or Education — and ship one copilot under explicit policy guardrails. "
+            "The Copilots page lists pre-built starters with status badges (Available Today / Pilot Available / Coming Soon).\n\n"
+            "3. Wire Evidence Pack provenance into your three most consequential AI workflows. "
+            "Every answer should cite the data source and ontology term it relied on — that is the artifact your auditors will ask for first.\n\n"
+            "Defer: any pilot without a named owner, a 90-day milestone, and a written shutdown criterion."
+        )
+
+    if intent == "industry_benchmarks":
+        return (
+            "[Simulated Demo Mode] Industry Benchmark Comparison\n\n"
+            f'Prompt: "{quoted}"\n\n'
+            f"{lens}sector medians and top quartiles for AI readiness, per Gartner's mid-market AI cut:\n\n"
+            "  Healthcare & Life Sciences   median 52   top quartile 74\n"
+            "  BFSI                         median 62   top quartile 82\n"
+            "  Education                    median 45   top quartile 68\n"
+            "  Cybersecurity                median 60   top quartile 80\n"
+            "  IT Consulting                median 58   top quartile 78\n"
+            "  Energy & Utilities           median 48   top quartile 70\n"
+            "  Government                   median 46   top quartile 68\n\n"
+            "Reading your position:\n"
+            "- Below median → catch-up phase: focus on Governance Oversight + Semantic Alignment.\n"
+            "- Median to top quartile → consolidation: productize one or two copilots under continuous oversight.\n"
+            "- Above top quartile → defend the lead and export your governance pattern internally.\n\n"
+            "Your live peer benchmark is computed against your declared sector specifically."
+        )
+
+    if intent == "governance_recommendations":
+        return (
+            "[Simulated Demo Mode] Governance Recommendations\n\n"
+            f'Prompt: "{quoted}"\n\n'
+            f"{lens}controls to implement, mapped to the frameworks your auditors recognize.\n\n"
+            "Frameworks in scope:\n"
+            "- NIST AI RMF — GOVERN and MEASURE functions are scored directly in your report.\n"
+            "- ISO/IEC 42001 — AI management system standard.\n"
+            "- EU AI Act — risk-tier classification per use case.\n"
+            "- Sector overlays — HIPAA / SOX / SOC 2 / FERPA / GDPR depending on your domain.\n\n"
+            "Concrete controls to implement first:\n"
+            "1. AI Review Committee chartered with binding decision rights (not advisory).\n"
+            "2. Pre-deployment risk classification for every model and every use case.\n"
+            "3. Evidence Pack standard — every AI-supported decision cites its sources, ontology term, and policy.\n"
+            "4. Vendor and model risk triage on a quarterly cadence.\n"
+            "5. Incident playbook covering hallucination, data leakage, and prompt-injection scenarios.\n\n"
+            "Your readiness report's Governance section includes the per-control gap analysis with named owners."
+        )
+
+    if intent == "cost_optimization":
+        return (
+            "[Simulated Demo Mode] AI Cost Optimization\n\n"
+            f'Prompt: "{quoted}"\n\n'
+            f"{lens}three cost levers in order of typical payback for mid-market organizations:\n\n"
+            "1. Model routing — send 70–80% of routine workloads to a smaller/cheaper model. "
+            "Most teams default everything to a premium model and overspend by 3–5x. Build a query classifier that routes first.\n\n"
+            "2. Caching — prompt-cache and semantic-result cache for repeated queries. "
+            "30–50% spend reduction is typical in customer-support and internal-Q&A workloads.\n\n"
+            "3. Committed-spend optimization — if you are on Google Cloud or Azure, drawing down on committed spend via Marketplace listings "
+            "often yields a 15–30% effective discount.\n\n"
+            "Track unit economics, not just raw spend: dollars per decision, per copilot-run, per dashboard-load. "
+            "Connect your telemetry so these are computed continuously, not in a quarterly spreadsheet."
+        )
+
+    # general fallback
+    return (
+        "[Simulated Demo Mode] AI Readiness Copilot\n\n"
+        f'Prompt: "{quoted}"\n\n'
+        f"{lens}I am running in simulated demo mode because no LLM provider key is configured in this environment "
+        "(or the configured LLM call did not return). In production, this prompt would be answered by Gemini via Vertex AI "
+        "under your governance policy.\n\n"
+        "I can answer prompts across five topic areas in simulated mode:\n"
+        "1. Explain Score — interpretation of your AI Readiness Score and its sub-dimensions.\n"
+        "2. Priority Actions — what to do next, ranked by impact-to-effort.\n"
+        "3. Industry Benchmarks — how your score compares against sector medians.\n"
+        "4. Governance Recommendations — controls to implement, mapped to NIST / ISO / EU AI Act.\n"
+        "5. Cost Optimization — levers to reduce AI spend without sacrificing capability.\n\n"
+        "Try one of those topics, or open the AI Readiness report from the Reports tab to see your live scores."
+    )
+
+
 def _generate_simulated_trace(agent: Agent, user_input: str, document_count: int) -> tuple[str, list[dict]]:
-    """Helper to generate a high-quality simulated execution trace for audits and test runs."""
-    steps = [
+    """[Simulated Demo Mode] Intent-aware fallback when no LLM is configured
+    or the live call raised mid-loop.
+
+    Intent is detected from the user's prompt and dispatched to one of five
+    distinct response templates (plus a general fallback). The agent's role
+    contributes a small framing prefix but does not override the intent —
+    eliminating the previous bug where role='base' silently fell into a CFO
+    template regardless of what the user asked.
+    """
+    intent = _detect_intent(user_input)
+    role = (agent.role or "base").lower()
+
+    logger.info(
+        "[agent_run] Simulated trace | role=%r intent=%r preview=%r",
+        role, intent, (user_input or "")[:200],
+    )
+
+    steps: list[dict] = [
         {
             "step": 1,
             "type": "reasoning",
-            "detail": f"[Simulated Initialisation] Agent '{agent.name}' loaded successfully on model: '{agent.model}'. Configured response style (temperature): {agent.temperature}.",
+            "detail": (
+                f"[Simulated Demo Mode] Agent '{agent.name}' loaded on model "
+                f"'{agent.model}'. Temperature: {agent.temperature}. No live LLM call performed."
+            ),
             "tool": None,
-            "tokens": 0
+            "tokens": 0,
         },
         {
             "step": 2,
             "type": "tool_call",
-            "detail": f"[Simulated Retrieval] Searched vector space of knowledge base. Scored {document_count} active documents using in-memory cosine similarity fallback. Injected matching chunks.",
+            "detail": (
+                f"[Simulated Demo Mode] Searched the knowledge base over {document_count} "
+                "active document(s) using in-memory cosine similarity fallback."
+            ),
             "tool": "Doc retrieval",
-            "tokens": 0
-        }
+            "tokens": 0,
+        },
     ]
-    
+
     curr_step = 3
     if agent.tools:
         first_tool = agent.tools[0]
         steps.append({
             "step": curr_step,
             "type": "tool_call",
-            "detail": f"[Simulated Execution] Invoked capability tool '{first_tool}' to gather references. Input: '{user_input[:40]}...'. Result: [Simulated] Successful lookup.",
+            "detail": (
+                f"[Simulated Demo Mode] Would call '{first_tool}' with input "
+                f"'{(user_input or '')[:40]}...' — skipped in demo mode."
+            ),
             "tool": first_tool,
-            "tokens": 0
+            "tokens": 0,
         })
         curr_step += 1
-        
+
     steps.append({
         "step": curr_step,
         "type": "reasoning",
-        "detail": f"[Simulated Reasoning] Synthesizing context, guidelines, and tool outputs under the C-suite role: {agent.role.upper()}.",
+        "detail": (
+            f"[Simulated Demo Mode] Classified prompt intent as '{intent}' "
+            f"under role '{role.upper()}'. Drafting topic-specific reply."
+        ),
         "tool": None,
-        "tokens": 0
+        "tokens": 0,
     })
     curr_step += 1
-    
-    if agent.role == "ciso":
-        outcome = (
-            f"**CISO Governed Risk Assessment Summary for '{agent.name}'**\n\n"
-            f"1. **Audit Alignment**: Evaluated input query '{user_input}' against NIST AI RMF standards.\n"
-            f"2. **Risk Analysis**: Simulated controls review suggests potential threat exposure in unstructured data pathways.\n"
-            f"3. **Suggested Mitigation**: Implement automated incident alerting and restrict least-privilege model access immediately."
-        )
-    else:  # cfo
-        outcome = (
-            f"**CFO Value Realization Analysis Summary for '{agent.name}'**\n\n"
-            f"1. **Cost & ROI Impact**: Evaluated cost footprint of '{user_input}' against estimated value realization.\n"
-            f"2. **FinOps Optimization**: Connect your enterprise spend and telemetry data to calculate payback, savings, and ROI.\n"
-            f"3. **Budget Governance**: Enforce token throttling limits to prevent cost overrun during pilot phase."
-        )
-        
+
+    outcome = _simulated_outcome(intent, user_input or "", role)
+
     steps.append({
         "step": curr_step,
         "type": "complete",
-        "detail": f"[Simulated Completion] Final report generated. Status: OK. Outcome: {outcome}",
+        "detail": f"[Simulated Demo Mode] Reply generated for intent '{intent}'.",
         "tool": None,
-        "tokens": 0
+        "tokens": 0,
     })
-    
+
     return outcome, steps
