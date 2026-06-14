@@ -42,6 +42,14 @@ class Settings(BaseSettings):
     memory_threshold: float = 0.70
     gemini_embedding_model: str = "models/text-embedding-004"
 
+    # ----- Layer C: Gemini multimodal PDF ingestion -----
+    # When True, image-only / scanned PDFs whose text extraction yields <50
+    # chars are routed to Vertex/Gemini multimodal with the raw PDF bytes.
+    # Set to False to disable the fallback entirely (the runtime then uses
+    # the Layer A "received_but_empty" stanza).
+    multimodal_enabled: bool = True
+    multimodal_max_bytes: int = 20 * 1024 * 1024  # 20 MB
+
     model_config = SettingsConfigDict(
         env_file=Path(__file__).resolve().parent.parent / ".env",
         env_file_encoding="utf-8",

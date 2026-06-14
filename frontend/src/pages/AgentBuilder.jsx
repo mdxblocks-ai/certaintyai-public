@@ -210,9 +210,12 @@ export default function AgentBuilder() {
       formData.append('source_ref', file.name);
       formData.append('file', file);
 
+      // Content-Type must be undefined for FormData so the browser auto-sets
+      // `multipart/form-data; boundary=...`. The bare string has no boundary
+      // and python-multipart rejects the body.
       const res = await api.post(`/agents/${agentId}/documents`, formData, {
         headers: {
-          'Content-Type': 'multipart/form-data'
+          'Content-Type': undefined
         }
       });
       setDocuments(prev => [...prev, res.data]);
@@ -753,7 +756,7 @@ export default function AgentBuilder() {
                       ref={fileInputRef}
                       onChange={handleFileUpload}
                       className="hidden"
-                      accept=".txt,.md,.pdf,.json"
+                      accept=".txt,.md,.csv,.json,.pdf,.docx,.pptx"
                     />
                   </div>
                 )}

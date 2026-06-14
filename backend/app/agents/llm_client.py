@@ -239,3 +239,119 @@ def _complete_vertex(system_prompt: str, user_message: str, max_tokens: int) -> 
     if not content.strip():
         raise LLMError("Vertex AI returned an empty response.")
     return content
+
+
+# ============================================================
+# Layer C: multimodal completion (PDF bytes → Gemini)
+# ============================================================
+#
+# Only Vertex/Gemini supports inline PDF in this code path. Other providers
+# are handled honestly: complete_json_multimodal falls back to a clearly
+# labelled error string (not raised) so the runtime can surface it to the
+# user instead of crashing.
+
+def complete_json_multimodal(
+    system_prompt: str,
+    user_message: str,
+    file_bytes: bytes,
+    file_mime: str = "application/pdf",
+    max_tokens: int = 2000,
+) -> str:
+    """Run a single multimodal LLM completion with an inline file part.
+
+    Currently only the `vertex` provider implements true multimodal. For other
+    providers, returns an honest fallback string (not an exception) so the
+    runtime can deliver it to the user as the answer.
+    """
+    provider = (settings.llm_provider or "anthropic").lower()
+    if provider == "vertex":
+        return _complete_vertex_multimodal(
+            system_prompt, user_message, file_bytes, file_mime, max_tokens
+        )
+    return (
+        '{"thought": "Multimodal attachment received but the configured LLM '
+        f"provider ({provider}) does not support inline PDF reading in this "
+        'environment.", "final_answer": "I received the attached file but the '
+        f"LLM provider configured here ({provider}) does not support reading "
+        "uploaded PDFs as binary input. Re-attach a text-selectable PDF or a "
+        '.docx / .txt file so I can answer from extracted text."}'
+    )
+
+
+def _complete_vertex_multimodal(
+    system_prompt: str,
+    user_message: str,
+    file_bytes: bytes,
+    file_mime: str,
+    max_tokens: int,
+) -> str:
+    """Vertex AI Gemini multimodal completion with an inline PDF part.
+
+    Uses Part.from_data for the binary; Part.from_text for the user message.
+    Returns raw JSON text exactly like _complete_vertex does so the existing
+    JSON-extraction logic in the runtime works unchanged.
+    """
+    if not settings.gcp_project_id:
+        raise LLMError(
+            "LLM_PROVIDER=vertex but GCP_PROJECT_ID is empty. "
+            "Set it in backend/.env (e.g. GCP_PROJECT_ID=certaintyai-prod)."
+        )
+
+    try:
+        import vertexai
+        from vertexai.generative_models import (
+            GenerativeModel,
+            GenerationConfig,
+            Part,
+        )
+    except ImportError as exc:
+        raise LLMError(
+            "google-cloud-aiplatform package not installed. "
+            "Run `pip install google-cloud-aiplatform`."
+        ) from exc
+
+    global _vertex_initialised
+    try:
+        if not _vertex_initialised:
+            vertexai.init(
+                project=settings.gcp_project_id,
+                location=settings.gcp_location or "us-central1",
+            )
+            _vertex_initialised = True
+            logger.info(
+                "Vertex AI initialised (multimodal path) project=%s location=%s",
+                settings.gcp_project_id,
+                settings.gcp_location or "us-central1",
+            )
+
+        generation_config = GenerationConfig(
+            temperature=0.4,
+            top_p=0.95,
+            max_output_tokens=max_tokens,
+            response_mime_type="application/json",
+        )
+        model = GenerativeModel(
+            model_name=settings.vertex_model or "gemini-2.0-flash",
+            generation_config=generation_config,
+            system_instruction=system_prompt,
+        )
+        parts = [
+            Part.from_data(file_bytes, mime_type=file_mime),
+            Part.from_text(user_message),
+        ]
+        response = model.generate_content(parts)
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("Vertex AI multimodal request failed")
+        raise LLMError(f"Vertex AI multimodal request failed: {exc}") from exc
+
+    try:
+        content = response.text or ""
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("Vertex AI multimodal returned no candidates")
+        raise LLMError(
+            f"Vertex AI multimodal returned no candidates: {exc}"
+        ) from exc
+
+    if not content.strip():
+        raise LLMError("Vertex AI multimodal returned an empty response.")
+    return content

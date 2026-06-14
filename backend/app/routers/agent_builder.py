@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, s
 from sqlalchemy.orm import Session
 
 from ..auth import get_current_user
+from ..config import settings
 from ..database import get_db
 from ..models import User, Agent, AgentDocument, AgentDocumentChunk, AgentRun
 from ..schemas import AgentCreate, AgentUpdate, AgentOut, AgentDocumentOut, AgentRunOut, AgentRunRequest
@@ -73,6 +74,108 @@ def ingest_remote_document_stub(source_type: str, source_ref: str) -> str:
     ========================================================================
     """
     return "linked/queued"
+
+
+def _extract_text_from_upload(content: bytes, filename: str = "", content_type: str = "") -> str:
+    """Extract UTF-8 plain text from an uploaded file's raw bytes.
+
+    Supports .pdf (pypdf), .docx (python-docx), .pptx (python-pptx), and
+    plain-text family (.txt, .md, .csv, .json) via UTF-8 decode. Dispatches
+    on filename extension first, falls back to content_type sniffing.
+
+    Returns extracted text. Raises HTTPException(415) on parse failure.
+    """
+    name = (filename or "").lower()
+    ct = (content_type or "").lower()
+
+    def _ext_matches(*exts):
+        return any(name.endswith(e) for e in exts)
+
+    # --- PDF ---
+    if _ext_matches(".pdf") or "pdf" in ct:
+        import io
+        # Pass 1: pypdf
+        pypdf_text = ""
+        try:
+            from pypdf import PdfReader
+            reader = PdfReader(io.BytesIO(content))
+            pages = []
+            for page in reader.pages:
+                try:
+                    txt = page.extract_text() or ""
+                except Exception:
+                    txt = ""
+                if txt.strip():
+                    pages.append(txt)
+            pypdf_text = "\n\n".join(pages)
+        except Exception as exc:
+            logger.warning("pypdf extraction failed for %r: %s", filename, exc)
+            pypdf_text = ""
+
+        # Pass 2: pdfminer.six — chained when pypdf returned <50 chars.
+        # pdfminer often succeeds on PDFs whose content streams use encodings
+        # pypdf can't decode. Pure Python, no system binaries.
+        if len(pypdf_text.strip()) < 50:
+            try:
+                from pdfminer.high_level import extract_text as _pdfminer_extract
+                miner_text = _pdfminer_extract(io.BytesIO(content)) or ""
+            except Exception as exc:
+                logger.warning("pdfminer extraction failed for %r: %s", filename, exc)
+                miner_text = ""
+
+            # Prefer whichever pass produced more readable text. Both can be
+            # empty for image-only / scanned PDFs — return the longer one
+            # (which will still be empty), and the runtime's empty-extract
+            # branch will tell the user honestly.
+            if len(miner_text.strip()) > len(pypdf_text.strip()):
+                logger.info(
+                    "[upload.extract] pdf engine=pdfminer pypdf_chars=%d miner_chars=%d filename=%r",
+                    len(pypdf_text.strip()), len(miner_text.strip()), filename,
+                )
+                return miner_text
+            else:
+                logger.info(
+                    "[upload.extract] pdf engine=pypdf pypdf_chars=%d miner_chars=%d filename=%r",
+                    len(pypdf_text.strip()), len(miner_text.strip()), filename,
+                )
+        return pypdf_text
+
+    # --- DOCX ---
+    if _ext_matches(".docx") or "wordprocessingml" in ct:
+        try:
+            import io
+            from docx import Document
+            doc = Document(io.BytesIO(content))
+            parts = [p.text for p in doc.paragraphs if p.text and p.text.strip()]
+            for table in doc.tables:
+                for row in table.rows:
+                    for cell in row.cells:
+                        if cell.text and cell.text.strip():
+                            parts.append(cell.text)
+            return "\n\n".join(parts)
+        except Exception as exc:
+            logger.warning("DOCX extraction failed for %r: %s", filename, exc)
+            raise HTTPException(status_code=415, detail=f"Failed to parse DOCX: {exc}")
+
+    # --- PPTX ---
+    if _ext_matches(".pptx") or "presentationml" in ct:
+        try:
+            import io
+            from pptx import Presentation
+            prs = Presentation(io.BytesIO(content))
+            parts = []
+            for slide in prs.slides:
+                for shape in slide.shapes:
+                    txt = getattr(shape, "text", "")
+                    if txt and txt.strip():
+                        parts.append(txt)
+            return "\n\n".join(parts)
+        except Exception as exc:
+            logger.warning("PPTX extraction failed for %r: %s", filename, exc)
+            raise HTTPException(status_code=415, detail=f"Failed to parse PPTX: {exc}")
+
+    # --- Plain-text family + fallback ---
+    return content.decode("utf-8", errors="ignore")
 
 
 def chunk_text(text: str, chunk_size: int = 500, overlap: int = 100) -> List[str]:
@@ -251,12 +354,16 @@ async def add_agent_document(
     db.refresh(doc)
     
     # If it is a local file upload, read and index chunks
-    # TODO: Implement real PDF/docx parsing + pgvector chunking later in production.
-    # Currently fall back to reading plain-text content only.
+    # PDF / DOCX / PPTX are now extracted via _extract_text_from_upload;
+    # plain-text family (.txt, .md, .csv, .json) falls through to utf-8 decode.
     if source_type == "local" and file:
         try:
             contents = await file.read()
-            text_content = contents.decode("utf-8", errors="ignore")
+            text_content = _extract_text_from_upload(
+                contents,
+                filename=file.filename or source_ref,
+                content_type=file.content_type or "",
+            )
             chunks = chunk_text(text_content)
             
             for chunk in chunks:
@@ -281,6 +388,103 @@ async def add_agent_document(
     return doc
 
 
+@router.post("/extract-text")
+async def extract_text_from_attachment(
+    file: UploadFile = File(...),
+    current: User = Depends(get_current_user),
+):
+    """Extract UTF-8 text from an uploaded file for the Copilot chat flow.
+
+    Used by the Dashboard Copilot's chat-attachment path so binary formats
+    (PDF / DOCX / PPTX) can be ingested as text into the agent run prompt.
+    Plain-text formats (.txt / .md / .csv / .json) also work via this route.
+
+    Returns: {"filename": str, "format": str, "chars": int, "text": str}
+    """
+    if not file:
+        raise HTTPException(status_code=400, detail="No file provided")
+    try:
+        contents = await file.read()
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"Failed to read upload: {exc}")
+
+    fname = file.filename or ""
+    text = _extract_text_from_upload(
+        contents,
+        filename=fname,
+        content_type=file.content_type or "",
+    )
+
+    name_lower = fname.lower()
+    if name_lower.endswith(".pdf"):
+        fmt = "pdf"
+    elif name_lower.endswith(".docx"):
+        fmt = "docx"
+    elif name_lower.endswith(".pptx"):
+        fmt = "pptx"
+    elif name_lower.endswith(".md"):
+        fmt = "md"
+    elif name_lower.endswith(".csv"):
+        fmt = "csv"
+    elif name_lower.endswith(".json"):
+        fmt = "json"
+    else:
+        fmt = "text"
+
+    # ----- Diagnostic logging (Layer D) -----
+    safe_preview = (text or "").replace("\n", " ")[:500]
+    logger.info(
+        "[upload.extract] filename=%r mime=%r size_bytes=%d format=%s extracted_chars=%d preview=%r",
+        fname,
+        file.content_type,
+        len(contents),
+        fmt,
+        len(text or ""),
+        safe_preview,
+    )
+
+    resp = {
+        "filename": fname,
+        "format": fmt,
+        "chars": len(text or ""),
+        "text": text or "",
+    }
+
+    # ----- Layer C: include raw bytes (base64) when extraction yielded little
+    # or no text AND the file is PDF AND under the size cap. The runtime can
+    # then route to Gemini multimodal. We only do this for PDFs in this layer;
+    # DOCX/PPTX never need multimodal because their text path always works.
+    EXTRACT_THRESHOLD = 50
+    if (
+        fmt == "pdf"
+        and len((text or "").strip()) < EXTRACT_THRESHOLD
+        and len(contents) <= settings.multimodal_max_bytes
+    ):
+        import base64 as _b64
+        resp["raw_b64"] = _b64.b64encode(contents).decode("ascii")
+        resp["mime"] = file.content_type or "application/pdf"
+        resp["multimodal_eligible"] = True
+        logger.info(
+            "[upload.extract] raw_b64_included filename=%r size_bytes=%d cap_bytes=%d",
+            fname, len(contents), settings.multimodal_max_bytes,
+        )
+    elif (
+        fmt == "pdf"
+        and len((text or "").strip()) < EXTRACT_THRESHOLD
+        and len(contents) > settings.multimodal_max_bytes
+    ):
+        # Above cap: refuse to ship bytes; the runtime will fall through to the
+        # received_but_empty stanza and tell the user honestly.
+        resp["multimodal_eligible"] = False
+        resp["mime"] = file.content_type or "application/pdf"
+        logger.warning(
+            "[upload.extract] over_size_cap filename=%r size_bytes=%d cap_bytes=%d",
+            fname, len(contents), settings.multimodal_max_bytes,
+        )
+
+    return resp
+
+
 @router.post("/{id}/run", response_model=AgentRunOut)
 def run_agent(
     id: int,
@@ -301,7 +505,9 @@ def run_agent(
             owner_id=current.id,
             history=payload.history,
             attached_doc_ref=payload.attached_doc_ref,
-            attached_doc_content=payload.attached_doc_content
+            attached_doc_content=payload.attached_doc_content,
+            attached_doc_b64=payload.attached_doc_b64,
+            attached_doc_mime=payload.attached_doc_mime,
         )
         return run_log
     except Exception as exc:

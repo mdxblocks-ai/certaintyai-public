@@ -1,7 +1,30 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git *)"
+      "Bash(git *)",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('app/agents/agent_runtime.py'\\).read\\(\\)\\); print\\('SYNTAX OK'\\)\")",
+      "Bash(python -m pytest tests/ -q --tb=short)",
+      "Bash(python -m pytest tests/ -q --tb=short --ignore=tests/test_adk_parity.py)",
+      "Bash(python -m pip install google-adk==2.2.0 a2a-sdk==0.3.26)",
+      "Bash(where python *)",
+      "Bash(python -c \"import sys; print\\(sys.executable\\); print\\(sys.path[:5]\\)\")",
+      "Bash(python -m pytest tests/test_adk_parity.py --collect-only -q)",
+      "Bash(python -m venv .venv)",
+      "Bash(.venv/Scripts/python.exe --version)",
+      "Bash(.venv/Scripts/python.exe -m pip install --upgrade pip)",
+      "Bash(.venv/Scripts/python.exe -m pip install -r requirements.txt pytest)",
+      "Bash(.venv/Scripts/python.exe -m pytest tests/ -q --tb=short)",
+      "Bash(.venv/Scripts/python.exe -c ' *)",
+      "Bash(.venv/Scripts/python.exe -m pytest tests/test_agent_builder.py::test_agent_crud_and_firewall -q --tb=long)",
+      "Bash(.venv/Scripts/python.exe -m pytest tests/ -q)",
+      "Bash(node -e ' *)",
+      "Bash(awk 'NR==2503,NR==2510 || NR==2624,NR==2632 || /^            \\\\\\)\\\\}/' src/pages/Dashboard.jsx)",
+      "Bash(awk 'NR>=2504 && NR<=3141 && /^ {14}<div / {print NR\":  +DIV  \"$0} NR>=2504 && NR<=3141 && /^ {14}<\\\\/div>/ {print NR\":  -DIV  \"$0}' src/pages/Dashboard.jsx)",
+      "Bash(awk 'NR>=2503 && NR<=3141 { for \\(i=1; i<=length\\($0\\); i++\\) { c=substr\\($0,i,5\\); if \\(c==\"<div \" || c==\"<div>\"\\) opens++; if \\(c==\"</div\"\\) closes++; } } END {print \"opens=\"opens, \"closes=\"closes, \"diff=\"opens-closes}' src/pages/Dashboard.jsx)",
+      "Bash(.venv/Scripts/python.exe -m pip install pypdf python-docx python-pptx)",
+      "Bash(.venv/Scripts/python.exe -m pytest tests/test_agent_builder.py::test_extract_text_endpoint_with_pdf -q --tb=short)",
+      "Bash(.venv/Scripts/python.exe -m pip install \"pdfminer.six\")",
+      "Bash(.venv/Scripts/python.exe -m pytest tests/test_agent_builder.py::test_run_with_attached_text_lands_in_system_prompt -q --tb=long)"
     ]
   }
 }

@@ -17,3 +17,7 @@ google-cloud-aiplatform
 mcp[cli]==1.27.2
 google-adk==2.2.0
 a2a-sdk==0.3.26
+pypdf
+pdfminer.six
+python-docx
+python-pptx

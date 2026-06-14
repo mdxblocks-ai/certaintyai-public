@@ -441,7 +441,9 @@ def run_agent_loop(
     owner_id: int,
     history: list[dict] = None,
     attached_doc_ref: Optional[str] = None,
-    attached_doc_content: Optional[str] = None
+    attached_doc_content: Optional[str] = None,
+    attached_doc_b64: Optional[str] = None,
+    attached_doc_mime: Optional[str] = None,
 ) -> AgentRun:
     """Execute the config-driven runtime loop for a custom agent.
 
@@ -473,14 +475,92 @@ def run_agent_loop(
             if doc and doc.source_ref not in retrieved_refs:
                 retrieved_refs.append(doc.source_ref)
 
-    if attached_doc_content:
-        # TODO: Implement real PDF/docx parsing + pgvector chunking later in production.
-        # Inject ad-hoc doc contents directly into the prompt context for session RAG grounding.
-        doc_str = f"\n\n--- AD-HOC ATTACHED DOCUMENT ({attached_doc_ref or 'Attached File'}) ---\n{attached_doc_content}\n-----------------------------------------------------"
+    # ----- Layer A: prompt grounding state machine (Layer C extends) -----
+    # Always tell the model when the user attached a file. doc_status drives
+    # the system-prompt block, the user_message bridge, AND (Layer C) whether
+    # to call the multimodal completion path with the raw PDF bytes.
+    doc_block = ""
+    # "none" | "extracted" | "received_but_empty" | "multimodal"
+    doc_status = "none"
+    multimodal_bytes: Optional[bytes] = None
+    multimodal_mime: Optional[str] = None
+    _content_clean = (attached_doc_content or "").strip()
+    _has_b64 = bool((attached_doc_b64 or "").strip())
+
+    if attached_doc_ref or _content_clean or _has_b64:
+        _filename = attached_doc_ref or "untitled"
+        if _content_clean:
+            doc_block = (
+                "\n\n--- ATTACHED DOCUMENT (CURRENT TURN) ---\n"
+                f"Filename: {_filename}\n"
+                f"Length: {len(attached_doc_content)} characters\n"
+                "--- BEGIN DOCUMENT CONTENT ---\n"
+                f"{attached_doc_content}\n"
+                "--- END DOCUMENT CONTENT ---\n"
+                "This document was uploaded by the user in the current turn. "
+                "Treat it as authoritative source material. Quote it verbatim "
+                "when the user asks for facts contained in it. Do NOT say you "
+                "cannot read uploaded files — the text above IS the file."
+            )
+            doc_status = "extracted"
+        elif _has_b64 and settings.multimodal_enabled:
+            # Layer C: route to Gemini multimodal with the raw PDF bytes.
+            try:
+                import base64 as _b64
+                multimodal_bytes = _b64.b64decode(attached_doc_b64, validate=True)
+                multimodal_mime = attached_doc_mime or "application/pdf"
+                doc_block = (
+                    "\n\n--- ATTACHED DOCUMENT (CURRENT TURN, MULTIMODAL) ---\n"
+                    f"Filename: {_filename}\n"
+                    f"MIME: {multimodal_mime}\n"
+                    f"Size: {len(multimodal_bytes)} bytes\n"
+                    "NOTE TO MODEL: The user attached this PDF in the current "
+                    "turn. The full file is provided to you directly as inline "
+                    "binary PDF data alongside this prompt. Read the document, "
+                    "extract the user's requested information, and answer from "
+                    "the file's content. Do NOT say you cannot read uploaded "
+                    "files — the file IS attached as binary in this turn."
+                )
+                doc_status = "multimodal"
+            except Exception as exc:
+                logger.warning(
+                    "[multimodal] base64 decode failed for %r: %s", _filename, exc
+                )
+                # Fall through to received_but_empty
+                doc_block = ""
+                multimodal_bytes = None
+                multimodal_mime = None
+
+        if doc_status == "none":
+            # received_but_empty: file attached (ref or b64) but no readable
+            # content and multimodal either disabled or decode failed.
+            doc_block = (
+                "\n\n--- ATTACHED DOCUMENT (CURRENT TURN) ---\n"
+                f"Filename: {_filename}\n"
+                "NOTE TO MODEL: The user attached this file but no text could "
+                "be extracted (it may be a scanned image, password-protected, "
+                "or empty), and multimodal ingestion is disabled or "
+                "unavailable in this environment. Tell the user explicitly "
+                "that the file was received but its content could not be "
+                "parsed, and recommend re-attaching a text-selectable PDF or "
+                "a .docx / .txt file. Do NOT pretend to have read content "
+                "you do not have."
+            )
+            doc_status = "received_but_empty"
         if attached_doc_ref and attached_doc_ref not in retrieved_refs:
             retrieved_refs.append(attached_doc_ref)
 
+    # Backwards-compatible alias for code paths further down that referenced doc_str.
+    doc_str = doc_block
+
     context_str = "\n\n".join(context_chunks) if context_chunks else "No relevant documents in knowledge base."
+
+    # ----- Layer D: attachment diagnostics -----
+    logger.info(
+        "[agent_run] Attachment | ref=%r status=%s content_chars=%d doc_block_chars=%d",
+        attached_doc_ref, doc_status,
+        len(attached_doc_content or ""), len(doc_block or ""),
+    )
     
     # Check if Vertex or Gemini is fully configured
     is_llm_configured = bool(
@@ -501,13 +581,17 @@ def run_agent_loop(
             len(outcome or ""), (outcome or "")[:600],
         )
     else:
-        # Build prompt guidelines
+        # Build prompt guidelines. Knowledge Base Context (long-term, indexed
+        # docs from the agent's vector store) and ATTACHED DOCUMENT (current
+        # turn's user upload) are now in clearly distinct sections so Gemini
+        # never confuses the two.
         system_prompt = (
             f"You are a C-suite governed agent named '{agent.name}' operating with a C-suite focus: {agent.role.upper()}.\n"
             f"Instructions:\n{agent.instructions}\n\n"
             f"Available Tools: {agent.tools}\n"
             f"Response Style Temperature: {agent.temperature} (0.0=focused, 1.0=creative)\n\n"
-            f"Knowledge Base Context:\n{context_str}{doc_str}\n\n"
+            f"Knowledge Base Context (long-term, indexed):\n{context_str}"
+            f"{doc_block}\n\n"
             f"You must perform step-by-step reasoning. Output a JSON object matching this exact schema:\n"
             f"{{\n"
             f"  \"thought\": \"your reasoning about what to do next\",\n"
@@ -518,9 +602,31 @@ def run_agent_loop(
             f"  \"final_answer\": \"your final summary response if no more tools are needed\" or null\n"
             f"}}\n"
         )
-        
+
+        # Layer A + C: user_message bridge — link the user's question to the
+        # attachment so Gemini doesn't fall back to "I can't read files".
+        attachment_cue = ""
+        if doc_status == "extracted":
+            attachment_cue = (
+                f"\n\n(Context: the user attached '{attached_doc_ref or 'a file'}' in this turn. "
+                f"Its full text is in the system instruction under 'ATTACHED DOCUMENT (CURRENT TURN)'. "
+                f"Use that text to answer.)"
+            )
+        elif doc_status == "multimodal":
+            attachment_cue = (
+                f"\n\n(Context: the user attached '{attached_doc_ref or 'a file'}' in this turn. "
+                f"The PDF is provided to you as inline binary data in this same request. "
+                f"Read the PDF directly and answer the user's question from its content.)"
+            )
+        elif doc_status == "received_but_empty":
+            attachment_cue = (
+                f"\n\n(Context: the user attached '{attached_doc_ref or 'a file'}' in this turn but no "
+                f"text could be extracted from it. Tell the user the file came through but couldn't "
+                f"be parsed.)"
+            )
+
         history_str = format_history_context(history)
-        user_message = f"{history_str}\n\nUser Input:\n{user_input}\n\nProceed with the first step."
+        user_message = f"{history_str}\n\nUser Input:\n{user_input}{attachment_cue}\n\nProceed with the first step."
         
         current_step = 1
         current_input = user_message
@@ -538,12 +644,28 @@ def run_agent_loop(
                     (system_prompt + " || USER || " + current_input)[:600],
                 )
 
-                # Execute completion
-                raw_response = complete_json(
-                    system_prompt=system_prompt,
-                    user_message=current_input,
-                    max_tokens=1000
+                # Execute completion — Layer C routes multimodal on step 1
+                # only (subsequent steps after a tool call are pure-text).
+                _multimodal_this_step = (
+                    current_step == 1
+                    and doc_status == "multimodal"
+                    and multimodal_bytes is not None
                 )
+                if _multimodal_this_step:
+                    from .llm_client import complete_json_multimodal
+                    raw_response = complete_json_multimodal(
+                        system_prompt=system_prompt,
+                        user_message=current_input,
+                        file_bytes=multimodal_bytes,
+                        file_mime=multimodal_mime or "application/pdf",
+                        max_tokens=2000,
+                    )
+                else:
+                    raw_response = complete_json(
+                        system_prompt=system_prompt,
+                        user_message=current_input,
+                        max_tokens=1000
+                    )
 
                 # ----- Structured run logging (Model Response) -----
                 logger.info(
@@ -552,6 +674,18 @@ def run_agent_loop(
                     len(raw_response or ""),
                     (raw_response or "")[:600],
                 )
+
+                # ----- Layer C: multimodal-specific diagnostics -----
+                if _multimodal_this_step:
+                    logger.info(
+                        "[multimodal] filename=%r mime=%r size_bytes=%d used=True provider=%r model=%r response_chars=%d",
+                        attached_doc_ref,
+                        multimodal_mime or "application/pdf",
+                        len(multimodal_bytes or b""),
+                        (settings.llm_provider or "").lower(),
+                        settings.vertex_model or "",
+                        len(raw_response or ""),
+                    )
                 
                 try:
                     resp_json = json.loads(raw_response)

@@ -222,5 +222,8 @@ class AgentRunRequest(BaseModel):
     history: list[dict] = Field(default_factory=list)
     attached_doc_ref: Optional[str] = None
     attached_doc_content: Optional[str] = None
+    # Layer C: optional base64-encoded raw bytes for multimodal Gemini ingest
+    attached_doc_b64: Optional[str] = None
+    attached_doc_mime: Optional[str] = None
 
 

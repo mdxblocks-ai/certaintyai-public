@@ -511,6 +511,37 @@ const getExpertResponse = (text, modelName, activeLanguage = 'English (US)', lat
 
 
 
+// ---- Copilot session row helpers (ChatGPT-style list rendering) ----
+const getSessionPreview = (session) => {
+  if (!session || !session.messages || session.messages.length === 0) return null
+  const last = session.messages[session.messages.length - 1]
+  const raw = (last && last.content) ? String(last.content) : ''
+  const text = raw.replace(/[#*`>\-\n]+/g, ' ').replace(/\s+/g, ' ').trim()
+  if (!text) return null
+  return text.length > 70 ? text.slice(0, 70) + '…' : text
+}
+
+const getRelativeTime = (iso) => {
+  if (!iso) return ''
+  const date = new Date(iso)
+  if (isNaN(date.getTime())) return ''
+  const diffSec = Math.max(0, (Date.now() - date.getTime()) / 1000)
+  if (diffSec < 45) return 'Just now'
+  if (diffSec < 3600) return `${Math.floor(diffSec / 60)}m ago`
+  if (diffSec < 86400) return `${Math.floor(diffSec / 3600)}h ago`
+  if (diffSec < 172800) return 'Yesterday'
+  if (diffSec < 604800) return `${Math.floor(diffSec / 86400)}d ago`
+  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+}
+
+const getSessionLatestTimestamp = (session) => {
+  if (session && session.messages && session.messages.length > 0) {
+    const last = session.messages[session.messages.length - 1]
+    if (last && last.timestamp) return last.timestamp
+  }
+  return session && session.createdDate ? session.createdDate : null
+}
+
 const getFollowUpPromptsForResponse = (query) => {
   const q = query.toLowerCase()
   if (q.includes('assessment') || q.includes('report') || q.includes('evaluation')) {
@@ -799,6 +830,30 @@ export default function Dashboard() {
     return localStorage.getItem('copilot_active_session_id') || 'default-session-1'
   })
 
+  // Persist copilot sessions to localStorage on every change. Cap persistence at
+  // the 50 most-recent sessions to stay safely inside browser quota; in-memory
+  // state is untouched so the active session keeps full fidelity.
+  useEffect(() => {
+    try {
+      const COPILOT_SESSIONS_PERSIST_CAP = 50
+      const toPersist = (copilotSessions || []).slice(0, COPILOT_SESSIONS_PERSIST_CAP)
+      localStorage.setItem('copilot_sessions', JSON.stringify(toPersist))
+    } catch (e) {
+      console.warn('[copilot] Failed to persist copilot_sessions:', e)
+    }
+  }, [copilotSessions])
+
+  // Persist the active session id so refresh restores the user's last selection.
+  useEffect(() => {
+    try {
+      if (copilotActiveSessionId) {
+        localStorage.setItem('copilot_active_session_id', copilotActiveSessionId)
+      }
+    } catch (e) {
+      console.warn('[copilot] Failed to persist copilot_active_session_id:', e)
+    }
+  }, [copilotActiveSessionId])
+
   const [copilotModel, setCopilotModel] = useState('Gemini 2.5 Flash')
   const [copilotInput, setCopilotInput] = useState('')
   const [copilotFiles, setCopilotFiles] = useState([])
@@ -1070,14 +1125,14 @@ export default function Dashboard() {
     const files = Array.from(e.target.files)
     if (files.length === 0) return
 
-    const allowedExtensions = ['txt', 'md']
+    const allowedExtensions = ['txt', 'md', 'csv', 'json', 'pdf', 'docx', 'pptx']
     const validFiles = files.filter(file => {
       const ext = file.name.split('.').pop().toLowerCase()
       return allowedExtensions.includes(ext)
     })
 
     if (validFiles.length < files.length) {
-      alert("Some files were skipped. Only plain-text files (.txt, .md) are allowed.")
+      alert("Some files were skipped. Supported: .txt, .md, .csv, .json, .pdf, .docx, .pptx")
     }
 
     if (validFiles.length === 0) return
@@ -1117,14 +1172,14 @@ export default function Dashboard() {
     const files = Array.from(e.dataTransfer.files)
     if (files.length === 0) return
 
-    const allowedExtensions = ['txt', 'md']
+    const allowedExtensions = ['txt', 'md', 'csv', 'json', 'pdf', 'docx', 'pptx']
     const validFiles = files.filter(file => {
       const ext = file.name.split('.').pop().toLowerCase()
       return allowedExtensions.includes(ext)
     })
 
     if (validFiles.length < files.length) {
-      alert("Some files were skipped. Only plain-text files (.txt, .md) are allowed.")
+      alert("Some files were skipped. Supported: .txt, .md, .csv, .json, .pdf, .docx, .pptx")
     }
 
     if (validFiles.length === 0) return
@@ -1139,16 +1194,39 @@ export default function Dashboard() {
     setCopilotFiles(prev => [...prev, ...formatted])
   }
 
-  const readFileAsText = (file) => {
-    // TODO: Implement real PDF/docx parsing + pgvector chunking later in production.
-    // Currently fallback to browser FileReader for plain-text (.txt, .md) only.
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader()
-      reader.onload = () => resolve(reader.result)
-      reader.onerror = () => reject(reader.error)
-      reader.readAsText(file)
+  const extractAttachment = async (file) => {
+    // Returns { text, b64, mime }. b64/mime are non-null only for PDFs whose
+    // server-side text extraction yielded <50 chars — those are routed to
+    // Vertex/Gemini multimodal in the backend (Layer C).
+    const ext = (file.name || '').split('.').pop().toLowerCase()
+    const inBrowserFormats = ['txt', 'md', 'csv', 'json']
+    if (inBrowserFormats.includes(ext)) {
+      const text = await new Promise((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve(reader.result)
+        reader.onerror = () => reject(reader.error)
+        reader.readAsText(file)
+      })
+      return { text, b64: null, mime: null }
+    }
+    // Binary formats (.pdf, .docx, .pptx): server-side extract.
+    // Content-Type MUST be undefined so the browser auto-sets
+    // `multipart/form-data; boundary=...` with the real boundary param.
+    const formData = new FormData()
+    formData.append('file', file)
+    const res = await api.post('/agents/extract-text', formData, {
+      headers: { 'Content-Type': undefined }
     })
+    const data = res.data || {}
+    return {
+      text: data.text || '',
+      b64:  data.raw_b64 || null,
+      mime: data.mime || null,
+    }
   }
+
+  // Backwards-compat shim — kept in case anything else calls it.
+  const readFileAsText = async (file) => (await extractAttachment(file)).text
 
   const handleCopilotSend = async (textToSend = copilotInput) => {
     const trimmed = textToSend.trim()
@@ -1219,12 +1297,17 @@ export default function Dashboard() {
     // Read first file if attached
     let attachedDocRef = null
     let attachedDocContent = null
+    let attachedDocB64 = null
+    let attachedDocMime = null
     if (attachedFiles.length > 0) {
       const firstFile = attachedFiles[0]
       attachedDocRef = firstFile.name
       if (firstFile.file) {
         try {
-          attachedDocContent = await readFileAsText(firstFile.file)
+          const a = await extractAttachment(firstFile.file)
+          attachedDocContent = a.text
+          attachedDocB64 = a.b64
+          attachedDocMime = a.mime
         } catch (e) {
           console.error("Failed to read attached file content:", e)
         }
@@ -1237,7 +1320,9 @@ export default function Dashboard() {
         input: trimmed,
         history: historyList,
         attached_doc_ref: attachedDocRef,
-        attached_doc_content: attachedDocContent
+        attached_doc_content: attachedDocContent,
+        attached_doc_b64: attachedDocB64,
+        attached_doc_mime: attachedDocMime
       })
 
       const runLog = res.data
@@ -2457,6 +2542,19 @@ export default function Dashboard() {
                         <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-wider animate-fade-in">Sessions</span>
                       )}
                       <div className="flex items-center gap-1.5 ml-auto">
+                        {!copilotSidebarCollapsed && (
+                          <button
+                            onClick={handleCopilotNewChat}
+                            className="p-1 rounded-lg border border-[var(--dash-border)] text-[var(--dash-text-secondary)] hover:text-[var(--dash-accent)] hover:bg-[var(--dash-hover-bg)] transition focus:outline-none focus:ring-1 focus:ring-[var(--dash-accent)] shrink-0"
+                            title="New Chat"
+                            aria-label="New Chat"
+                          >
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3.5 h-3.5">
+                              <line x1="12" y1="5" x2="12" y2="19" />
+                              <line x1="5" y1="12" x2="19" y2="12" />
+                            </svg>
+                          </button>
+                        )}
                         <button
                           onClick={() => setCopilotSidebarCollapsed(!copilotSidebarCollapsed)}
                           className="p-1 rounded-lg border border-[var(--dash-border)] text-[var(--dash-text-secondary)] hover:text-[var(--dash-accent)] hover:bg-[var(--dash-hover-bg)] transition focus:outline-none focus:ring-1 focus:ring-[var(--dash-accent)] shrink-0"
@@ -2475,42 +2573,71 @@ export default function Dashboard() {
                       </button>
                     </div>
 
-                    {/* Session List */}
+                    {/* Session List (ChatGPT-style) */}
                     <div className="space-y-1">
-                      {copilotSessions.map(session => (
-                        <div
-                          key={session.id}
-                          onClick={() => setCopilotActiveSessionId(session.id)}
-                          className={`w-full group flex items-center justify-between px-2 py-1.5 rounded-xl text-left cursor-pointer transition duration-150 ${
-                            session.id === copilotActiveSessionId
-                              ? 'bg-[var(--dash-active-bg)] border border-[var(--dash-active-border)] text-[var(--dash-active-text)] shadow-[var(--dash-active-shadow)]'
-                              : 'border border-transparent text-[var(--dash-text-secondary)] hover:text-[var(--dash-text-primary)] hover:bg-[var(--dash-hover-bg)]'
-                          }`}
-                          title={session.title}
-                        >
-                          <div className="flex items-center gap-2 truncate">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 shrink-0 text-[var(--dash-accent)]/80">
+                      {displayedSessions.length === 0 && !copilotSidebarCollapsed && (
+                        <div className="text-[10.5px] italic text-[var(--dash-text-secondary)] px-2 py-3">
+                          No sessions yet. Click <b className="not-italic">+</b> above to start a chat.
+                        </div>
+                      )}
+                      {displayedSessions.map(session => {
+                        const preview = getSessionPreview(session)
+                        const isEmpty = !session.messages || session.messages.length === 0
+                        const relTime = getRelativeTime(getSessionLatestTimestamp(session))
+                        const isActive = session.id === copilotActiveSessionId
+                        return (
+                          <div
+                            key={session.id}
+                            onClick={() => setCopilotActiveSessionId(session.id)}
+                            className={`w-full group flex items-start gap-2 px-2 py-2 rounded-xl text-left cursor-pointer transition duration-150 ${
+                              isActive
+                                ? 'bg-[var(--dash-active-bg)] border border-[var(--dash-active-border)] text-[var(--dash-active-text)] shadow-[var(--dash-active-shadow)]'
+                                : 'border border-transparent text-[var(--dash-text-secondary)] hover:text-[var(--dash-text-primary)] hover:bg-[var(--dash-hover-bg)]'
+                            }`}
+                            title={session.title}
+                          >
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={`w-4 h-4 shrink-0 mt-0.5 ${isActive ? 'text-[var(--dash-accent)]' : 'text-[var(--dash-accent)]/70'}`}>
                               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                             </svg>
                             {!copilotSidebarCollapsed && (
-                              <span className="text-xs font-semibold truncate animate-fade-in">{session.title}</span>
+                              <div className="flex-1 min-w-0 animate-fade-in">
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className={`text-xs font-semibold truncate ${isEmpty && !isActive ? 'opacity-70' : ''}`}>
+                                    {session.title}
+                                  </span>
+                                  <span className="text-[9px] text-[var(--dash-text-secondary)]/75 shrink-0 ml-1">
+                                    {relTime}
+                                  </span>
+                                </div>
+                                {preview ? (
+                                  <div className="text-[10.5px] text-[var(--dash-text-secondary)]/85 truncate mt-0.5 leading-snug">
+                                    {preview}
+                                  </div>
+                                ) : (
+                                  <div className="mt-0.5">
+                                    <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider text-[var(--dash-text-secondary)]/55 border border-[var(--dash-border)] rounded-md px-1.5 py-0.5">
+                                      Empty
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                            {!copilotSidebarCollapsed && (
+                              <button
+                                onClick={(e) => handleCopilotDeleteSession(session.id, e)}
+                                className="opacity-0 group-hover:opacity-100 hover:text-rose-600 p-0.5 transition shrink-0 mt-0.5"
+                                title="Delete session"
+                                aria-label={`Delete session ${session.title}`}
+                              >
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3">
+                                  <polyline points="3 6 5 6 21 6" />
+                                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                </svg>
+                              </button>
                             )}
                           </div>
-                          {!copilotSidebarCollapsed && (
-                            <button
-                              onClick={(e) => handleCopilotDeleteSession(session.id, e)}
-                              className="opacity-0 group-hover:opacity-100 hover:text-rose-600 p-0.5 transition shrink-0"
-                              title="Delete session"
-                              aria-label={`Delete session ${session.title}`}
-                            >
-                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-3 h-3">
-                                <polyline points="3 6 5 6 21 6" />
-                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                              </svg>
-                            </button>
-                          )}
-                        </div>
-                      ))}
+                        )
+                      })}
                     </div>
                   </div>
                   
@@ -2925,7 +3052,7 @@ export default function Dashboard() {
                         onChange={handleCopilotFileChange}
                         multiple
                         className="hidden"
-                        accept=".txt,.md,text/plain"
+                        accept=".txt,.md,.csv,.json,.pdf,.docx,.pptx,text/plain,application/pdf"
                       />
                       
                       {/* Attach Document (paperclip) Button */}
@@ -3035,10 +3162,10 @@ export default function Dashboard() {
                       </button>
                     </div>
                     
-                    {/* Plain-text helper note */}
+                    {/* Supported formats helper note */}
                     <div className="text-[10px] text-[var(--dash-text-secondary)]/75 max-w-[95%] ml-2 mr-auto md:ml-4 px-1.5 flex items-center gap-1 font-medium font-sans mt-1">
                       <i className="ti ti-info-circle text-xs"></i>
-                      <span>Plain-text files for now (.txt, .md)</span>
+                      <span>Supported: .txt, .md, .csv, .json, .pdf, .docx, .pptx</span>
                     </div>
                   </div>
                 </div>
