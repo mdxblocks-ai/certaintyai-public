@@ -15,6 +15,66 @@ const SUPPORTED_ATTACHMENT_EXTS = ['txt', 'md', 'csv', 'json', 'pdf', 'docx', 'p
 const SUPPORTED_ATTACHMENT_LABEL = SUPPORTED_ATTACHMENT_EXTS.map(e => '.' + e).join(', ')
 const SUPPORTED_ATTACHMENT_ACCEPT = SUPPORTED_ATTACHMENT_EXTS.map(e => '.' + e).join(',')
 
+// Sessions are created with this placeholder title. handleCopilotSend
+// auto-renames it the first time the user sends a message, using
+// generateSessionTitle below.
+const NEW_CHAT_TITLE = 'New Chat'
+
+// Titles that an empty session should be allowed to keep (legacy values
+// in localStorage from earlier app versions plus the current placeholder).
+// Used by handleCopilotSend to decide whether to auto-rename, and by the
+// rename-eligibility check in the agent-builder smart-title path.
+const PLACEHOLDER_NEW_CHAT_TITLES = new Set(['', NEW_CHAT_TITLE, 'New Chat Session'])
+
+// Smart auto-title generator. Maps a first user prompt to a topical title
+// like "Readiness Score Review" / "Governance Gap Review" / "PDF Analysis"
+// / "AI Roadmap". Falls back to the first 4 meaningful words in Title Case.
+// Pure function — kept at module scope so it stays referentially stable
+// across renders and is unit-testable in isolation later if needed.
+const generateSessionTitle = (prompt) => {
+  const p = (prompt || '').trim()
+  if (!p) return NEW_CHAT_TITLE
+  const lower = p.toLowerCase()
+  // Topic patterns — first match wins. Most-specific phrases first.
+  const TOPICS = [
+    [/readiness\s+(score|rating|assessment)/, 'Readiness Score Review'],
+    [/governance\s+(gap|risk|issue|control|review)/, 'Governance Gap Review'],
+    [/\bmaturity\b/, 'Maturity Review'],
+    [/(\bai\b\s+)?roadmap|adoption\s+plan/, 'AI Roadmap'],
+    [/\b(pdf|attached\s+(file|document)|uploaded\s+(file|document|pdf))\b/, 'PDF Analysis'],
+    [/\b(spend|cost|budget|roi|finops|payback|savings|investment)\b/, 'Cost & ROI Review'],
+    [/\b(vendor|third[-\s]?party|supplier)\b/, 'Vendor Review'],
+    [/\b(risk|threat|exposure)\b/, 'Risk Review'],
+    [/\b(compliance|hipaa|gdpr|soc\s?2|nist|eu\s+ai\s+act|sox)\b/, 'Compliance Review'],
+    [/\b(audit|provenance|lineage)\b/, 'Audit Review'],
+    [/\b(security|cyber|controls?)\b/, 'Security Review'],
+    [/\b(rag|retrieval)\b/, 'RAG Review'],
+    [/\bdata\s+(quality|standardization|gap|hygiene)\b/, 'Data Quality Review'],
+  ]
+  for (const [re, label] of TOPICS) {
+    if (re.test(lower)) return label
+  }
+  // Fallback: first 4 meaningful words in Title Case, capped at 40 chars.
+  const stop = new Set([
+    'the','a','an','is','are','was','were','be','been','being',
+    'and','or','but','if','then','of','in','on','for','to','from','with','about','at','by',
+    'my','our','your','their','his','her','its',
+    'i','me','you','we','us','they','them',
+    'what','when','where','why','how','who','which',
+    'please','show','tell','give','create','make','build','draft','can','will','do','does','let',
+  ])
+  const words = p
+    .split(/\s+/)
+    .map(w => w.replace(/[^a-zA-Z0-9-]/g, ''))
+    .filter(w => w && !stop.has(w.toLowerCase()))
+    .slice(0, 4)
+  if (words.length === 0) return NEW_CHAT_TITLE
+  const titled = words
+    .map(w => (w.length > 1 ? w[0].toUpperCase() + w.slice(1).toLowerCase() : w.toUpperCase()))
+    .join(' ')
+  return titled.length > 40 ? titled.substring(0, 37) + '...' : titled
+}
+
 
 const SHOW_AI_READINESS_NAV = false;
 
@@ -945,18 +1005,17 @@ export default function Dashboard() {
 
   const activeCopilotSession = displayedSessions.find(s => s.id === copilotActiveSessionId) || displayedSessions[0] || null
 
-  // Sessions rendered in the sidebar list — hides placeholder-titled empty
-  // sessions so the panel only shows real conversations. The session is
-  // still selectable via the active resolution above; it just doesn't clutter
-  // the list until the user types the first message (which renames the title).
-  const _PLACEHOLDER_TITLES = new Set([
-    '', 'new chat', 'new chat session', 'untitled', 'certaintyai / mdx',
-  ])
+  // Sessions rendered in the sidebar list. An empty "New Chat" placeholder
+  // IS shown (so the user sees their click of "+" immediately and can rename
+  // by sending a message). Only orphan-titled empties (legacy '', 'Untitled',
+  // the long-gone 'CertaintyAI / MDx' badge string) are hidden — those
+  // never come from the current code path and only show up as stale rows
+  // in older localStorage snapshots.
+  const _ORPHAN_EMPTY_TITLES = new Set(['', 'untitled', 'certaintyai / mdx'])
   const sidebarSessions = displayedSessions.filter(s => {
     const isEmpty = !s.messages || s.messages.length === 0
     const titleKey = String(s.title || '').trim().toLowerCase()
-    const hasPlaceholderTitle = _PLACEHOLDER_TITLES.has(titleKey)
-    return !(isEmpty && hasPlaceholderTitle)
+    return !(isEmpty && _ORPHAN_EMPTY_TITLES.has(titleKey))
   })
 
   // Ensure active model is updated when session changes
@@ -1026,7 +1085,7 @@ export default function Dashboard() {
     const newId = `session-${activeAgentId}-${Date.now()}`
     const newSession = {
       id: newId,
-      title: 'New Chat Session',
+      title: NEW_CHAT_TITLE,
       selectedModel: copilotModel,
       createdDate: new Date().toISOString(),
       messages: [],
@@ -1050,7 +1109,7 @@ export default function Dashboard() {
           ...prev.filter(s => s.id !== id),
           {
             id: fallbackId,
-            title: 'New Chat Session',
+            title: NEW_CHAT_TITLE,
             selectedModel: copilotModel,
             createdDate: new Date().toISOString(),
             messages: [],
@@ -1260,7 +1319,7 @@ export default function Dashboard() {
       const newId = `session-${activeAgentId}-${Date.now()}`
       currentSession = {
         id: newId,
-        title: trimmed ? (trimmed.length > 25 ? trimmed.substring(0, 25) + '...' : trimmed) : 'File Upload Chat',
+        title: trimmed ? generateSessionTitle(trimmed) : 'File Upload Chat',
         selectedModel: copilotModel,
         createdDate: new Date().toISOString(),
         messages: [],
@@ -1283,9 +1342,12 @@ export default function Dashboard() {
 
     const updatedMessages = [...(currentSession.messages || []), userMsg]
     
-    // Update session with user message
-    const titleUpdated = currentSession.title === 'New Chat Session' && trimmed
-      ? (trimmed.length > 25 ? trimmed.substring(0, 25) + '...' : trimmed)
+    // Update session with user message. Smart-rename fires only on the very
+    // first user message of a session that still carries one of the placeholder
+    // titles. Legacy "New Chat Session" rows in localStorage are also matched
+    // so prior-version sessions migrate to smart titles on their next prompt.
+    const titleUpdated = PLACEHOLDER_NEW_CHAT_TITLES.has(currentSession.title) && trimmed
+      ? generateSessionTitle(trimmed)
       : currentSession.title
 
     setCopilotSessions(prev => prev.map(s => 
@@ -2653,15 +2715,9 @@ export default function Dashboard() {
                                     {relTime}
                                   </span>
                                 </div>
-                                {preview ? (
+                                {preview && (
                                   <div className="text-[10.5px] text-[var(--dash-text-secondary)]/85 truncate mt-0.5 leading-snug">
                                     {preview}
-                                  </div>
-                                ) : (
-                                  <div className="mt-0.5">
-                                    <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-wider text-[var(--dash-text-secondary)]/55 border border-[var(--dash-border)] rounded-md px-1.5 py-0.5">
-                                      Empty
-                                    </span>
                                   </div>
                                 )}
                               </div>
