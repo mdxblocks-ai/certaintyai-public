@@ -3271,6 +3271,11 @@ export default function Dashboard() {
                       <i className="ti ti-info-circle text-xs"></i>
                       <span>Supported: {SUPPORTED_ATTACHMENT_LABEL}</span>
                     </div>
+                    {/* AI disclaimer — same subtle style as the supported-formats hint */}
+                    <div className="text-[10px] text-[var(--dash-text-secondary)]/75 max-w-[95%] ml-2 mr-auto md:ml-4 px-1.5 flex items-start gap-1 font-medium font-sans mt-1">
+                      <i className="ti ti-info-circle text-xs mt-0.5 shrink-0"></i>
+                      <span>AI-generated insights may contain errors. Human-in-the-Loop review is required for critical decisions.</span>
+                    </div>
                   </div>
                 </div>
               </div>
