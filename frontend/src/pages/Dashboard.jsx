@@ -2912,11 +2912,8 @@ export default function Dashboard() {
                   <div className="overflow-y-auto scrollbar-none flex-1 font-sans">
                     {/* Sessions header — sticky so it stays visible while
                         the list below scrolls (ChatGPT-style fixed header). */}
-                    <div className="flex flex-col gap-2 px-2 pt-3 pb-2 border-b border-[var(--dash-border)] sticky top-0 bg-[var(--dash-sidebar-bg)] z-10">
-                      {!copilotSidebarCollapsed && (
-                        <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-wider animate-fade-in order-2 px-1">Sessions</span>
-                      )}
-                      <div className="flex items-center gap-1.5 order-1">
+                    <div className="flex items-center px-2 py-2 border-b border-[var(--dash-border)] sticky top-0 bg-[var(--dash-sidebar-bg)] z-10">
+                      <div className="flex items-center gap-1.5 w-full">
                         {!copilotSidebarCollapsed && (
                           <button
                             onClick={handleCopilotNewChat}
@@ -2966,11 +2963,11 @@ export default function Dashboard() {
                       </button>
                     </div>
 
-                    {/* Session List (ChatGPT-style) */}
-                    <div className="space-y-1">
+                    {/* Session List (ChatGPT-style — starts immediately under the New Chat button) */}
+                    <div className="space-y-1 px-2 pt-2">
                       {sidebarSessions.length === 0 && !copilotSidebarCollapsed && (
                         <div className="text-[10.5px] italic text-[var(--dash-text-secondary)] px-2 py-3">
-                          No sessions yet. Click <b className="not-italic">+</b> above to start a chat.
+                          No conversations yet. Click <b className="not-italic">+ New Chat</b> above to start.
                         </div>
                       )}
                       {sidebarSessions.map(session => {
