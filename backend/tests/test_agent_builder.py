@@ -629,6 +629,140 @@ def test_followups_classify_from_user_prompt_first(client, db_session, monkeypat
     )
 
 
+def test_extractive_doc_answer_grounds_in_document_content(client):
+    """When the user asks about scoring and the document explains scoring,
+    the extractive answer must quote the relevant sentences verbatim."""
+    from app.agents.agent_runtime import _extractive_doc_answer
+
+    doc = (
+        "Northwind Health Systems AI Readiness Assessment.\n\n"
+        "The AI Readiness Score combines five sub-dimensions, each scored 0 to 100: "
+        "Semantic Alignment, RAG Accuracy, Audit and Provenance, Governance Oversight, "
+        "and Data Maturity. "
+        "The overall score rolls up into a tier — Foundational (0 to 39), Piloting (40 to 74), "
+        "or Scale (75 to 100). "
+        "The weather in Seattle this week is partly cloudy. "
+        "Your weakest sub-score is usually the highest-leverage fix for the next tier jump."
+    )
+
+    answer = _extractive_doc_answer(
+        user_question="Please explain about Scoring in laymen terms",
+        doc_content=doc,
+        doc_ref="Northwind Health Systems_Report.txt",
+        role="base",
+    )
+
+    # The answer must quote the scoring-relevant content.
+    assert "five sub-dimensions" in answer or "Foundational" in answer or "tier" in answer
+    # The irrelevant sentence about Seattle weather must NOT appear.
+    assert "Seattle" not in answer and "weather" not in answer
+    # Citation present.
+    assert "Northwind Health Systems_Report.txt" in answer
+    # Intro phrase keyed to the topic.
+    assert answer.startswith("Based on the uploaded document,")
+
+
+def test_extractive_doc_answer_does_not_leak_internal_failure_modes(client):
+    """The doc-grounded response must NEVER mention any of the internal
+    failure-mode words: 'simulated', 'demo', 'fallback', 'LLM', 'Gemini',
+    'Vertex', or the generic 'I can answer prompts across five topic areas'.
+    """
+    from app.agents.agent_runtime import _extractive_doc_answer
+
+    answer = _extractive_doc_answer(
+        user_question="What does the document say?",
+        doc_content=(
+            "This is a comprehensive AI readiness review for the organization. "
+            "Key findings include governance gaps and data hygiene issues. "
+            "Recommended next steps are to charter a steering committee."
+        ),
+        doc_ref="sample.txt",
+        role="base",
+    )
+
+    forbidden = (
+        "simulated", "Simulated", "demo", "Demo", "fallback", "Fallback",
+        "LLM", "Gemini", "Vertex",
+        "I can answer prompts across five topic areas",
+    )
+    lower = answer.lower()
+    for bad in forbidden:
+        assert bad.lower() not in lower, (
+            f"Forbidden phrase {bad!r} appeared in extractive answer:\n{answer}"
+        )
+
+
+def test_extractive_doc_answer_zero_overlap_falls_back_to_document_opener(client):
+    """When the question has no keyword overlap with the document, the
+    extractor still returns content FROM the document — never a generic
+    capability blurb."""
+    from app.agents.agent_runtime import _extractive_doc_answer
+
+    doc = (
+        "Quarter one revenue figures for the Northwind organization. "
+        "Sales totaled 4.2 million across three product lines. "
+        "Margins held at 38 percent year over year."
+    )
+
+    answer = _extractive_doc_answer(
+        user_question="biology of dolphins",
+        doc_content=doc,
+        doc_ref="finance.txt",
+        role="base",
+    )
+
+    # Even with zero overlap, the answer must come from the document.
+    assert "Northwind" in answer or "Sales" in answer or "Margins" in answer
+    # Must NOT be the generic intent fallback.
+    assert "I can answer prompts across five topic areas" not in answer
+    # Citation still present.
+    assert "finance.txt" in answer
+
+
+def test_simulated_trace_uses_extractive_path_when_document_attached(client, db_session):
+    """`_generate_simulated_trace` with attached_doc_content takes the
+    document-grounded extractive path. Without it, the existing intent-
+    dispatch templates fire (regression coverage)."""
+    from app.agents.agent_runtime import _generate_simulated_trace
+    from app.models import Agent
+
+    agent = Agent(
+        name="Test Agent", description="t", instructions="t", icon="ti-robot",
+        role="base", model="Gemini 2.5", temperature=0.3, max_steps=10,
+        tools=[], voice_enabled=False, owner_id=1,
+    )
+
+    # Path A: doc attached -> extractive grounded answer.
+    doc = (
+        "The AI Readiness Score is calculated from five sub-dimensions. "
+        "Each sub-dimension is scored from zero to one hundred."
+    )
+    outcome_doc, steps_doc = _generate_simulated_trace(
+        agent,
+        user_input="Please explain about scoring",
+        document_count=1,
+        attached_doc_content=doc,
+        attached_doc_ref="report.txt",
+    )
+    assert "report.txt" in outcome_doc
+    assert "sub-dimension" in outcome_doc.lower() or "score" in outcome_doc.lower()
+    assert "I can answer prompts across five topic areas" not in outcome_doc
+
+    # Path B: no doc attached -> existing intent-dispatch templates fire.
+    outcome_nodoc, steps_nodoc = _generate_simulated_trace(
+        agent,
+        user_input="Explain my readiness score",
+        document_count=0,
+    )
+    # The intent-dispatch path produces the canned templates (recognizable
+    # by their topic-titled first line); the doc-grounded path does NOT
+    # use those headings.
+    assert "AI Readiness Score" in outcome_nodoc
+    # Belt-and-suspenders: the regression path does not contain the doc
+    # intro phrase.
+    assert "Based on the uploaded document" not in outcome_nodoc
+
+
 def test_simulated_outcomes_have_no_internal_debug_labels(client, monkeypatch):
     """The simulated fallback outcomes (used when no LLM is configured or
     the live call raises) must not surface any internal "[Simulated ...]" /

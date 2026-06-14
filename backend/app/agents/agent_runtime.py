@@ -760,7 +760,12 @@ def run_agent_loop(
     
     if not is_llm_configured:
         logger.info("LLM not fully configured in environment. Generating simulated agent run trace.")
-        outcome, steps = _generate_simulated_trace(agent, user_input, len(context_chunks) + (1 if attached_doc_content else 0))
+        outcome, steps = _generate_simulated_trace(
+            agent, user_input,
+            len(context_chunks) + (1 if attached_doc_content else 0),
+            attached_doc_content=attached_doc_content,
+            attached_doc_ref=attached_doc_ref,
+        )
         logger.info(
             "[agent_run] Model Response (simulated) | resp_chars=%d preview=%r",
             len(outcome or ""), (outcome or "")[:600],
@@ -969,7 +974,12 @@ def run_agent_loop(
                 
         except Exception as exc:
             logger.warning("Agent execution loop encountered error: %s. Falling back to simulated trace.", exc)
-            outcome, steps = _generate_simulated_trace(agent, user_input, len(context_chunks) + (1 if attached_doc_content else 0))
+            outcome, steps = _generate_simulated_trace(
+                agent, user_input,
+                len(context_chunks) + (1 if attached_doc_content else 0),
+                attached_doc_content=attached_doc_content,
+                attached_doc_ref=attached_doc_ref,
+            )
             logger.info(
                 "[agent_run] Model Response (simulated, after LLM error) | resp_chars=%d preview=%r",
                 len(outcome or ""), (outcome or "")[:600],
@@ -1119,6 +1129,149 @@ def _role_lens(role: str) -> str:
     return ""
 
 
+# ---- Document-grounded extractive answering (no LLM) -----------------
+#
+# Used when an uploaded document is attached AND the live LLM path didn't
+# complete. Picks the question-most-relevant sentences from the document
+# and returns them as a concise grounded answer. Reads as a normal
+# response — no leakage of "simulated", "fallback", "LLM unavailable", etc.
+
+_DOC_STOP_WORDS = frozenset({
+    'a', 'an', 'the', 'and', 'or', 'but', 'if', 'then', 'of', 'in', 'on',
+    'for', 'to', 'from', 'with', 'about', 'as', 'at', 'by', 'into', 'over',
+    'is', 'are', 'was', 'were', 'be', 'been', 'being',
+    'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'should',
+    'could', 'can', 'may', 'might', 'must', 'shall',
+    'i', 'me', 'my', 'we', 'us', 'our', 'you', 'your', 'he', 'him', 'his',
+    'she', 'her', 'they', 'them', 'their', 'this', 'that', 'these', 'those',
+    'it', 'its',
+    'what', 'when', 'where', 'why', 'how', 'who', 'which', 'whom',
+    'please', 'tell', 'show', 'explain', 'describe', 'give', 'provide',
+    'help', 'want', 'need', 'know', 'see',
+    'so', 'also', 'just', 'really', 'very', 'much', 'many', 'more', 'most',
+    'some', 'any', 'no', 'not', 'don', 'didn', 'doesn',
+    'now', 'then', 'here', 'there', 'today', 'tomorrow',
+    # Meta words about the upload itself — not content the user cares about.
+    'read', 'file', 'document', 'pdf', 'attached', 'uploaded', 'attachment',
+    'layman', 'laymen', 'terms', 'simple', 'simply', 'basic', 'briefly',
+})
+
+_TOPIC_VOCABULARY = (
+    # (substring to match in lowered question, label shown in the intro)
+    ('scoring', 'scoring'),
+    ('score', 'score'),
+    ('readiness', 'readiness'),
+    ('governance', 'governance'),
+    ('compliance', 'compliance'),
+    ('roadmap', 'roadmap'),
+    ('priority', 'priorities'),
+    ('priorities', 'priorities'),
+    ('benchmark', 'benchmarks'),
+    ('cost', 'cost'),
+    ('roi', 'ROI'),
+    ('risk', 'risk'),
+    ('vendor', 'vendor'),
+    ('audit', 'audit'),
+    ('maturity', 'maturity'),
+    ('finops', 'FinOps'),
+)
+
+
+def _question_topic_label(question: str) -> Optional[str]:
+    """Pick a short topic label for the intro phrase, or None for the generic form."""
+    if not question:
+        return None
+    low = question.lower()
+    for needle, label in _TOPIC_VOCABULARY:
+        if needle in low:
+            return label
+    return None
+
+
+def _meaningful_question_stems(question: str) -> set[str]:
+    """Tokens from the question minus stop words, lightly stemmed so
+    'scoring' / 'scored' / 'scores' all match 'score' in the document."""
+    out: set[str] = set()
+    for tok in re.findall(r"[a-zA-Z][a-zA-Z0-9'-]+", (question or "").lower()):
+        if tok in _DOC_STOP_WORDS or len(tok) < 3:
+            continue
+        stem = tok
+        for suffix in ('ing', 'ies', 'ed', 'es', 's'):
+            if stem.endswith(suffix) and len(stem) > len(suffix) + 2:
+                stem = stem[: -len(suffix)]
+                break
+        out.add(stem)
+    return out
+
+
+def _split_doc_sentences(text: str) -> list[str]:
+    """Naive sentence splitter. Treats sentence-ending punctuation and
+    blank-line paragraph breaks as sentence boundaries. Single newlines
+    are NOT a split signal (they're usually word-wrap, not paragraph
+    breaks). Bullet glyphs at line starts are stripped so list items
+    can stand on their own when separated by blank lines."""
+    if not text:
+        return []
+    # Strip bullet glyphs at line starts so they don't bleed into sentences.
+    normalised = re.sub(r"\n[\s•\-*]+", "\n", text)
+    # Soft-wrap repair: collapse a single newline (without surrounding
+    # punctuation or blank line) into a space. Preserves paragraph breaks.
+    normalised = re.sub(r"(?<![.!?\n])\n(?!\n)", " ", normalised)
+    parts = re.split(r"(?<=[.!?])\s+|\n{2,}", normalised.strip())
+    return [p.strip() for p in parts if p.strip()]
+
+
+def _extractive_doc_answer(
+    user_question: str,
+    doc_content: str,
+    doc_ref: Optional[str],
+    role: str,
+    n: int = 3,
+) -> str:
+    """Pick the top-N question-relevant sentences from doc_content and
+    return them as a concise grounded answer. Returns empty string if the
+    document yields zero usable sentences — caller falls through to the
+    generic intent-dispatch path in that case."""
+    sentences = _split_doc_sentences(doc_content)
+    if not sentences:
+        return ""
+
+    q_stems = _meaningful_question_stems(user_question)
+
+    if q_stems:
+        scored: list[tuple[float, int, str]] = []
+        for idx, s in enumerate(sentences):
+            s_lower = s.lower()
+            overlap = sum(1 for stem in q_stems if stem in s_lower)
+            if overlap == 0:
+                continue
+            word_count = max(1, len(s.split()))
+            score = overlap / (word_count ** 0.5)
+            scored.append((score, idx, s))
+        if scored:
+            scored.sort(key=lambda t: -t[0])
+            top = sorted(scored[:n], key=lambda t: t[1])
+            picked = [s for _, _, s in top]
+        else:
+            picked = sentences[:n]
+    else:
+        # Question had no usable tokens (e.g. "?" only). Use document opener.
+        picked = sentences[:n]
+
+    body = " ".join(picked)
+    if len(body) > 600:
+        body = body[:597].rstrip() + "..."
+
+    topic = _question_topic_label(user_question)
+    if topic:
+        intro = f"Based on the uploaded document, the {topic} can be explained this way:"
+    else:
+        intro = "Based on the uploaded document, here is the answer:"
+
+    citation = f"\n\nSource: {doc_ref}" if doc_ref else ""
+    return f"{intro}\n\n{body}{citation}"
+
+
 def _simulated_outcome(intent: str, user_input: str, role: str) -> str:
     """Return a distinct fallback response per intent (used when no LLM is
     configured or the live call raised). No user-visible debug label —
@@ -1228,18 +1381,69 @@ def _simulated_outcome(intent: str, user_input: str, role: str) -> str:
     )
 
 
-def _generate_simulated_trace(agent: Agent, user_input: str, document_count: int) -> tuple[str, list[dict]]:
+def _generate_simulated_trace(
+    agent: Agent,
+    user_input: str,
+    document_count: int,
+    attached_doc_content: Optional[str] = None,
+    attached_doc_ref: Optional[str] = None,
+) -> tuple[str, list[dict]]:
     """Intent-aware fallback when no LLM is configured or the live call
     raised mid-loop. (Internal — no user-visible debug label.)
 
-    Intent is detected from the user's prompt and dispatched to one of five
-    distinct response templates (plus a general fallback). The agent's role
-    contributes a small framing prefix but does not override the intent —
-    eliminating the previous bug where role='base' silently fell into a CFO
-    template regardless of what the user asked.
+    When an attached document with extracted content is present, takes a
+    document-grounded extractive path that picks the most question-relevant
+    sentences from the document and returns them as a concise answer. Only
+    when no document content is available does this fall through to the
+    existing intent-dispatch templates.
     """
-    intent = _detect_intent(user_input)
     role = (agent.role or "base").lower()
+    doc_clean = (attached_doc_content or "").strip()
+
+    # ----- Document-grounded path: answer from the extracted document. -----
+    if doc_clean:
+        outcome = _extractive_doc_answer(
+            user_question=user_input,
+            doc_content=doc_clean,
+            doc_ref=attached_doc_ref,
+            role=role,
+        )
+        if outcome:
+            logger.info(
+                "[agent_run] Document-grounded trace | role=%r doc_chars=%d doc_ref=%r",
+                role, len(doc_clean), attached_doc_ref,
+            )
+            steps = [
+                {
+                    "step": 1,
+                    "type": "reasoning",
+                    "detail": (
+                        f"Reviewed attached document "
+                        f"'{attached_doc_ref or 'untitled'}' "
+                        f"({len(doc_clean)} characters)."
+                    ),
+                    "tool": None,
+                    "tokens": 0,
+                },
+                {
+                    "step": 2,
+                    "type": "tool_call",
+                    "detail": "Identified passages relevant to the user's question.",
+                    "tool": "Doc retrieval",
+                    "tokens": 0,
+                },
+                {
+                    "step": 3,
+                    "type": "complete",
+                    "detail": "Drafted reply grounded in the attached document.",
+                    "tool": None,
+                    "tokens": 0,
+                },
+            ]
+            return outcome, steps
+        # else: extraction produced no usable sentences -> fall through.
+
+    intent = _detect_intent(user_input)
 
     logger.info(
         "[agent_run] Simulated trace | role=%r intent=%r preview=%r",
