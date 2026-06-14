@@ -225,5 +225,7 @@ class AgentRunRequest(BaseModel):
     # Layer C: optional base64-encoded raw bytes for multimodal Gemini ingest
     attached_doc_b64: Optional[str] = None
     attached_doc_mime: Optional[str] = None
+    # Follow-up exclusion: prompts already shown in this conversation
+    previous_follow_ups: list[str] = Field(default_factory=list)
 
 

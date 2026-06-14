@@ -563,3 +563,102 @@ def test_run_with_b64_but_multimodal_disabled_falls_back_honestly(
     # Honest fallback stanza in the system prompt
     assert "no text could be extracted" in sp
     assert "multimodal ingestion is disabled" in sp.lower() or "received but its content could not be parsed" in sp.lower()
+
+
+# ============================================================
+# Phase: Follow-up generation — Fix 1 + Fix 2 regression tests
+# ============================================================
+
+def test_followups_track_assistant_response_not_user_prompt(client, db_session, monkeypatch):
+    """User CLICKS a follow-up that lives in the priority_actions bucket,
+    but the assistant's response is about COST. The next turn's follow-ups
+    must reflect the assistant's response (cost_optimization), not the
+    bucket the user's templated click came from.
+    """
+    # Force the fallback path so we can read intent dispatch deterministically.
+    monkeypatch.setattr("app.agents.agent_runtime.settings.llm_provider", "openai")
+    monkeypatch.setattr("app.agents.agent_runtime.settings.openai_api_key", "")
+    monkeypatch.setattr("app.agents.agent_runtime.settings.anthropic_api_key", "")
+    monkeypatch.setattr("app.agents.agent_runtime.settings.gemini_api_key", "")
+    monkeypatch.setattr("app.agents.agent_runtime.settings.gcp_project_id", "")
+
+    # Call the function directly so we control last_answer / last_user_input.
+    from app.agents.agent_runtime import generate_dynamic_follow_ups
+
+    user_prompt_click = "What are the priority actions to lift my score?"
+    assistant_says = (
+        "Three cost levers in order of typical payback: model routing, "
+        "caching, and committed-spend optimization. Track unit economics, "
+        "not just raw AI spend."
+    )
+
+    out = generate_dynamic_follow_ups(
+        agent_role="base",
+        history=[],
+        last_answer=assistant_says,
+        last_user_input=user_prompt_click,
+        previous_follow_ups=[],
+    )
+    # The returned set must come from the cost_optimization ladder, not
+    # priority_actions — proves Fix 1 (assistant response wins).
+    joined = " | ".join(out).lower()
+    assert any(kw in joined for kw in ("cost", "routing", "unit economics", "overspend", "finops")), (
+        f"Expected cost-bucket follow-ups based on assistant response, got: {out!r}"
+    )
+
+
+def test_followups_never_repeat_within_session(client, db_session, monkeypatch):
+    """Three consecutive turns in the same intent must yield three disjoint
+    sets — no repetition within a session, ladder descends naturally.
+    """
+    monkeypatch.setattr("app.agents.agent_runtime.settings.llm_provider", "openai")
+    monkeypatch.setattr("app.agents.agent_runtime.settings.openai_api_key", "")
+    monkeypatch.setattr("app.agents.agent_runtime.settings.anthropic_api_key", "")
+    monkeypatch.setattr("app.agents.agent_runtime.settings.gemini_api_key", "")
+    monkeypatch.setattr("app.agents.agent_runtime.settings.gcp_project_id", "")
+
+    from app.agents.agent_runtime import generate_dynamic_follow_ups, _normalize_followup
+
+    assistant_says = (
+        "Three priority actions ranked by impact-to-effort: charter a "
+        "governance committee, ship one copilot under policy, wire the "
+        "Evidence Pack into your top three workflows."
+    )
+    user_prompt = "What are the priority actions for our organization?"
+
+    seen: list[str] = []
+
+    turn1 = generate_dynamic_follow_ups(
+        agent_role="base", history=[], last_answer=assistant_says,
+        last_user_input=user_prompt, previous_follow_ups=list(seen),
+    )
+    seen.extend(turn1)
+
+    turn2 = generate_dynamic_follow_ups(
+        agent_role="base", history=[], last_answer=assistant_says,
+        last_user_input=user_prompt, previous_follow_ups=list(seen),
+    )
+    seen.extend(turn2)
+
+    turn3 = generate_dynamic_follow_ups(
+        agent_role="base", history=[], last_answer=assistant_says,
+        last_user_input=user_prompt, previous_follow_ups=list(seen),
+    )
+
+    # Each turn returns exactly 3 items.
+    assert len(turn1) == 3 and len(turn2) == 3 and len(turn3) == 3
+
+    # No follow-up repeats across turns (compare normalised forms).
+    t1n = {_normalize_followup(s) for s in turn1}
+    t2n = {_normalize_followup(s) for s in turn2}
+    t3n = {_normalize_followup(s) for s in turn3}
+    assert t1n.isdisjoint(t2n), f"Turn 2 repeats Turn 1 items: {t1n & t2n}"
+    assert t1n.isdisjoint(t3n), f"Turn 3 repeats Turn 1 items: {t1n & t3n}"
+    assert t2n.isdisjoint(t3n), f"Turn 3 repeats Turn 2 items: {t2n & t3n}"
+
+    # Ladder descends: by turn 3 the suggestions are deeper-stage entries
+    # (look for at least one of the deeper-stage anchor words).
+    deeper_anchors = ("timeline", "value", "sponsor", "roadmap")
+    assert any(any(kw in s.lower() for kw in deeper_anchors) for s in turn3), (
+        f"Expected turn-3 suggestions to surface deeper-ladder anchors, got: {turn3!r}"
+    )

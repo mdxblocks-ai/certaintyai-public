@@ -508,6 +508,7 @@ def run_agent(
             attached_doc_content=payload.attached_doc_content,
             attached_doc_b64=payload.attached_doc_b64,
             attached_doc_mime=payload.attached_doc_mime,
+            previous_follow_ups=payload.previous_follow_ups,
         )
         return run_log
     except Exception as exc:

@@ -251,21 +251,38 @@ def format_history_context(history: list[dict]) -> str:
 # prompts regardless of what the user had just asked. This table is keyed
 # by intent first so the suggestions stay relevant to the conversation.
 INTENT_FOLLOWUPS: dict[str, dict[str, list[str]]] = {
+    # Each list is ordered by typical conversation depth (top = shallowest,
+    # bottom = deepest). The fallback selector picks the first 3 entries
+    # whose normalised text isn't in the exclusion set, so as the user
+    # clicks through the conversation the suggestions naturally descend
+    # the ladder: Score → Priority → Timeline → Value → Sponsorship → Roadmap.
     "explain_score": {
         "base": [
             "What are the priority actions to lift my score?",
             "How does my score compare to industry benchmarks?",
             "Which sub-score is driving my tier the most?",
+            "What is the implementation timeline for closing the largest gap?",
+            "What business value does each sub-score improvement unlock?",
+            "Who should sponsor each sub-score improvement at the C-suite level?",
+            "What does the 12-month roadmap look like to reach the next tier?",
         ],
         "ciso": [
             "Which NIST AI RMF controls drive my Audit & Provenance sub-score?",
             "What governance gaps are hurting my score the most?",
             "How does my security posture compare to my sector?",
+            "What is the implementation timeline for the largest control gap?",
+            "What business risk does each unresolved gap carry?",
+            "Who at the executive level should sponsor each control rollout?",
+            "What does the 12-month security roadmap look like to reach the next tier?",
         ],
         "cfo": [
             "Which sub-score has the largest ROI to fix first?",
             "What is the cost of inaction at my current tier?",
             "How do top-quartile peers structure their AI spend?",
+            "What is the payback timeline for each sub-score improvement?",
+            "What business value does each tier jump unlock for the P&L?",
+            "Who at the C-suite should sponsor each investment?",
+            "What does the 12-month investment roadmap look like to reach the next tier?",
         ],
     },
     "priority_actions": {
@@ -273,16 +290,28 @@ INTENT_FOLLOWUPS: dict[str, dict[str, list[str]]] = {
             "How long does each priority action typically take?",
             "Which action has the highest impact-to-effort ratio?",
             "How do I get executive buy-in for these actions?",
+            "What business value does each action unlock for the organization?",
+            "Who at the C-suite should sponsor each action?",
+            "What does the 12-month roadmap look like for these actions?",
+            "Which actions can be sequenced in parallel vs. serial?",
         ],
         "ciso": [
             "Which actions close the biggest NIST AI RMF gaps?",
             "What does a 90-day AI governance charter cover?",
             "How do I sequence vendor and model risk reviews?",
+            "What is the implementation timeline for each action?",
+            "What residual risk remains after each action ships?",
+            "Who at the C-suite should sponsor the security program?",
+            "What does the 12-month security roadmap look like?",
         ],
         "cfo": [
             "What is the 12-month payback on these actions?",
             "How do I budget for an AI governance committee?",
             "Which action carries the lowest cost-of-inaction risk?",
+            "What is the implementation timeline by quarter?",
+            "What is the net business value per dollar spent?",
+            "Who at the C-suite should sponsor each line of investment?",
+            "What does the 12-month roadmap look like by quarter?",
         ],
     },
     "industry_benchmarks": {
@@ -290,16 +319,28 @@ INTENT_FOLLOWUPS: dict[str, dict[str, list[str]]] = {
             "How can I close the gap with the top quartile?",
             "Which sub-score most differentiates leaders from peers?",
             "What practices do top-quartile organizations have in common?",
+            "What is the implementation timeline to reach top-quartile performance?",
+            "What business value comes from reaching the top quartile?",
+            "Who at the C-suite typically sponsors top-quartile programs?",
+            "What does a 12-month roadmap to top-quartile readiness look like?",
         ],
         "ciso": [
             "What controls do top-quartile peers use that we do not?",
             "How do my NIST GOVERN/MEASURE scores compare to my sector?",
             "Which framework adoption is the sector median?",
+            "What is the implementation timeline to reach sector top quartile?",
+            "What residual risk reduction comes from closing each gap?",
+            "Who sponsors top-quartile security programs at peer firms?",
+            "What does the 12-month roadmap to top-quartile security look like?",
         ],
         "cfo": [
             "What is the typical AI-readiness investment for top-quartile peers?",
             "How do peers structure committed-spend drawdown?",
             "Where do laggards leak the most AI spend?",
+            "What is the implementation timeline for top-quartile investment patterns?",
+            "What is the P&L delta between median and top-quartile peers?",
+            "Who sponsors top-quartile AI investment at peer firms?",
+            "What does the 12-month investment roadmap to top quartile look like?",
         ],
     },
     "governance_recommendations": {
@@ -307,16 +348,28 @@ INTENT_FOLLOWUPS: dict[str, dict[str, list[str]]] = {
             "What does an AI Review Committee charter look like?",
             "How do I prioritize among NIST AI RMF controls?",
             "Which controls should our auditors see first?",
+            "What is the implementation timeline for the highest-priority controls?",
+            "What business value does each control deliver beyond compliance?",
+            "Who at the C-suite should sponsor the governance program?",
+            "What does the 12-month governance roadmap look like?",
         ],
         "ciso": [
             "How do I instrument continuous control attestation?",
             "What is the right cadence for vendor and model risk triage?",
             "How do I prove policy enforcement at runtime?",
+            "What is the implementation timeline for continuous attestation?",
+            "What residual risk drops after each control matures?",
+            "Who at the C-suite should sponsor each control program?",
+            "What does the 12-month attestation roadmap look like?",
         ],
         "cfo": [
             "What is the year-one budget envelope for the governance program?",
             "Which governance controls have measurable ROI?",
             "How do regulators weigh governance vs. model performance?",
+            "What is the implementation timeline by quarter?",
+            "What is the P&L impact of each control delivered?",
+            "Who at the C-suite should sponsor the governance investment?",
+            "What does the 12-month governance investment roadmap look like?",
         ],
     },
     "cost_optimization": {
@@ -324,16 +377,28 @@ INTENT_FOLLOWUPS: dict[str, dict[str, list[str]]] = {
             "What is the typical payback period for model routing?",
             "How do I measure AI unit economics?",
             "Where do most teams overspend on AI?",
+            "What is the implementation timeline for the largest savings lever?",
+            "What business value does each cost lever unlock?",
+            "Who at the C-suite should sponsor the FinOps program?",
+            "What does the 12-month cost-optimization roadmap look like?",
         ],
         "ciso": [
             "How do I balance security controls with cost optimization?",
             "Which security tools have outsized AI cost impact?",
             "How do I measure security ROI on AI spend?",
+            "What is the implementation timeline for security-cost rebalancing?",
+            "What residual risk remains after each consolidation?",
+            "Who at the C-suite should sponsor security-cost tradeoff decisions?",
+            "What does the 12-month security-cost roadmap look like?",
         ],
         "cfo": [
             "What is the right baseline metric for AI unit economics?",
             "How do I structure committed-spend drawdowns?",
             "What does best-in-class AI gross margin look like?",
+            "What is the implementation timeline for FinOps program rollout?",
+            "What is the P&L impact in year one vs. year two?",
+            "Who at the C-suite should sponsor the FinOps program?",
+            "What does the 12-month FinOps roadmap look like?",
         ],
     },
     "general": {
@@ -341,26 +406,87 @@ INTENT_FOLLOWUPS: dict[str, dict[str, list[str]]] = {
             "Explain my AI Readiness Score in more detail.",
             "What are the priority actions for our organization?",
             "How do we compare with industry benchmarks?",
+            "What is the implementation timeline for our top priorities?",
+            "What business value will we gain by acting on these?",
+            "Who at the C-suite should sponsor our AI readiness program?",
+            "What does our 12-month AI readiness roadmap look like?",
         ],
         "ciso": [
             "Which NIST AI RMF controls should we prioritize next?",
             "What are the top threat-exposure gaps in our current posture?",
             "How do we establish automated alerting for shadow AI?",
+            "What is the implementation timeline for our security priorities?",
+            "What residual risk reduction do we gain from each control?",
+            "Who at the C-suite should sponsor the security program?",
+            "What does our 12-month security roadmap look like?",
         ],
         "cfo": [
             "What is our estimated payback period for these AI cost savings?",
             "How can we optimize multi-cloud LLM token spend today?",
             "Does our current AI spend governance model meet standards?",
+            "What is the implementation timeline for the FinOps program?",
+            "What is the P&L impact of each lever?",
+            "Who at the C-suite should sponsor FinOps?",
+            "What does our 12-month FinOps roadmap look like?",
         ],
     },
 }
 
 
-def _resolve_fallback_followups(role: str, intent: str) -> list[str]:
-    """Look up the intent-and-role-specific fallback follow-ups."""
+def _normalize_followup(s: str) -> str:
+    """Normalise a follow-up string for stable equality comparison
+    (case-insensitive, whitespace-collapsed, terminal punctuation stripped).
+    """
+    out = (s or "").strip().lower()
+    out = " ".join(out.split())
+    out = out.rstrip(" .?!:;-—")
+    return out
+
+
+def _resolve_fallback_followups(
+    role: str,
+    intent: str,
+    seen_norm: Optional[set] = None,
+    needed: int = 3,
+) -> list[str]:
+    """Pick fresh follow-ups from the intent×role ladder, excluding any whose
+    normalised form is already in `seen_norm`. Walks the ladder top-to-bottom
+    (shallowest → deepest), so as the user progresses through a topic the
+    suggestions naturally deepen: Score → Priority → Timeline → Value →
+    Sponsorship → Roadmap.
+
+    If the primary bucket is exhausted, draws additional entries from the
+    `general` bucket so the runtime never returns fewer than `needed` items.
+    """
     role_key = role.lower() if role and role.lower() in ("ciso", "cfo") else "base"
-    intent_table = INTENT_FOLLOWUPS.get(intent) or INTENT_FOLLOWUPS["general"]
-    return intent_table.get(role_key) or intent_table["base"]
+    seen = seen_norm or set()
+
+    def _walk(bucket: list[str]) -> list[str]:
+        picked: list[str] = []
+        for entry in bucket:
+            if _normalize_followup(entry) in seen:
+                continue
+            picked.append(entry)
+            seen.add(_normalize_followup(entry))
+            if len(picked) >= needed:
+                break
+        return picked
+
+    primary = (INTENT_FOLLOWUPS.get(intent) or INTENT_FOLLOWUPS["general"]).get(role_key) \
+              or INTENT_FOLLOWUPS["general"]["base"]
+    out = _walk(primary)
+
+    if len(out) < needed:
+        # Topic ladder is exhausted; pull additional fresh entries from the
+        # general bucket so the user never sees an empty suggestion strip.
+        general = INTENT_FOLLOWUPS["general"].get(role_key) \
+                  or INTENT_FOLLOWUPS["general"]["base"]
+        for entry in _walk(general):
+            out.append(entry)
+            if len(out) >= needed:
+                break
+
+    return out[:needed]
 
 
 def generate_dynamic_follow_ups(
@@ -368,27 +494,39 @@ def generate_dynamic_follow_ups(
     history: list[dict],
     last_answer: str,
     last_user_input: str = "",
+    previous_follow_ups: Optional[list[str]] = None,
 ) -> list[str]:
-    """Contact Gemini to generate 2-3 dynamic follow-up prompts from the conversation.
+    """Generate 2-3 follow-up prompts grounded in the latest assistant response.
 
-    FIREWALL CONFIRMATION: This call is strictly for conversational guidance only
-    and never interacts with the scoring engine (score_agent.py).
+    FIREWALL CONFIRMATION: this is conversational guidance only and never
+    interacts with the scoring engine.
 
-    Fallback path is now intent-aware: when the live LLM call is unavailable
-    or fails, the follow-ups are selected by detecting intent from the user's
-    latest prompt (or, failing that, from the answer just produced) and looking
-    up the matching (intent, role) entry in INTENT_FOLLOWUPS.
+    Fix 1: intent is now detected from `last_answer` first, falling back to
+    `last_user_input` only when the response classifies as "general". This
+    stops the bug where clicking a templated follow-up (whose text matches
+    one bucket) re-anchored the user to the same bucket turn after turn.
+
+    Fix 2: `previous_follow_ups` is an exclusion set — entries already shown
+    in this conversation are removed from both the LLM-generated set and the
+    fallback ladder, so suggestions evolve and never repeat within a session.
     """
-    # ----- Detect intent from the latest user prompt (preferred) or the answer -----
-    intent = _detect_intent(last_user_input)
-    if intent == "general" and last_answer:
-        intent = _detect_intent(last_answer)
+    previous_follow_ups = previous_follow_ups or []
+    seen_norm: set = {_normalize_followup(s) for s in previous_follow_ups if s}
 
-    fallbacks = _resolve_fallback_followups(agent_role, intent)
+    # ----- Fix 1: detect intent from assistant response first -----
+    intent = _detect_intent(last_answer)
+    intent_source = "assistant_response"
+    if intent == "general" and last_user_input:
+        intent = _detect_intent(last_user_input)
+        intent_source = "user_prompt"
+
+    fallbacks = _resolve_fallback_followups(agent_role, intent, seen_norm=set(seen_norm))
 
     logger.info(
-        "[follow_ups] role=%r intent=%r user_input_preview=%r",
-        (agent_role or "base").lower(), intent, (last_user_input or "")[:120],
+        "[follow_ups] role=%r intent=%r source=%s seen_count=%d user_input_preview=%r answer_preview=%r",
+        (agent_role or "base").lower(), intent, intent_source,
+        len(seen_norm),
+        (last_user_input or "")[:120], (last_answer or "")[:120],
     )
 
     is_llm_configured = bool(
@@ -405,19 +543,32 @@ def generate_dynamic_follow_ups(
         if history:
             history_snippet = "\n".join([f"{m.get('role')}: {m.get('content')}" for m in history[-3:]])
 
+        # ----- Fix 2 (LLM path): instruct the model NOT to repeat seen items.
+        exclusion_block = ""
+        if previous_follow_ups:
+            quoted = "\n".join(f"- {p}" for p in previous_follow_ups if p)
+            exclusion_block = (
+                "\n\nDo NOT repeat any of these previously-shown follow-ups; "
+                "produce ones that go deeper into the topic or pivot naturally:\n"
+                f"{quoted}"
+            )
+
         system_prompt = (
             "You are a C-suite assistant coordinator. Given the recent conversation history and the assistant's last answer, "
             "generate exactly 2 or 3 highly relevant, professional follow-up questions or prompts that the user "
             "(a non-technical C-suite executive) might want to ask next.\n"
             "Keep the questions concise, strategic, and direct (do not use technical jargon like RAG, pgvector, etc.).\n"
+            "Each new question should go ONE step deeper than the previous turn — surface → priority → "
+            "timeline → business value → executive sponsorship → roadmap.\n"
             "You must return a JSON array of strings, e.g. [\"question 1\", \"question 2\"]."
+            f"{exclusion_block}"
         )
 
         user_message = (
             f"Conversation History:\n{history_snippet}\n\n"
             f"Latest User Prompt:\n{last_user_input}\n\n"
-            f"Last Answer:\n{last_answer}\n\n"
-            "Generate 2-3 C-suite follow-up prompts."
+            f"Assistant's Last Answer (use this as the primary source for the new follow-ups):\n{last_answer}\n\n"
+            "Generate 2-3 C-suite follow-up prompts that deepen the conversation."
         )
 
         raw_response = complete_json(system_prompt=system_prompt, user_message=user_message, max_tokens=250)
@@ -427,7 +578,30 @@ def generate_dynamic_follow_ups(
             logger.warning("Failed to parse dynamic follow-up questions JSON. Raw: %s", raw_response)
             questions = parse_tolerant_questions(raw_response)
         if isinstance(questions, list) and len(questions) >= 2:
-            return [str(q) for q in questions[:3]]
+            # Belt-and-suspenders: filter the LLM's output through the
+            # exclusion set too, in case it ignored the instruction.
+            cleaned: list[str] = []
+            local_seen = set(seen_norm)
+            for q in questions:
+                qs = str(q)
+                if _normalize_followup(qs) in local_seen:
+                    continue
+                cleaned.append(qs)
+                local_seen.add(_normalize_followup(qs))
+                if len(cleaned) >= 3:
+                    break
+            # If filtering left us with too few, top up from the fallback
+            # ladder (which itself already excludes seen items).
+            if len(cleaned) < 2:
+                for f in fallbacks:
+                    if _normalize_followup(f) in local_seen:
+                        continue
+                    cleaned.append(f)
+                    local_seen.add(_normalize_followup(f))
+                    if len(cleaned) >= 3:
+                        break
+            if cleaned:
+                return cleaned[:3]
     except Exception as exc:
         logger.warning("Failed to generate dynamic follow-up questions: %s. Using intent-aware fallbacks.", exc)
 
@@ -444,6 +618,7 @@ def run_agent_loop(
     attached_doc_content: Optional[str] = None,
     attached_doc_b64: Optional[str] = None,
     attached_doc_mime: Optional[str] = None,
+    previous_follow_ups: Optional[list[str]] = None,
 ) -> AgentRun:
     """Execute the config-driven runtime loop for a custom agent.
 
@@ -792,7 +967,13 @@ def run_agent_loop(
             status = "completed"
             
     # Generate dynamic follow-up prompts (intent-aware fallback if LLM unavailable)
-    follow_ups = generate_dynamic_follow_ups(agent.role, history, outcome, last_user_input=user_input)
+    follow_ups = generate_dynamic_follow_ups(
+        agent.role,
+        history,
+        outcome,
+        last_user_input=user_input,
+        previous_follow_ups=previous_follow_ups or [],
+    )
             
     # Persist the AgentRun to database
     finished_at = datetime.now(timezone.utc).replace(tzinfo=None)

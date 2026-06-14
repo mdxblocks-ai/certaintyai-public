@@ -1314,6 +1314,26 @@ export default function Dashboard() {
       }
     }
 
+    // Collect every follow-up the user has already been shown in this session
+    // so the backend never repeats one. Order doesn't matter; the backend
+    // normalises (case-insensitive, whitespace-collapsed, terminal punctuation
+    // stripped) before comparing.
+    const seenFollowUps = []
+    {
+      const seen = new Set()
+      for (const m of (currentSession.messages || [])) {
+        if (m && Array.isArray(m.follow_ups)) {
+          for (const f of m.follow_ups) {
+            const key = String(f || '').trim().toLowerCase()
+            if (key && !seen.has(key)) {
+              seen.add(key)
+              seenFollowUps.push(String(f))
+            }
+          }
+        }
+      }
+    }
+
     try {
       // Execute agent run API call
       const res = await api.post(`/agents/${activeAgentId}/run`, {
@@ -1322,7 +1342,8 @@ export default function Dashboard() {
         attached_doc_ref: attachedDocRef,
         attached_doc_content: attachedDocContent,
         attached_doc_b64: attachedDocB64,
-        attached_doc_mime: attachedDocMime
+        attached_doc_mime: attachedDocMime,
+        previous_follow_ups: seenFollowUps
       })
 
       const runLog = res.data
