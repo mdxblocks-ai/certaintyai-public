@@ -113,6 +113,7 @@ export default function Navbar() {
             {!user && (
               <>
                 <NavLink to="/" end className={linkClass}>Home</NavLink>
+                <NavLink to="/copilot-marketplace" className={linkClass}>Copilot Marketplace</NavLink>
                 <NavLink to="/foundry" className={linkClass}>About Our Foundry</NavLink>
                 <NavLink to="/architecture" className={linkClass}>Open Architecture</NavLink>
                 <NavLink to="/survey" className={linkClass}>AI Readiness</NavLink>

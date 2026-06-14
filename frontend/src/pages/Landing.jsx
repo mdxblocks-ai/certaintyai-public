@@ -8,6 +8,7 @@ import ProofStrip from '../components/ProofStrip'
 import ExecutiveEngagement from '../components/ExecutiveEngagement'
 import StatusChip from '../components/StatusChip'
 import { BRAND, CTA } from '../lib/branding'
+import { DOMAINS, domainStatusCounts } from '../lib/copilots'
 
 const WHY_CARDS = [
   {
@@ -178,10 +179,10 @@ export default function Landing() {
 
             <div className="flex flex-wrap gap-3 items-center">
               <Link
-                to="/copilots"
+                to="/copilot-marketplace"
                 className="py-4 px-7 rounded-lg bg-gradient-to-br from-[#F0CE8C] via-[#D8B679] to-[#A87C3C] text-[#0A0A0E] hover:from-[#F4D89A] hover:via-[#E0BD7C] hover:to-[#B8884C] transition font-bold text-sm shadow-[0_8px_28px_-6px_rgba(216,182,121,0.55)] hover:shadow-[0_8px_36px_-6px_rgba(216,182,121,0.75)]"
               >
-                Explore AI Copilots →
+                Explore Copilot Marketplace →
               </Link>
               <Link
                 to={CTA.startFree.href}
@@ -365,8 +366,8 @@ export default function Landing() {
                 title: 'Measure Business Value',
                 blurb: 'Concrete domain copilots with cited outcomes per role — defensible numbers for the board, every quarter.',
                 accent: '#3A7E92',
-                href: '/copilots',
-                cta: 'Explore copilots',
+                href: '/copilot-marketplace',
+                cta: 'Explore marketplace',
               },
             ].map((o) => (
               <Link
@@ -450,20 +451,88 @@ export default function Landing() {
       >
         <div className="max-w-7xl mx-auto px-6 relative">
 
-          <div className="max-w-3xl mb-12">
+          <div className="max-w-3xl mb-8">
             <span className="text-[11px] font-semibold tracking-[0.22em] text-[#D8B679] uppercase block mb-3">
-              Industry AI Copilots
+              Copilot Marketplace
             </span>
             <h2 className="font-serif-brand text-3xl sm:text-4xl text-[#F4F0E6] font-normal leading-tight">
-              Pre-built AI copilots,{' '}
-              <em className="not-italic bg-gradient-to-r from-[#F0CE8C] via-[#D8B679] to-[#E08443] bg-clip-text text-transparent">for regulated industries.</em>
+              Industry AI Copilots.
             </h2>
             <p className="text-sm sm:text-base text-[#F4F0E6]/68 mt-3 max-w-3xl leading-relaxed">
-              Pre-built AI copilots designed for regulated industries with governance, explainability, security, and compliance built in.
+              Pre-built AI copilots for regulated industries with governance, explainability, security, and compliance built in.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {/* Compact legend so the executive can read the colors at a glance */}
+          <div className="mb-7 flex flex-wrap items-center gap-x-5 gap-y-2 text-[11.5px] text-[#F4F0E6]/72">
+            <span className="inline-flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-[#10B981]" />
+              <span>Ready for Demo</span>
+            </span>
+            <span className="inline-flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-[#F59E0B]" />
+              <span>Working In Progress</span>
+            </span>
+            <span className="inline-flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-[#60A5FA]" />
+              <span>On Roadmap</span>
+            </span>
+          </div>
+
+          {/* Executive overview — per-domain count summary only. The detailed
+              copilot listings live on the Copilot Marketplace page. Each card
+              deep-links to the matching domain section. */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {DOMAINS.map((d) => {
+              const c = domainStatusCounts(d.id)
+              return (
+                <Link
+                  key={d.id}
+                  to={`/copilot-marketplace#${d.id}`}
+                  className="bg-[#15161B] border border-[#D8B679]/12 rounded-2xl p-5 shadow-[0_8px_28px_-12px_rgba(0,0,0,0.65)] hover:shadow-[0_12px_42px_-10px_rgba(216,182,121,0.3)] hover:border-[#D8B679]/45 transition duration-200 flex flex-col"
+                  style={{ borderTop: `4px solid ${d.accent}` }}
+                >
+                  <h3 className="font-serif-brand text-lg sm:text-xl font-semibold text-[#F4F0E6] leading-tight mb-3">
+                    {d.name}
+                  </h3>
+                  <ul className="space-y-1.5 text-[13px] text-[#F4F0E6]/85">
+                    <li className="flex items-center gap-2.5">
+                      <span className="w-2 h-2 rounded-full bg-[#10B981] shrink-0" />
+                      <span className="font-bold tabular-nums w-4 text-right">{c.ready}</span>
+                      <span>Ready for Demo</span>
+                    </li>
+                    <li className="flex items-center gap-2.5">
+                      <span className="w-2 h-2 rounded-full bg-[#F59E0B] shrink-0" />
+                      <span className="font-bold tabular-nums w-4 text-right">{c.wip}</span>
+                      <span>Working In Progress</span>
+                    </li>
+                    <li className="flex items-center gap-2.5">
+                      <span className="w-2 h-2 rounded-full bg-[#60A5FA] shrink-0" />
+                      <span className="font-bold tabular-nums w-4 text-right">{c.roadmap}</span>
+                      <span>On Roadmap</span>
+                    </li>
+                  </ul>
+                </Link>
+              )
+            })}
+          </div>
+
+          {/* Single CTA — drives every visitor into the Copilot Marketplace for the deep dive. */}
+          <div className="mt-9 flex justify-center">
+            <Link
+              to="/copilot-marketplace"
+              className="py-3.5 px-7 rounded-lg bg-gradient-to-br from-[#F0CE8C] via-[#D8B679] to-[#A87C3C] text-[#0A0A0E] hover:from-[#F4D89A] hover:via-[#E0BD7C] hover:to-[#B8884C] transition font-bold text-sm shadow-[0_8px_24px_-6px_rgba(216,182,121,0.55)]"
+            >
+              Explore Copilot Marketplace →
+            </Link>
+          </div>
+
+          {/* Legacy industry-card grid suppressed (was a dense per-row product list
+              with per-card CTAs). Replaced by the compact summary above per the
+              Copilot Marketplace spec. The detailed product listing now lives on
+              the /copilot-marketplace page. The wrapper below stays `hidden` so the
+              JSX tree balance is preserved — could be removed in a follow-up. */}
+          <div className="hidden">
             {[
               {
                 id: 'healthcare',
@@ -630,10 +699,10 @@ export default function Landing() {
             </p>
             <div className="flex flex-wrap gap-3 justify-center">
               <Link
-                to="/copilots"
+                to="/copilot-marketplace"
                 className="py-3.5 px-6 rounded-lg bg-gradient-to-br from-[#F0CE8C] via-[#D8B679] to-[#A87C3C] text-[#0A0A0E] hover:from-[#F4D89A] hover:via-[#E0BD7C] hover:to-[#B8884C] transition font-bold text-sm shadow-[0_8px_24px_-6px_rgba(216,182,121,0.55)]"
               >
-                Explore AI Copilots →
+                Explore Copilot Marketplace →
               </Link>
               <Link
                 to="/ai-readiness"

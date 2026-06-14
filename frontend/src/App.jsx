@@ -30,7 +30,10 @@ export default function App() {
                 <Route path="/signup" element={<Signup />} />
                 <Route path="/foundry" element={<Foundry />} />
                 <Route path="/architecture" element={<Architecture />} />
-                <Route path="/copilots" element={<Copilots />} />
+                <Route path="/copilot-marketplace" element={<Copilots />} />
+                {/* Back-compat: redirect the old /copilots URL to the new
+                    marketplace path so external links and bookmarks keep working. */}
+                <Route path="/copilots" element={<Navigate to="/copilot-marketplace" replace />} />
                 <Route path="/ai-readiness" element={<AIReadiness />} />
                 {/* Survey + Report are public (anonymous flow). */}
                 <Route path="/survey" element={<Survey />} />

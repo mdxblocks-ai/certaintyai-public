@@ -12,7 +12,7 @@ export default function ExecutiveEngagement({
   heading = 'Ready to operationalize AI?',
   description = 'Whether you are exploring AI, running pilots, or scaling enterprise AI, CertaintyAI helps organizations establish governance, connect enterprise knowledge, deploy domain copilots, and operationalize AI with confidence.',
   primary = { label: 'Start AI Readiness Assessment', href: '/survey' },
-  secondary = { label: 'Explore Domain AI Copilots', href: '/copilots' },
+  secondary = { label: 'Explore Copilot Marketplace', href: '/copilot-marketplace' },
   tertiary = { label: 'Talk to an AI Advisor', href: '/signup' },
 }) {
   return (

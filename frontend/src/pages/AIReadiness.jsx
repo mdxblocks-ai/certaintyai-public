@@ -921,10 +921,10 @@ export default function AIReadiness() {
             </div>
             <div className="flex gap-3">
               <Link
-                to="/copilots"
+                to="/copilot-marketplace"
                 className="py-3 px-5 rounded-lg border border-[#14161A]/16 text-[#14161A] hover:bg-[#ECE5D6] hover:border-[#14161A]/30 transition font-bold text-sm"
               >
-                See Domain Copilots
+                Explore Copilot Marketplace
               </Link>
               <Link
                 to="/architecture"

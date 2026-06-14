@@ -1,11 +1,29 @@
-// Domain × Status taxonomy for the Copilots page.
+// Domain × Status × Category taxonomy for the Copilot Marketplace page.
+//
 // Status values:
 //   'ready-for-demo'        — production-ready demo today
 //   'working-in-progress'   — actively under development
 //   'on-roadmap'            — planned future capability
-//
 // Legacy keys ('available' / 'pilot' / 'coming-soon') are still accepted by
 // StatusChip via an alias map; new entries should use the canonical keys above.
+//
+// Category values (long-term marketplace vision — supports future expansion
+// into AI Advisors / AI Agents / Industry Templates / Compliance Packs /
+// Knowledge Packs without redesign):
+//   'copilot'         — industry copilot (default)
+//   'advisor'         — cross-industry executive advisor
+//   'agent'           — autonomous agent (future)
+//   'template'        — industry-specific template pack (future)
+//   'compliance-pack' — framework-aligned compliance pack (future)
+//   'knowledge-pack'  — curated knowledge / ontology pack (future)
+export const CATEGORIES = [
+  { id: 'copilot',         name: 'Industry Copilots' },
+  { id: 'advisor',         name: 'AI Advisors' },
+  { id: 'agent',           name: 'AI Agents' },
+  { id: 'template',        name: 'Industry Templates' },
+  { id: 'compliance-pack', name: 'Compliance Packs' },
+  { id: 'knowledge-pack',  name: 'Knowledge Packs' },
+]
 
 export const DOMAINS = [
   {
@@ -121,6 +139,21 @@ export const COPILOTS = [
     frameworks: ['HIPAA', 'HITECH', 'NIST AI RMF', 'State Privacy Acts'],
     status: 'working-in-progress',
     persona: 'CCO · Privacy Officer · Compliance Operations',
+  },
+  {
+    id: 'care-coordination',
+    domain: 'healthcare',
+    name: 'Care Coordination Assistant',
+    tagline: 'Bridge clinical, social-determinant, and operational signal so the right next step is obvious.',
+    capabilities: [
+      'Cross-source case-conference summary with cited evidence',
+      'SDoH-aware care-plan suggestions with clinician-override gate',
+      'Follow-up adherence tracking with privacy-preserving aggregations',
+      'Care-team-ready briefing assembly with traceable lineage',
+    ],
+    frameworks: ['HIPAA', 'NIST AI RMF', 'ISO 42001', 'SDoH Guidelines'],
+    status: 'on-roadmap',
+    persona: 'CMIO · Care Management · Population Health',
   },
 
   // ============================================================
@@ -472,4 +505,19 @@ export function copilotsByDomain() {
  */
 export function domainHasReadyForDemo(domainId) {
   return COPILOTS.some((c) => c.domain === domainId && c.status === 'ready-for-demo')
+}
+
+/**
+ * Per-domain count of copilots in each status bucket. Drives the compact
+ * Industry summary on the homepage (the executive overview that links to
+ * the full Copilot Marketplace).
+ */
+export function domainStatusCounts(domainId) {
+  const list = COPILOTS.filter((c) => c.domain === domainId)
+  return {
+    ready:    list.filter((c) => c.status === 'ready-for-demo').length,
+    wip:      list.filter((c) => c.status === 'working-in-progress').length,
+    roadmap:  list.filter((c) => c.status === 'on-roadmap').length,
+    total:    list.length,
+  }
 }

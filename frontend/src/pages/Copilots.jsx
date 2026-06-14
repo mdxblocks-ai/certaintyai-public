@@ -13,7 +13,7 @@ export default function Copilots() {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const prev = document.title
-      document.title = `Domain AI Copilots · ${BRAND.name}`
+      document.title = `Copilot Marketplace · ${BRAND.name}`
       return () => { document.title = prev }
     }
   }, [])
@@ -26,13 +26,13 @@ export default function Copilots() {
         <div className="max-w-4xl">
           <div className="inline-flex items-center gap-2 text-xs font-semibold tracking-widest text-[#7C5723] uppercase">
             <span className="w-6 h-px bg-[#A87C3C]" />
-            Domain AI Copilots
+            Copilot Marketplace
           </div>
           <h1 className="font-serif-brand text-5xl sm:text-6xl font-normal leading-[1.05] tracking-tight mt-6 text-[#14161A]">
-            Pre-built copilots, <em>built for the audit.</em>
+            Copilot Marketplace.
           </h1>
           <p className="text-lg text-[#3B3D42] leading-relaxed mt-6 mb-7 max-w-2xl">
-            Each copilot inherits the same open architecture — ontology grounding, governance gates, evidence packs, and step traces. So a clinician, a CFO, a dean, or a CISO gets help they can actually defend.
+            Explore pre-built AI copilots, advisors, and domain assistants designed for regulated industries.
           </p>
 
           <div className="flex flex-wrap gap-3 items-center">

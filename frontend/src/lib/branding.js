@@ -69,7 +69,7 @@ export const NARRATIVE_CHAIN = [
     title: 'Domain AI Copilots',
     blurb: 'Pre-built copilots for CISO and CFO. Build your own in minutes — with role templates, knowledge bases, and step traces.',
     caps: ['Role Templates', 'Knowledge Base RAG', 'Voice', 'Step Traces'],
-    cta: { label: 'Explore the Copilots', href: '/copilots' },
+    cta: { label: 'Explore Copilot Marketplace', href: '/copilot-marketplace' },
     accent: '#A8506A',
     glow: 'rgba(168,80,106,0.18)',
   },
