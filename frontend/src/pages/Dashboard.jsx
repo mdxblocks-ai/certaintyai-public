@@ -578,6 +578,131 @@ const getExpertResponse = (text, modelName, activeLanguage = 'English (US)', lat
 
 
 
+// ---- Report-grounding context builder ------------------------------
+// Compact text payload derived from the user's active AI Readiness
+// Report. Threaded through the chat's `attached_doc_content` channel so
+// the agent runtime grounds answers in the user's actual numbers.
+// All field derivations come from the report's real `scores` / `answers`
+// JSON — no fabricated values.
+
+const _REPORT_SUB_LABELS = {
+  semantic: 'Semantic Alignment',
+  rag: 'RAG Accuracy',
+  audit: 'Audit & Provenance',
+  oversight: 'Governance Oversight',
+  data: 'Data Maturity',
+  maturity: 'AI Maturity',
+  frag: 'Fragmentation Index',
+}
+
+const _REPORT_PRIORITY_LABELS = {
+  risk_reduction: 'Risk Reduction',
+  audit_readiness: 'Audit Readiness',
+  standardization: 'Standardization',
+  cost_control: 'Cost Control',
+  speed_to_production: 'Speed to Production',
+}
+
+const _isoDate = (iso) => {
+  if (!iso) return null
+  try { return new Date(iso).toISOString().slice(0, 10) } catch { return null }
+}
+
+const _lowestSubScores = (sub, n = 3) => {
+  if (!sub || typeof sub !== 'object') return []
+  return Object.entries(sub)
+    .filter(([, v]) => typeof v === 'number')
+    .map(([k, v]) => ({ key: k, label: _REPORT_SUB_LABELS[k] || k, score: v }))
+    .sort((a, b) => a.score - b.score)
+    .slice(0, n)
+}
+
+const _governanceGaps = (data) => {
+  const sub = data?.scores?.sub_scores || {}
+  const gov = data?.answers?.governance || {}
+  const nistGovern = data?.scores?.nist_rmf?.govern
+  const out = []
+  if (typeof sub.oversight === 'number') out.push(`Governance Oversight sub-score: ${sub.oversight}/100`)
+  if (typeof nistGovern === 'number') out.push(`NIST AI RMF GOVERN function: ${nistGovern}/100`)
+  if (gov.has_ai_policy === false) out.push('No formal AI policy in place')
+  if (gov.has_data_governance === false) out.push('No data governance framework in place')
+  return out
+}
+
+const _securityGaps = (data) => {
+  const sub = data?.scores?.sub_scores || {}
+  const gov = data?.answers?.governance || {}
+  const out = []
+  if (typeof sub.audit === 'number') out.push(`Audit & Provenance sub-score: ${sub.audit}/100`)
+  if (gov.regulated === true && Array.isArray(gov.compliance_frameworks) && gov.compliance_frameworks.length > 0) {
+    out.push(`Required compliance frameworks: ${gov.compliance_frameworks.join(', ')}`)
+  }
+  return out
+}
+
+const _dataGaps = (data) => {
+  const sub = data?.scores?.sub_scores || {}
+  const ds = data?.answers?.data_state || data?.answers?.dataState || {}
+  const out = []
+  if (typeof sub.data === 'number') out.push(`Data Maturity sub-score: ${sub.data}/100`)
+  if (typeof sub.semantic === 'number') out.push(`Semantic Alignment sub-score: ${sub.semantic}/100`)
+  if (Array.isArray(ds.quality) && ds.quality.length > 0) out.push(`Reported data quality: ${ds.quality.join(', ')}`)
+  return out
+}
+
+const _recommendedActions = (data) => {
+  const sub = data?.scores?.sub_scores || {}
+  const priority = data?.answers?.priority
+  const lowest = _lowestSubScores(sub, 3)
+  const out = []
+  if (lowest[0]) out.push(`Address lowest sub-score first: ${lowest[0].label} (${lowest[0].score}/100)`)
+  if (priority) out.push(`User-declared priority: ${_REPORT_PRIORITY_LABELS[priority] || priority}`)
+  if (lowest[1]) out.push(`Secondary lever: ${lowest[1].label} (${lowest[1].score}/100)`)
+  return out
+}
+
+const buildReportContextText = (reportData, execSummary) => {
+  if (!reportData) return null
+  const scores = reportData.scores || {}
+  const answers = reportData.answers || {}
+  const company = answers.company || {}
+  const sub = scores.sub_scores || {}
+  const domains = Array.isArray(answers.domains) ? answers.domains : []
+
+  const lines = [
+    `Company Name: ${company.company_name || '(unspecified)'}`,
+    `Report Date: ${_isoDate(reportData.created_at) || '(unknown)'}`,
+    `Assessment Version: CertaintyAI Readiness Assessment`,
+    `Domains: ${domains.length > 0 ? domains.join(', ') : '(unspecified)'}`,
+    '',
+    `Total Score: ${scores.total_score ?? 'n/a'}/100`,
+    `Maturity Tier: ${scores.maturity_tier ?? 'n/a'}`,
+    scores.maturity_tagline ? `Tagline: ${scores.maturity_tagline}` : null,
+    '',
+    'Sub-scores:',
+  ]
+  for (const [k, lbl] of Object.entries(_REPORT_SUB_LABELS)) {
+    if (typeof sub[k] === 'number') lines.push(`  - ${lbl}: ${sub[k]}/100`)
+  }
+
+  const exec = (execSummary || '').trim()
+  if (exec) {
+    lines.push('', 'Executive Summary:', exec)
+  }
+
+  const gov = _governanceGaps(reportData)
+  if (gov.length > 0) { lines.push('', 'Top Governance Gaps:'); gov.forEach(g => lines.push(`  - ${g}`)) }
+  const sec = _securityGaps(reportData)
+  if (sec.length > 0) { lines.push('', 'Top Security Gaps:');   sec.forEach(g => lines.push(`  - ${g}`)) }
+  const dat = _dataGaps(reportData)
+  if (dat.length > 0) { lines.push('', 'Top Data Gaps:');       dat.forEach(g => lines.push(`  - ${g}`)) }
+  const acts = _recommendedActions(reportData)
+  if (acts.length > 0) { lines.push('', 'Recommended Actions:'); acts.forEach(a => lines.push(`  - ${a}`)) }
+
+  return lines.filter(l => l !== null).join('\n')
+}
+
+
 // ---- Copilot session row helpers (ChatGPT-style list rendering) ----
 const getSessionPreview = (session) => {
   if (!session || !session.messages || session.messages.length === 0) return null
@@ -1415,6 +1540,18 @@ export default function Dashboard() {
           console.error("Failed to read attached file content:", e)
         }
       }
+    }
+
+    // Report-grounding fallback. Priority: uploaded file (above) >
+    // selected report > most recent report > generic. The `latestReportData`
+    // state already resolves to selectedReportId || reports[0].id, so this
+    // single check covers priorities 2 and 3. Priority 4 (generic) is the
+    // implicit branch when latestReportData is null.
+    if (!attachedDocContent && latestReportData) {
+      attachedDocContent = buildReportContextText(latestReportData, execSummary)
+      attachedDocRef = `AI Readiness Report — ${
+        latestReportData?.answers?.company?.company_name || 'active'
+      }`
     }
 
     // Collect every follow-up the user has already been shown in this session
