@@ -1240,8 +1240,21 @@ export default function Dashboard() {
 
   const handleCopilotDeleteSession = (id, e) => {
     e.stopPropagation()
+    const target = copilotSessions.find(s => s.id === id)
+    const title = (target && target.title) || 'this chat'
+    if (typeof window !== 'undefined' && typeof window.confirm === 'function') {
+      const ok = window.confirm(`Delete "${title}"? This cannot be undone.`)
+      if (!ok) return
+    }
     const updated = copilotSessions.filter(s => s.id !== id)
     setCopilotSessions(updated)
+    // Clean the per-agent last-active-session pointer if it referenced the
+    // session we just deleted, so the agent-sync effect doesn't try to
+    // re-select an orphan id on the next agent switch.
+    try {
+      const k = `last_active_session_for_agent_${activeAgentId}`
+      if (localStorage.getItem(k) === id) localStorage.removeItem(k)
+    } catch {}
     const agentSessions = updated.filter(s => s.agentId === activeAgentId)
     if (copilotActiveSessionId === id) {
       if (agentSessions.length > 0) {
@@ -1262,6 +1275,37 @@ export default function Dashboard() {
         setCopilotActiveSessionId(fallbackId)
       }
     }
+  }
+
+  const handleClearAllSessions = () => {
+    if (typeof window !== 'undefined' && typeof window.confirm === 'function') {
+      const ok = window.confirm('Delete all conversations? This cannot be undone.')
+      if (!ok) return
+    }
+    // Reset to a single fresh empty session for the active agent. Sessions
+    // for other agents that the user might own are also cleared — Clear All
+    // is unambiguously global per ChatGPT-style UX.
+    const freshId = `session-${activeAgentId}-${Date.now()}`
+    const fresh = {
+      id: freshId,
+      title: NEW_CHAT_TITLE,
+      selectedModel: copilotModel,
+      createdDate: new Date().toISOString(),
+      messages: [],
+      agentId: activeAgentId,
+    }
+    setCopilotSessions([fresh])
+    setCopilotActiveSessionId(freshId)
+    // Clean per-agent last-active pointers so the agent-sync effect doesn't
+    // try to re-select an orphan id when the user switches copilots later.
+    try {
+      const keysToDrop = []
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i)
+        if (k && k.startsWith('last_active_session_for_agent_')) keysToDrop.push(k)
+      }
+      keysToDrop.forEach(k => localStorage.removeItem(k))
+    } catch {}
   }
 
   const handleCopilotSpeak = (messageId, text) => {
@@ -2813,6 +2857,23 @@ export default function Dashboard() {
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3.5 h-3.5">
                               <line x1="12" y1="5" x2="12" y2="19" />
                               <line x1="5" y1="12" x2="19" y2="12" />
+                            </svg>
+                          </button>
+                        )}
+                        {!copilotSidebarCollapsed && copilotSessions.length > 0 && (
+                          <button
+                            onClick={handleClearAllSessions}
+                            disabled={
+                              copilotSessions.length === 1 &&
+                              (!copilotSessions[0].messages || copilotSessions[0].messages.length === 0)
+                            }
+                            className="p-1 rounded-lg border border-[var(--dash-border)] text-[var(--dash-text-secondary)] hover:text-rose-500 hover:bg-[var(--dash-hover-bg)] transition focus:outline-none focus:ring-1 focus:ring-rose-500/40 shrink-0 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-[var(--dash-text-secondary)]"
+                            title="Clear All Conversations"
+                            aria-label="Clear All Conversations"
+                          >
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3.5 h-3.5">
+                              <polyline points="3 6 5 6 21 6" />
+                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                             </svg>
                           </button>
                         )}
