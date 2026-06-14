@@ -2906,28 +2906,29 @@ export default function Dashboard() {
             {activeTab === 'home' && (
               <div className="bg-[var(--dash-card-bg)] border border-[var(--dash-border)] rounded-2xl overflow-hidden flex flex-col md:flex-row flex-grow h-full w-full">
                 {/* Nested Left Pane: Chat Sessions History */}
-                <div className={`w-full transition-all duration-300 border-r border-[var(--dash-border)] bg-[var(--dash-sidebar-bg)] p-3 flex flex-col justify-between shrink-0 ${
+                <div className={`w-full transition-all duration-300 border-r border-[var(--dash-border)] bg-[var(--dash-sidebar-bg)] flex flex-col shrink-0 ${
                   copilotSidebarCollapsed ? 'md:w-16' : 'md:w-56'
                 }`}>
-                  <div className="space-y-4 overflow-y-auto scrollbar-none flex-1 pr-1 font-sans">
+                  <div className="overflow-y-auto scrollbar-none flex-1 font-sans">
                     {/* Sessions header — sticky so it stays visible while
                         the list below scrolls (ChatGPT-style fixed header). */}
-                    <div className="flex items-center justify-between pb-2 border-b border-[var(--dash-border)] gap-2 sticky top-0 bg-[var(--dash-sidebar-bg)] z-10">
+                    <div className="flex flex-col gap-2 px-2 pt-3 pb-2 border-b border-[var(--dash-border)] sticky top-0 bg-[var(--dash-sidebar-bg)] z-10">
                       {!copilotSidebarCollapsed && (
-                        <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-wider animate-fade-in">Sessions</span>
+                        <span className="text-[10px] font-bold text-[var(--dash-text-secondary)] uppercase tracking-wider animate-fade-in order-2 px-1">Sessions</span>
                       )}
-                      <div className="flex items-center gap-1.5 ml-auto">
+                      <div className="flex items-center gap-1.5 order-1">
                         {!copilotSidebarCollapsed && (
                           <button
                             onClick={handleCopilotNewChat}
-                            className="p-1 rounded-lg border border-[var(--dash-border)] text-[var(--dash-text-secondary)] hover:text-[var(--dash-accent)] hover:bg-[var(--dash-hover-bg)] transition focus:outline-none focus:ring-1 focus:ring-[var(--dash-accent)] shrink-0"
+                            className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg border border-[var(--dash-border)] bg-[var(--dash-card-bg)] hover:bg-[var(--dash-hover-bg)] hover:border-[var(--dash-accent)]/40 transition text-xs font-semibold text-[var(--dash-text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--dash-accent)]"
                             title="New Chat"
                             aria-label="New Chat"
                           >
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3.5 h-3.5">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="w-3.5 h-3.5 shrink-0">
                               <line x1="12" y1="5" x2="12" y2="19" />
                               <line x1="5" y1="12" x2="19" y2="12" />
                             </svg>
+                            <span>New Chat</span>
                           </button>
                         )}
                         {!copilotSidebarCollapsed && copilotSessions.length > 0 && (
