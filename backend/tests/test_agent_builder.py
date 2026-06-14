@@ -187,8 +187,17 @@ def test_agent_crud_and_firewall(
     assert run_data["agent_id"] == agent_id
     assert run_data["status"] == "completed"
     assert len(run_data["steps"]) > 0
-    # Steps trace must be documented and include simulated stubs labels
-    assert any("[Simulated" in step["detail"] for step in run_data["steps"])
+    # Every step must have a descriptive detail, and NO step may carry an
+    # internal "[Simulated ...]" / "[Demo ...]" / "[Fallback ...]" debug
+    # label — those are not safe to expose to end users.
+    assert all(step["detail"] for step in run_data["steps"])
+    forbidden_labels = ("[Simulated", "[Demo", "[Fallback", "[Mock", "[Test")
+    for step in run_data["steps"]:
+        for label in forbidden_labels:
+            assert label not in step["detail"], (
+                f"Internal debug label {label!r} leaked into user-visible "
+                f"step detail: {step['detail']!r}"
+            )
 
     # 8. DELETE Agent
     response = client.delete(f"/agents/{agent_id}")
@@ -618,6 +627,32 @@ def test_followups_classify_from_user_prompt_first(client, db_session, monkeypat
     assert not any(kw in joined for kw in ("payback period for model routing", "unit economics", "overspend on ai")), (
         f"Cost-bucket follow-ups leaked through despite user prompt being priority-actions: {out!r}"
     )
+
+
+def test_simulated_outcomes_have_no_internal_debug_labels(client, monkeypatch):
+    """The simulated fallback outcomes (used when no LLM is configured or
+    the live call raises) must not surface any internal "[Simulated ...]" /
+    "[Demo ...]" / "[Fallback ...]" / "[Mock ...]" / "[Test ...]" debug
+    labels to end users. The fallback execution logic itself is preserved;
+    only the visible label is gone.
+    """
+    from app.agents.agent_runtime import _simulated_outcome
+
+    forbidden_labels = ("[Simulated", "[Demo", "[Fallback", "[Mock", "[Test")
+    intents = (
+        "explain_score", "priority_actions", "industry_benchmarks",
+        "governance_recommendations", "cost_optimization", "general",
+    )
+    for intent in intents:
+        for role in ("base", "ciso", "cfo"):
+            outcome = _simulated_outcome(intent, "sample prompt", role)
+            assert outcome and isinstance(outcome, str)
+            for label in forbidden_labels:
+                assert label not in outcome, (
+                    f"Internal debug label {label!r} present in simulated "
+                    f"outcome for intent={intent!r} role={role!r}: "
+                    f"{outcome[:160]!r}"
+                )
 
 
 def test_detect_intent_scrubs_stock_phrase(client, monkeypatch):

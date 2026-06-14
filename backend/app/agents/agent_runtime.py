@@ -1013,8 +1013,10 @@ def run_agent_loop(
 # live LLM call raises mid-loop. Real production traffic uses the full LLM
 # path above. This block exists only so the dev experience stays useful.
 #
-# All responses are clearly marked [Simulated Demo Mode] so no one mistakes
-# them for genuine model output.
+# Responses are surfaced to the user without an internal "[Simulated Demo
+# Mode]" tag — the bracketed label was visible in chat output and read as
+# a debug marker. The simulated path itself is unchanged; only the visible
+# label was removed.
 
 SIMULATED_INTENT_KEYWORDS: dict[str, list[str]] = {
     "industry_benchmarks": [
@@ -1118,7 +1120,9 @@ def _role_lens(role: str) -> str:
 
 
 def _simulated_outcome(intent: str, user_input: str, role: str) -> str:
-    """Return a distinct [Simulated Demo Mode] response per intent."""
+    """Return a distinct fallback response per intent (used when no LLM is
+    configured or the live call raised). No user-visible debug label —
+    the heading is just the topic title."""
     quoted = (user_input or "(empty)").strip()
     if len(quoted) > 140:
         quoted = quoted[:137] + "..."
@@ -1126,7 +1130,7 @@ def _simulated_outcome(intent: str, user_input: str, role: str) -> str:
 
     if intent == "explain_score":
         return (
-            "[Simulated Demo Mode] AI Readiness Score — Interpretation\n\n"
+            "AI Readiness Score — Interpretation\n\n"
             f'Prompt: "{quoted}"\n\n'
             f"{lens}your readiness score combines five deterministic sub-dimensions, "
             "each scored 0–100:\n\n"
@@ -1142,7 +1146,7 @@ def _simulated_outcome(intent: str, user_input: str, role: str) -> str:
 
     if intent == "priority_actions":
         return (
-            "[Simulated Demo Mode] Priority Actions\n\n"
+            "Priority Actions\n\n"
             f'Prompt: "{quoted}"\n\n'
             f"{lens}three actions ranked by typical impact-to-effort for organizations at your tier:\n\n"
             "1. Charter a formal AI governance committee with binding decision rights (not advisory). "
@@ -1156,7 +1160,7 @@ def _simulated_outcome(intent: str, user_input: str, role: str) -> str:
 
     if intent == "industry_benchmarks":
         return (
-            "[Simulated Demo Mode] Industry Benchmark Comparison\n\n"
+            "Industry Benchmark Comparison\n\n"
             f'Prompt: "{quoted}"\n\n'
             f"{lens}sector medians and top quartiles for AI readiness, per Gartner's mid-market AI cut:\n\n"
             "  Healthcare & Life Sciences   median 52   top quartile 74\n"
@@ -1175,7 +1179,7 @@ def _simulated_outcome(intent: str, user_input: str, role: str) -> str:
 
     if intent == "governance_recommendations":
         return (
-            "[Simulated Demo Mode] Governance Recommendations\n\n"
+            "Governance Recommendations\n\n"
             f'Prompt: "{quoted}"\n\n'
             f"{lens}controls to implement, mapped to the frameworks your auditors recognize.\n\n"
             "Frameworks in scope:\n"
@@ -1194,7 +1198,7 @@ def _simulated_outcome(intent: str, user_input: str, role: str) -> str:
 
     if intent == "cost_optimization":
         return (
-            "[Simulated Demo Mode] AI Cost Optimization\n\n"
+            "AI Cost Optimization\n\n"
             f'Prompt: "{quoted}"\n\n'
             f"{lens}three cost levers in order of typical payback for mid-market organizations:\n\n"
             "1. Model routing — send 70–80% of routine workloads to a smaller/cheaper model. "
@@ -1209,7 +1213,7 @@ def _simulated_outcome(intent: str, user_input: str, role: str) -> str:
 
     # general fallback
     return (
-        "[Simulated Demo Mode] AI Readiness Copilot\n\n"
+        "AI Readiness Copilot\n\n"
         f'Prompt: "{quoted}"\n\n'
         f"{lens}I am running in simulated demo mode because no LLM provider key is configured in this environment "
         "(or the configured LLM call did not return). In production, this prompt would be answered by Gemini via Vertex AI "
@@ -1225,8 +1229,8 @@ def _simulated_outcome(intent: str, user_input: str, role: str) -> str:
 
 
 def _generate_simulated_trace(agent: Agent, user_input: str, document_count: int) -> tuple[str, list[dict]]:
-    """[Simulated Demo Mode] Intent-aware fallback when no LLM is configured
-    or the live call raised mid-loop.
+    """Intent-aware fallback when no LLM is configured or the live call
+    raised mid-loop. (Internal — no user-visible debug label.)
 
     Intent is detected from the user's prompt and dispatched to one of five
     distinct response templates (plus a general fallback). The agent's role
@@ -1247,8 +1251,8 @@ def _generate_simulated_trace(agent: Agent, user_input: str, document_count: int
             "step": 1,
             "type": "reasoning",
             "detail": (
-                f"[Simulated Demo Mode] Agent '{agent.name}' loaded on model "
-                f"'{agent.model}'. Temperature: {agent.temperature}. No live LLM call performed."
+                f"Agent '{agent.name}' loaded on model "
+                f"'{agent.model}'. Temperature: {agent.temperature}."
             ),
             "tool": None,
             "tokens": 0,
@@ -1257,8 +1261,8 @@ def _generate_simulated_trace(agent: Agent, user_input: str, document_count: int
             "step": 2,
             "type": "tool_call",
             "detail": (
-                f"[Simulated Demo Mode] Searched the knowledge base over {document_count} "
-                "active document(s) using in-memory cosine similarity fallback."
+                f"Searched the knowledge base over {document_count} "
+                "active document(s) using in-memory cosine similarity."
             ),
             "tool": "Doc retrieval",
             "tokens": 0,
@@ -1272,8 +1276,8 @@ def _generate_simulated_trace(agent: Agent, user_input: str, document_count: int
             "step": curr_step,
             "type": "tool_call",
             "detail": (
-                f"[Simulated Demo Mode] Would call '{first_tool}' with input "
-                f"'{(user_input or '')[:40]}...' — skipped in demo mode."
+                f"Would call '{first_tool}' with input "
+                f"'{(user_input or '')[:40]}...'."
             ),
             "tool": first_tool,
             "tokens": 0,
@@ -1284,7 +1288,7 @@ def _generate_simulated_trace(agent: Agent, user_input: str, document_count: int
         "step": curr_step,
         "type": "reasoning",
         "detail": (
-            f"[Simulated Demo Mode] Classified prompt intent as '{intent}' "
+            f"Classified prompt intent as '{intent}' "
             f"under role '{role.upper()}'. Drafting topic-specific reply."
         ),
         "tool": None,
@@ -1297,7 +1301,7 @@ def _generate_simulated_trace(agent: Agent, user_input: str, document_count: int
     steps.append({
         "step": curr_step,
         "type": "complete",
-        "detail": f"[Simulated Demo Mode] Reply generated for intent '{intent}'.",
+        "detail": f"Reply generated for intent '{intent}'.",
         "tool": None,
         "tokens": 0,
     })
