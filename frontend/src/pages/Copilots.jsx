@@ -4,7 +4,8 @@ import Footer from '../components/Footer'
 import CopilotCard from '../components/CopilotCard'
 import CTABand from '../components/CTABand'
 import { BRAND, CTA } from '../lib/branding'
-import { copilotsByDomain, COPILOTS } from '../lib/copilots'
+import { copilotsByDomain, COPILOTS, domainHasReadyForDemo } from '../lib/copilots'
+import { normalizeStatus } from '../components/StatusChip'
 
 export default function Copilots() {
   const groups = copilotsByDomain()
@@ -57,7 +58,33 @@ export default function Copilots() {
         </div>
       </section>
 
-      {/* ===== Summary: 7 Industry AI Copilots ===== */}
+      {/* ===== Status legend (compact, fixed at the top of the lineup) ===== */}
+      <section className="border-t border-[#14161A]/10 bg-[#FBF8F0] py-4">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-[12px] text-[#3B3D42]">
+            <span className="text-[10.5px] uppercase tracking-[0.22em] text-[#7C5723] font-bold">
+              Status legend
+            </span>
+            <span className="inline-flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#10B981]" />
+              <b className="text-[#14161A]">Ready for Demo</b>
+              <span className="text-[#73706A]">— available today</span>
+            </span>
+            <span className="inline-flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#F59E0B]" />
+              <b className="text-[#14161A]">Working In Progress</b>
+              <span className="text-[#73706A]">— under active build</span>
+            </span>
+            <span className="inline-flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#1E40AF]" />
+              <b className="text-[#14161A]">On Roadmap</b>
+              <span className="text-[#73706A]">— planned capability</span>
+            </span>
+          </div>
+        </div>
+      </section>
+
+      {/* ===== Summary: Industry AI Copilots ===== */}
       <section id="copilot-summary" className="border-t border-b border-[#14161A]/10 bg-[#ECE5D6]/30 py-10">
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6 mb-6">
@@ -77,36 +104,37 @@ export default function Copilots() {
 
           {(() => {
             const countBy = COPILOTS.reduce((acc, c) => {
-              acc[c.status] = (acc[c.status] || 0) + 1
+              const k = normalizeStatus(c.status)
+              acc[k] = (acc[k] || 0) + 1
               return acc
             }, {})
             const tiles = [
               {
-                status: 'available',
-                label: 'Available Today',
-                count: countBy.available || 0,
+                status: 'ready-for-demo',
+                label: 'Ready for Demo',
+                count: countBy['ready-for-demo'] || 0,
                 bg: 'bg-[#10B981]/12',
                 border: 'border-[#10B981]/40',
                 text: 'text-[#047857]',
                 dot: 'bg-[#10B981]',
               },
               {
-                status: 'pilot',
-                label: 'Pilot Available',
-                count: countBy.pilot || 0,
+                status: 'working-in-progress',
+                label: 'Working In Progress',
+                count: countBy['working-in-progress'] || 0,
                 bg: 'bg-[#F59E0B]/12',
                 border: 'border-[#F59E0B]/40',
                 text: 'text-[#B45309]',
                 dot: 'bg-[#F59E0B]',
               },
               {
-                status: 'coming-soon',
-                label: 'Coming Soon',
-                count: countBy['coming-soon'] || 0,
+                status: 'on-roadmap',
+                label: 'On Roadmap',
+                count: countBy['on-roadmap'] || 0,
                 bg: 'bg-[#64748B]/12',
                 border: 'border-[#64748B]/40',
-                text: 'text-[#334155]',
-                dot: 'bg-[#64748B]',
+                text: 'text-[#1E40AF]',
+                dot: 'bg-[#1E40AF]',
               },
             ]
             return (
@@ -164,13 +192,26 @@ export default function Copilots() {
                 <div className="uppercase font-semibold tracking-widest text-[#14161A]/70 mb-1">
                   {group.copilots.length} copilot{group.copilots.length === 1 ? '' : 's'}
                 </div>
-                <Link
-                  to={CTA.startFree.href}
-                  className="font-bold transition"
-                  style={{ color: group.domain.accent }}
-                >
-                  Build in Copilot Studio →
-                </Link>
+                {/* CTA rule: "Request Demo →" appears only when this domain
+                    has at least one ready-for-demo copilot. Otherwise show
+                    the neutral "Build in Copilot Studio →" link. */}
+                {domainHasReadyForDemo(group.domain.id) ? (
+                  <Link
+                    to="/signup?intent=demo"
+                    className="font-bold transition"
+                    style={{ color: group.domain.accent }}
+                  >
+                    Request Demo →
+                  </Link>
+                ) : (
+                  <Link
+                    to={CTA.startFree.href}
+                    className="font-bold transition"
+                    style={{ color: group.domain.accent }}
+                  >
+                    Build in Copilot Studio →
+                  </Link>
+                )}
               </div>
             </header>
 

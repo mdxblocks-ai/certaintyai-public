@@ -1,6 +1,6 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
-import StatusChip from './StatusChip'
+import StatusChip, { normalizeStatus } from './StatusChip'
 
 const DOMAIN_ICONS = {
   healthcare: (
@@ -22,15 +22,54 @@ const DOMAIN_ICONS = {
       <path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5" />
     </svg>
   ),
+  'it-consulting': (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className="w-5 h-5">
+      <rect x="3" y="4" width="18" height="12" rx="2" />
+      <line x1="8" y1="20" x2="16" y2="20" />
+      <line x1="12" y1="16" x2="12" y2="20" />
+    </svg>
+  ),
   cybersecurity: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className="w-5 h-5">
       <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+    </svg>
+  ),
+  'ai-advisory': (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className="w-5 h-5">
+      <circle cx="12" cy="12" r="3" />
+      <path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.93 4.93l2.12 2.12M16.95 16.95l2.12 2.12M4.93 19.07l2.12-2.12M16.95 7.05l2.12-2.12" />
     </svg>
   ),
 }
 
 export default function CopilotCard({ copilot, domain }) {
   const icon = DOMAIN_ICONS[copilot.domain]
+  const canonical = normalizeStatus(copilot.status)
+
+  // Per-status CTA. Only ready-for-demo shows an actionable "Request Demo →"
+  // link. The other two show a non-interactive status indicator with a tooltip.
+  const ctaByStatus = {
+    'ready-for-demo': {
+      kind: 'link',
+      label: 'Request Demo',
+      href: '/signup?intent=demo',
+      color: '#047857',
+    },
+    'working-in-progress': {
+      kind: 'text',
+      label: 'Coming Soon',
+      tooltip: 'Currently under development',
+      color: '#B45309',
+    },
+    'on-roadmap': {
+      kind: 'text',
+      label: 'Roadmap',
+      tooltip: 'Planned future capability',
+      color: '#1E40AF',
+    },
+  }
+  const cta = ctaByStatus[canonical]
+
   return (
     <article
       className="relative bg-[#FBF8F0] border border-[#14161A]/10 rounded-2xl p-7 shadow-sm hover:shadow-md transition duration-200 overflow-hidden flex flex-col"
@@ -53,12 +92,12 @@ export default function CopilotCard({ copilot, domain }) {
           </div>
           <div>
             <div className="text-[10px] font-semibold tracking-widest uppercase text-[#73706A]">
-              {domain.name}
+              {copilot.subdomainName || domain.name}
             </div>
             <div className="text-[10px] text-[#73706A] mt-0.5">{copilot.persona}</div>
           </div>
         </div>
-        <StatusChip status={copilot.status} />
+        <StatusChip status={canonical} />
       </header>
 
       <h3 className="font-serif-brand text-xl text-[#14161A] font-semibold leading-snug mb-2">
@@ -96,24 +135,24 @@ export default function CopilotCard({ copilot, domain }) {
         <span className="text-[10.5px] uppercase tracking-widest text-[#73706A] font-semibold">
           Defensible by design
         </span>
-        {(() => {
-          const ctaByStatus = {
-            available:     { label: 'View Demo',     href: '/signup?intent=demo',     color: '#047857' },
-            pilot:         { label: 'Request Demo',  href: '/signup?intent=pilot',    color: '#B45309' },
-            'coming-soon': { label: 'Join Waitlist', href: '/signup?intent=waitlist', color: '#334155' },
-          }
-          const cta = ctaByStatus[copilot.status]
-          if (!cta) return null
-          return (
-            <Link
-              to={cta.href}
-              className="text-[12.5px] font-bold transition hover:translate-x-0.5"
-              style={{ color: cta.color }}
-            >
-              {cta.label} →
-            </Link>
-          )
-        })()}
+        {cta && cta.kind === 'link' && (
+          <Link
+            to={cta.href}
+            className="text-[12.5px] font-bold transition hover:translate-x-0.5"
+            style={{ color: cta.color }}
+          >
+            {cta.label} →
+          </Link>
+        )}
+        {cta && cta.kind === 'text' && (
+          <span
+            className="text-[12.5px] font-bold opacity-80 cursor-default"
+            style={{ color: cta.color }}
+            title={cta.tooltip}
+          >
+            {cta.label}
+          </span>
+        )}
       </div>
     </article>
   )
