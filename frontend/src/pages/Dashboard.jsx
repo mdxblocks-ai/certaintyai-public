@@ -936,13 +936,28 @@ export default function Dashboard() {
 
   const activeAgent = allAgents.find(a => a.id === activeAgentId) || allAgents.find(a => a.role === 'base') || null
 
-  // Filter sessions by activeAgentId
-  const displayedSessions = copilotSessions.filter(s => 
-    s.agentId === activeAgentId || 
+  // Filter sessions by activeAgentId — used to resolve the ACTIVE session,
+  // so an empty placeholder the user just opened still counts.
+  const displayedSessions = copilotSessions.filter(s =>
+    s.agentId === activeAgentId ||
     (!s.agentId && activeAgent?.role === 'base')
   )
 
   const activeCopilotSession = displayedSessions.find(s => s.id === copilotActiveSessionId) || displayedSessions[0] || null
+
+  // Sessions rendered in the sidebar list — hides placeholder-titled empty
+  // sessions so the panel only shows real conversations. The session is
+  // still selectable via the active resolution above; it just doesn't clutter
+  // the list until the user types the first message (which renames the title).
+  const _PLACEHOLDER_TITLES = new Set([
+    '', 'new chat', 'new chat session', 'untitled', 'certaintyai / mdx',
+  ])
+  const sidebarSessions = displayedSessions.filter(s => {
+    const isEmpty = !s.messages || s.messages.length === 0
+    const titleKey = String(s.title || '').trim().toLowerCase()
+    const hasPlaceholderTitle = _PLACEHOLDER_TITLES.has(titleKey)
+    return !(isEmpty && hasPlaceholderTitle)
+  })
 
   // Ensure active model is updated when session changes
   useEffect(() => {
@@ -2604,12 +2619,12 @@ export default function Dashboard() {
 
                     {/* Session List (ChatGPT-style) */}
                     <div className="space-y-1">
-                      {displayedSessions.length === 0 && !copilotSidebarCollapsed && (
+                      {sidebarSessions.length === 0 && !copilotSidebarCollapsed && (
                         <div className="text-[10.5px] italic text-[var(--dash-text-secondary)] px-2 py-3">
                           No sessions yet. Click <b className="not-italic">+</b> above to start a chat.
                         </div>
                       )}
-                      {displayedSessions.map(session => {
+                      {sidebarSessions.map(session => {
                         const preview = getSessionPreview(session)
                         const isEmpty = !session.messages || session.messages.length === 0
                         const relTime = getRelativeTime(getSessionLatestTimestamp(session))
@@ -2668,18 +2683,6 @@ export default function Dashboard() {
                         )
                       })}
                     </div>
-                  </div>
-                  
-                  {/* Clean brand badge */}
-                  <div className="pt-3 border-t border-[var(--dash-border)]/40 mt-3 text-[10px] text-[var(--dash-text-secondary)] flex justify-between items-center font-semibold font-sans">
-                    {!copilotSidebarCollapsed ? (
-                      <>
-                        <span>CertaintyAI / MDx</span>
-                        <span className="h-1.5 w-1.5 rounded-full bg-[var(--emerald)]"></span>
-                      </>
-                    ) : (
-                      <span className="h-2 w-2 rounded-full bg-[var(--emerald)] mx-auto animate-pulse"></span>
-                    )}
                   </div>
                 </div>
               </div>
