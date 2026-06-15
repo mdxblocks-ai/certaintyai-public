@@ -570,11 +570,23 @@ body {
   color: var(--ink);
 }
 
+/* Shared page container — single source of truth for max-width and gutters.
+   Equivalent to (and replaces) per-section `max-w-7xl mx-auto px-6`. */
+.page-container {
+  width: min(100% - 48px, 1320px);
+  margin-inline: auto;
+}
+@media (max-width: 768px) {
+  .page-container {
+    width: calc(100% - 24px);
+  }
+}
+
 /* Footer layout and style overrides from certaintyai.html */
 .theme-parchment footer {
   border-top: 1px solid var(--line);
-  margin-top: 96px;
-  padding: 54px 0 40px;
+  margin-top: 0;
+  padding: 40px 0 28px;
 }
 .theme-parchment .foot-grid {
   display: flex;

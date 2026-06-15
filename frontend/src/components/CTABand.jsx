@@ -10,7 +10,7 @@ export default function CTABand({
   sub = 'Start with the live stack, build a copilot, or run the 2-minute readiness check. Pick the door that fits.',
 }) {
   return (
-    <section className="max-w-7xl mx-auto px-6 py-16">
+    <section className="page-container py-16">
       <div className="bg-[#14161A] text-[#F4F0E6] rounded-3xl p-10 sm:p-12 text-center relative overflow-hidden isolate shadow-2xl">
         <div
           aria-hidden

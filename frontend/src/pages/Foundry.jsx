@@ -67,7 +67,7 @@ export default function Foundry() {
 
   return (
     <div className="theme-parchment min-h-screen bg-[#F4F0E6] text-[#14161A] font-sans-brand relative isolate">
-      <div className="max-w-7xl mx-auto px-6 pt-10">
+      <div className="page-container pt-10 pb-20">
         {/* Header */}
         <div className="max-w-5xl mx-auto text-center mb-16">
           <span className="text-[11px] font-semibold tracking-[0.22em] text-[#7C5723] uppercase block mb-3">About Our Foundry</span>

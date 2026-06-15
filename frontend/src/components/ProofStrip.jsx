@@ -48,7 +48,7 @@ const PROOFS = [
 export default function ProofStrip() {
   return (
     <section className="border-t border-b border-[#14161A]/10 bg-[#ECE5D6]/30 py-12">
-      <div className="max-w-7xl mx-auto px-6">
+      <div className="page-container">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {PROOFS.map((p) => (
             <div key={p.label} className="flex items-start gap-3">

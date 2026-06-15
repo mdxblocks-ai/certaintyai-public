@@ -15,6 +15,7 @@ import Foundry from './pages/Foundry'
 import Architecture from './pages/Architecture'
 import Copilots from './pages/Copilots'
 import AIReadiness from './pages/AIReadiness'
+import DomainOntology from './pages/DomainOntology'
 
 export default function App() {
   return (
@@ -35,6 +36,7 @@ export default function App() {
                     marketplace path so external links and bookmarks keep working. */}
                 <Route path="/copilots" element={<Navigate to="/copilot-marketplace" replace />} />
                 <Route path="/ai-readiness" element={<AIReadiness />} />
+                <Route path="/ontology/:slug" element={<DomainOntology />} />
                 {/* Survey + Report are public (anonymous flow). */}
                 <Route path="/survey" element={<Survey />} />
                 <Route path="/report/:token" element={<Report />} />

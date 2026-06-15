@@ -22,7 +22,7 @@ export default function Copilots() {
     <div className="theme-parchment min-h-screen bg-[#F4F0E6] text-[#14161A] font-sans-brand relative isolate">
 
       {/* ===== Hero ===== */}
-      <section className="max-w-7xl mx-auto px-6 pt-12 pb-12">
+      <section className="page-container pt-12 pb-12">
         <div className="max-w-4xl">
           <div className="inline-flex items-center gap-2 text-xs font-semibold tracking-widest text-[#7C5723] uppercase">
             <span className="w-6 h-px bg-[#A87C3C]" />
@@ -60,7 +60,7 @@ export default function Copilots() {
 
       {/* ===== Status legend (compact, fixed at the top of the lineup) ===== */}
       <section className="border-t border-[#14161A]/10 bg-[#FBF8F0] py-4">
-        <div className="max-w-7xl mx-auto px-6">
+        <div className="page-container">
           <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-[12px] text-[#3B3D42]">
             <span className="text-[10.5px] uppercase tracking-[0.22em] text-[#7C5723] font-bold">
               Status legend
@@ -86,7 +86,7 @@ export default function Copilots() {
 
       {/* ===== Summary: Industry AI Copilots ===== */}
       <section id="copilot-summary" className="border-t border-b border-[#14161A]/10 bg-[#ECE5D6]/30 py-10">
-        <div className="max-w-7xl mx-auto px-6">
+        <div className="page-container">
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6 mb-6">
             <div>
               <span className="text-[10px] uppercase tracking-[0.28em] text-[#7C5723] font-bold block mb-2">
@@ -171,7 +171,7 @@ export default function Copilots() {
           id={group.domain.id}
           className={gi % 2 === 0 ? 'py-16' : 'py-16 bg-[#ECE5D6]/15 border-y border-[#14161A]/8'}
         >
-          <div className="max-w-7xl mx-auto px-6">
+          <div className="page-container">
             <header className="flex items-start justify-between gap-6 flex-wrap mb-10">
               {/* Left column: title + blurb. flex-1 + min-w-0 lets the title
                   consume all remaining horizontal space before wrapping. The
@@ -224,7 +224,7 @@ export default function Copilots() {
       ))}
 
       {/* ===== Build-your-own band ===== */}
-      <section className="max-w-7xl mx-auto px-6 py-16">
+      <section className="page-container py-16">
         <div className="bg-[#FBF8F0] border border-[#14161A]/10 rounded-3xl p-10 sm:p-12 shadow-sm">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
             <div className="lg:col-span-7">

@@ -1,11 +1,9 @@
 import React from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useRegion } from '../context/RegionContext'
-import LogoMark from './LogoMark'
+import BrandLogo from './BrandLogo'
 
 export default function Footer() {
   const navigate = useNavigate()
-  const { activeRegion } = useRegion()
 
   const handleScrollToExplorer = (e) => {
     e.preventDefault()
@@ -17,22 +15,12 @@ export default function Footer() {
   }
 
   return (
-    <footer className="border-t border-[#14161A]/14 mt-24 pt-14 pb-10 bg-[#ECE5D6]/20">
-      <div className="max-w-7xl mx-auto px-6">
+    <footer className="border-t border-[#14161A]/14 pt-10 pb-7 bg-[#ECE5D6]/20">
+      <div className="page-container">
         <div className="foot-grid">
-          <div style={{ maxWidth: '300px' }}>
-            <div className="brand flex items-center gap-3" style={{ cursor: 'default' }}>
-              <div className="w-[42px] h-[42px] border-[1.5px] border-[#14161A] rounded-[9px] flex items-center justify-center bg-[#FBF8F0] shrink-0">
-                <LogoMark className="w-[28px] h-[28px] text-[#14161A]" />
-              </div>
-              <div className="leading-tight">
-                <div className="font-serif-brand font-bold text-lg text-[#14161A]">CertaintyAI<sup className="text-[10px] ml-0.5 font-sans">™</sup></div>
-                <div className="text-[10px] text-[#73706A] italic font-medium font-serif-brand mt-0.5">
-                  {activeRegion?.tag || 'Defensible AI for regulated industries'}
-                </div>
-              </div>
-            </div>
-            <p className="text-sm text-[#73706A] mt-5 leading-relaxed">
+          <div className="flex-1 md:min-w-[420px]">
+            <BrandLogo variant="parchment" />
+            <p className="text-sm text-[#73706A] mt-5 leading-relaxed whitespace-normal md:whitespace-nowrap">
               The governance layer for AI in healthcare, finance, cybersecurity, education and beyond.
             </p>
           </div>

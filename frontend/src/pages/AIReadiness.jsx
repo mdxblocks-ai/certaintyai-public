@@ -581,7 +581,7 @@ export default function AIReadiness() {
     <div className="theme-parchment min-h-screen bg-[#F4F0E6] text-[#14161A] font-sans-brand relative isolate">
 
       {/* ===== Hero ===== */}
-      <section className="max-w-7xl mx-auto px-6 pt-12 pb-16">
+      <section className="page-container pt-12 pb-16">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
           <div className="lg:col-span-7">
             <div className="inline-flex items-center gap-2 text-xs font-semibold tracking-widest text-[#7C5723] uppercase">
@@ -629,7 +629,7 @@ export default function AIReadiness() {
       </section>
 
       {/* ===== Below-fold secondary exits (low-emphasis link bar) ===== */}
-      <div className="max-w-7xl mx-auto px-6 pb-10 -mt-2">
+      <div className="page-container pb-10 -mt-2">
         <div className="text-[12px] text-[#73706A] tracking-wide">
           Or:{' '}
           <a
@@ -648,7 +648,7 @@ export default function AIReadiness() {
 
       {/* ===== Q2: Why am I here? ===== */}
       <section id="why-here" className="border-t border-b border-[#14161A]/10 bg-[#ECE5D6]/30 py-16">
-        <div className="max-w-7xl mx-auto px-6">
+        <div className="page-container">
           <div className="max-w-3xl mb-12">
             <span className="text-[11px] font-semibold tracking-[0.22em] text-[#7C5723] uppercase block mb-3">
               Why am I here?
@@ -701,7 +701,7 @@ export default function AIReadiness() {
 
       {/* ===== Q1: Where am I today? — Maturity progression ===== */}
       <section id="where-today" className="border-t border-[#14161A]/10 py-20">
-        <div className="max-w-7xl mx-auto px-6">
+        <div className="page-container">
           <div className="max-w-3xl mb-10">
             <span className="text-[11px] font-semibold tracking-[0.22em] text-[#7C5723] uppercase block mb-3">
               Where am I today?
@@ -720,7 +720,7 @@ export default function AIReadiness() {
 
       {/* ===== Q3: What should I do next? — 5-step flow ===== */}
       <section id="next-steps" className="border-t border-[#14161A]/10 py-20 bg-[#ECE5D6]/15">
-        <div className="max-w-7xl mx-auto px-6">
+        <div className="page-container">
           <div className="max-w-3xl mb-12">
             <span className="text-[11px] font-semibold tracking-[0.22em] text-[#7C5723] uppercase block mb-3">
               What should I do next?
@@ -774,7 +774,7 @@ export default function AIReadiness() {
 
       {/* ===== Q4: What business value will I gain? — Role-specific cards ===== */}
       <section id="business-value" className="border-t border-[#14161A]/10 py-20">
-        <div className="max-w-7xl mx-auto px-6">
+        <div className="page-container">
           <div className="max-w-3xl mb-12">
             <span className="text-[11px] font-semibold tracking-[0.22em] text-[#7C5723] uppercase block mb-3">
               What business value will I gain?
@@ -820,7 +820,7 @@ export default function AIReadiness() {
 
       {/* ===== Sample report ===== */}
       <section id="sample-report" className="border-t border-[#14161A]/10 py-20 bg-[#1E3A36]/4">
-        <div className="max-w-7xl mx-auto px-6">
+        <div className="page-container">
           <div className="max-w-3xl mb-10">
             <span className="text-[11px] font-semibold tracking-[0.22em] text-[#A87C3C] uppercase block mb-3">
               Sample report preview
@@ -851,7 +851,7 @@ export default function AIReadiness() {
 
       {/* ===== Q5: How does CertaintyAI move me from experimentation to operationalization? ===== */}
       <section id="operationalization" className="border-t border-[#14161A]/10 py-20">
-        <div className="max-w-7xl mx-auto px-6">
+        <div className="page-container">
           <div className="max-w-3xl mb-12">
             <span className="text-[11px] font-semibold tracking-[0.22em] text-[#7C5723] uppercase block mb-3">
               How CertaintyAI moves you forward

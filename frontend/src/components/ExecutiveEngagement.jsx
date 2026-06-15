@@ -16,7 +16,7 @@ export default function ExecutiveEngagement({
   tertiary = { label: 'Talk to an AI Advisor', href: '/signup' },
 }) {
   return (
-    <section id="executive-engagement" className="max-w-7xl mx-auto px-6 py-20">
+    <section id="executive-engagement" className="page-container py-20">
       <div
         className="relative bg-[#0A0A0E] text-[#F4F0E6] rounded-3xl p-10 sm:p-14 shadow-[0_30px_80px_-20px_rgba(0,0,0,0.7)] overflow-hidden isolate border border-[#D8B679]/15"
         style={{

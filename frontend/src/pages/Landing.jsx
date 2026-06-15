@@ -58,7 +58,7 @@ const INDUSTRIES = [
   },
   {
     name: 'Banking & Financial Services',
-    slug: 'finance',
+    slug: 'banking-finance',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className="w-6 h-6">
         <rect x="4" y="2" width="16" height="20" rx="2" ry="2" />
@@ -71,7 +71,7 @@ const INDUSTRIES = [
   },
   {
     name: 'Government & Public Sector',
-    slug: 'other',
+    slug: 'government-public-sector',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className="w-6 h-6">
         <line x1="3" y1="22" x2="21" y2="22" />
@@ -95,7 +95,7 @@ const INDUSTRIES = [
   },
   {
     name: 'Cybersecurity',
-    slug: 'cyber',
+    slug: 'cybersecurity',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className="w-6 h-6">
         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
@@ -104,7 +104,7 @@ const INDUSTRIES = [
   },
   {
     name: 'IT Consulting',
-    slug: 'consulting',
+    slug: 'it-consulting',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className="w-6 h-6">
         <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
@@ -163,7 +163,7 @@ export default function Landing() {
         }}
       >
         <div aria-hidden className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#D8B679]/35 to-transparent pointer-events-none" />
-        <div className="max-w-7xl mx-auto px-6 pt-14 pb-20 relative">
+        <div className="page-container pt-14 pb-20 relative">
           <div className="max-w-4xl">
             <div className="inline-flex items-center gap-2 text-xs font-semibold tracking-widest text-[#D8B679] uppercase">
               <span className="w-6 h-px bg-gradient-to-r from-[#D8B679] to-transparent" />
@@ -230,7 +230,7 @@ export default function Landing() {
         className="relative bg-[#0A0A0E] text-[#F4F0E6] py-16"
         style={{ backgroundImage: 'radial-gradient(700px 320px at 70% 50%, rgba(216,182,121,0.08), transparent 60%)' }}
       >
-        <div className="max-w-7xl mx-auto px-6 relative">
+        <div className="page-container relative">
           <div className="max-w-3xl mb-10">
             <span className="text-[11px] font-semibold tracking-[0.22em] text-[#D8B679] uppercase block mb-3">
               Designed For
@@ -284,7 +284,7 @@ export default function Landing() {
         className="relative bg-[#101116] text-[#F4F0E6] py-16 border-y border-[#D8B679]/12"
         style={{ backgroundImage: 'radial-gradient(800px 360px at 80% 50%, rgba(224,132,67,0.08), transparent 60%)' }}
       >
-        <div className="max-w-7xl mx-auto px-6 relative">
+        <div className="page-container relative">
           <div className="max-w-3xl mb-12">
             <span className="text-[11px] font-semibold tracking-[0.22em] text-[#D8B679] uppercase block mb-3">
               Why Organizations Struggle With AI
@@ -335,7 +335,7 @@ export default function Landing() {
             'radial-gradient(900px 420px at 20% 0%, rgba(216,182,121,0.10), transparent 60%), radial-gradient(700px 360px at 80% 100%, rgba(224,132,67,0.10), transparent 60%)',
         }}
       >
-        <div className="max-w-7xl mx-auto px-6 relative">
+        <div className="page-container relative">
           <div className="max-w-3xl mx-auto mb-12 text-center">
             <span className="text-[11px] font-semibold tracking-[0.22em] text-[#D8B679] uppercase block mb-3">
               Executive Outcomes
@@ -400,7 +400,7 @@ export default function Landing() {
         className="relative bg-[#101116] text-[#F4F0E6] py-16 border-y border-[#D8B679]/12"
         style={{ backgroundImage: 'radial-gradient(800px 360px at 50% 50%, rgba(216,182,121,0.07), transparent 60%)' }}
       >
-        <div className="max-w-7xl mx-auto px-6 relative">
+        <div className="page-container relative">
           <div className="max-w-3xl mb-10">
             <span className="text-[11px] font-semibold tracking-[0.22em] text-[#E08443] uppercase block mb-3">
               Trusted Frameworks
@@ -449,7 +449,7 @@ export default function Landing() {
             'radial-gradient(800px 380px at 0% 30%, rgba(216,182,121,0.10), transparent 60%), radial-gradient(700px 360px at 100% 70%, rgba(224,132,67,0.10), transparent 60%)',
         }}
       >
-        <div className="max-w-7xl mx-auto px-6 relative">
+        <div className="page-container relative">
 
           <div className="max-w-3xl mb-8">
             <span className="text-[11px] font-semibold tracking-[0.22em] text-[#D8B679] uppercase block mb-3">
@@ -597,7 +597,7 @@ export default function Landing() {
                 href: '/copilots#education',
                 copilots: [
                   { name: 'GradeUP Copilot',                                          status: 'ready-for-demo' },
-                  { name: 'SkillUP Copilot (Workforce & Skills Development)',         status: 'ready-for-demo' },
+                  { name: 'SkillUP Copilot',                                          status: 'ready-for-demo' },
                   { name: 'RankUP Copilot',                                           status: 'on-roadmap' },
                   { name: 'Institutional Analytics Assistant',                        status: 'on-roadmap' },
                 ],
@@ -723,7 +723,7 @@ export default function Landing() {
       </section>
 
       {/* ===== The 7-step Narrative Chain ===== */}
-      <section id="narrative-chain" className="max-w-7xl mx-auto px-6 py-20">
+      <section id="narrative-chain" className="page-container py-20">
         <div className="max-w-3xl mx-auto mb-12 text-center">
           <span className="text-[11px] font-semibold tracking-[0.22em] text-[#7C5723] uppercase block mb-3">
             The Open Architecture
@@ -741,7 +741,7 @@ export default function Landing() {
 
       {/* ===== Embedded Architecture Stack canvas ===== */}
       <section id="architecture-stack" className="border-t border-[#14161A]/10 bg-[#1E3A36]/4 py-20">
-        <div className="max-w-7xl mx-auto px-6">
+        <div className="page-container">
           <div className="max-w-3xl mb-10">
             <span className="text-[11px] font-semibold tracking-[0.22em] text-[#A87C3C] uppercase block mb-3">
               Live Architecture Canvas
@@ -771,7 +771,7 @@ export default function Landing() {
       <ProofStrip />
 
       {/* ===== Why an Open Architecture ===== */}
-      <section className="max-w-7xl mx-auto px-6 py-20">
+      <section className="page-container py-20">
         <div className="max-w-3xl mb-12">
           <span className="text-[11px] font-semibold tracking-[0.22em] text-[#7C5723] uppercase block mb-3">Why open</span>
           <h2 className="font-serif-brand text-3xl sm:text-4xl text-[#14161A] font-normal leading-tight">
@@ -799,7 +799,7 @@ export default function Landing() {
 
       {/* ===== Industries ===== */}
       <section id="explorer" className="border-t border-[#14161A]/10 py-20">
-        <div className="max-w-7xl mx-auto px-6">
+        <div className="page-container">
           <div className="max-w-3xl mb-12">
             <span className="text-[11px] font-semibold tracking-[0.22em] text-[#7C5723] uppercase block mb-3">Industries &amp; Domains</span>
             <h2 className="font-serif-brand text-3xl sm:text-4xl text-[#14161A] font-normal leading-tight">
@@ -813,8 +813,16 @@ export default function Landing() {
             {INDUSTRIES.map((ind) => (
               <div
                 key={ind.name}
-                className="bg-[#FBF8F0] border border-[#14161A]/10 rounded-2xl p-6 shadow-sm hover:border-[#A87C3C] transition cursor-pointer flex flex-col justify-between"
-                onClick={() => navigate('/foundry')}
+                role="button"
+                tabIndex={0}
+                onClick={() => navigate(`/ontology/${ind.slug}`)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    navigate(`/ontology/${ind.slug}`)
+                  }
+                }}
+                className="bg-[#FBF8F0] border border-[#14161A]/10 rounded-2xl p-6 shadow-sm hover:border-[#A87C3C] transition cursor-pointer flex flex-col justify-between focus:outline-none focus:ring-2 focus:ring-[#A87C3C]/40"
               >
                 <div>
                   <div className="w-11 h-11 rounded-xl bg-[#1E3A36] text-[#D8B679] flex items-center justify-center mb-4">
@@ -823,7 +831,7 @@ export default function Landing() {
                   <h4 className="font-serif-brand text-lg font-semibold text-[#14161A]">{ind.name}</h4>
                 </div>
                 <span className="text-[11px] text-[#A87C3C] font-semibold mt-6 block">
-                  Inspect domain ontology →
+                  Inspect Domain Ontology →
                 </span>
               </div>
             ))}
@@ -833,7 +841,7 @@ export default function Landing() {
 
       {/* ===== Honesty Contract ===== */}
       <section className="border-t border-[#14161A]/10 py-20 bg-[#1E3A36] text-[#F4F0E6]">
-        <div className="max-w-7xl mx-auto px-6">
+        <div className="page-container">
           <div className="max-w-3xl mb-12">
             <span className="text-[11px] font-semibold tracking-[0.22em] text-[#D8B679] uppercase block mb-3">The Honesty Contract</span>
             <h2 className="font-serif-brand text-3xl sm:text-4xl font-normal leading-tight">
@@ -856,7 +864,7 @@ export default function Landing() {
 
       {/* ===== Frameworks Wall ===== */}
       <section className="border-t border-[#14161A]/10 py-20 bg-[#ECE5D6]/10">
-        <div className="max-w-7xl mx-auto px-6">
+        <div className="page-container">
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-12">
             <div className="max-w-3xl">
               <span className="text-[11px] font-semibold tracking-[0.22em] text-[#7C5723] uppercase block mb-3">Auditable Compliance</span>

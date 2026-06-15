@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useRegion, REGIONS } from '../context/RegionContext'
-import LogoMark from './LogoMark'
+import BrandLogo from './BrandLogo'
 import AuthModal from './AuthModal'
 
 export default function Navbar() {
@@ -83,29 +83,13 @@ export default function Navbar() {
   return (
     <>
       <header className={headerClass}>
-        <div className={`${user ? 'max-w-full' : 'max-w-7xl'} mx-auto px-6 h-20 flex items-center justify-between`}>
+        <div className={`${user ? 'max-w-full px-6' : 'page-container'} h-20 flex items-center justify-between`}>
           <div className="flex items-center gap-4">
-            <Link to={user ? "/dashboard" : "/"} className="flex items-center gap-3 group">
-              <div className={isParchment 
-                ? "w-[42px] h-[42px] border-[1.5px] border-[#14161A] rounded-[9px] flex items-center justify-center bg-[#FBF8F0] shrink-0" 
-                : "w-10 h-10 border border-slate-800 rounded-lg flex items-center justify-center bg-slate-900 group-hover:border-slate-700 shrink-0 transition"
-              }>
-                <LogoMark className={isParchment ? "w-[28px] h-[28px] text-[#14161A]" : "w-[24px] h-[24px] text-cyan-400 group-hover:text-cyan-300 transition duration-300"} />
-              </div>
-              <div className="leading-tight">
-                <div className={isParchment 
-                  ? "font-serif-brand font-bold text-lg text-[#14161A]" 
-                  : "font-semibold tracking-tight text-slate-100 group-hover:text-white transition duration-200"
-                }>
-                  CertaintyAI<sup className="text-[10px] ml-0.5 font-sans">™</sup>
-                </div>
-                <div className={isParchment 
-                  ? "text-[10px] text-[#73706A] italic font-medium font-serif-brand" 
-                  : "text-[9px] uppercase tracking-[0.25em] text-slate-400"
-                }>
-                  {isParchment ? activeRegion.tag : 'by MDxBlocks Inc.'}
-                </div>
-              </div>
+            <Link to={user ? "/dashboard" : "/"} className="group">
+              <BrandLogo
+                variant={isParchment ? 'parchment' : 'dark'}
+                tagline={isParchment ? undefined : 'by MDxBlocks Inc.'}
+              />
             </Link>
           </div>
 
