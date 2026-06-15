@@ -598,7 +598,7 @@ export default function Landing() {
                 copilots: [
                   { name: 'GradeUP Copilot',                                          status: 'ready-for-demo' },
                   { name: 'SkillUP Copilot (Workforce & Skills Development)',         status: 'ready-for-demo' },
-                  { name: 'Curriculum Intelligence Assistant',                        status: 'on-roadmap' },
+                  { name: 'RankUP Copilot',                                           status: 'on-roadmap' },
                   { name: 'Institutional Analytics Assistant',                        status: 'on-roadmap' },
                 ],
                 icon: (

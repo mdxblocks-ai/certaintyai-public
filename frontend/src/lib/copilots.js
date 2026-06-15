@@ -60,11 +60,11 @@ export const DOMAINS = [
   },
   {
     id: 'ai-advisory',
-    name: 'AI Advisory & Governance',
+    name: 'AI Advisory & Governance (Cross-Industry)',
     accent: '#4F46E5',                          // Indigo / royal blue
     glow: 'rgba(79, 70, 229, 0.22)',
     blurb:
-      'Boardroom-ready AI advisors that translate readiness, governance, and investment posture into decisions the C-suite can defend.',
+      'Boardroom-ready AI advisors that translate readiness, governance, and investment posture into decisions the C-suite can defend. Sector-agnostic.',
   },
 ]
 
@@ -201,19 +201,20 @@ export const COPILOTS = [
     persona: 'Provost · Dean · Workforce Development',
   },
   {
-    id: 'curriculum-intelligence',
+    id: 'rankup',
     domain: 'education',
-    name: 'Curriculum Intelligence Assistant',
-    tagline: 'Map programs to competencies, accreditation standards, and labor-market signal.',
+    name: 'RankUP Copilot',
+    tagline: 'Accelerate exam readiness, certification success, career advancement, and performance outcomes through personalized AI-guided preparation and readiness intelligence.',
     capabilities: [
-      'Program-to-competency mapping with citation lineage',
-      'Accreditation gap analysis against discipline standards',
-      'Labor-market alignment scoring with traceable signal',
-      'Faculty-in-the-loop review on every curriculum change',
+      'Personalized study and success plans based on goals and performance',
+      'Competitive exam readiness for SAT, ACT, GRE, GMAT, JEE, NEET, UPSC and professional certifications',
+      'Skills-gap identification with recommended learning pathways',
+      'Career readiness insights aligned to industry demand and workforce trends',
+      'Human-in-the-loop review for academic and career planning decisions',
     ],
-    frameworks: ['FERPA', 'Accreditation Standards', 'NIST AI RMF'],
+    frameworks: ['EXAM READINESS', 'CAREER ADVANCEMENT', 'WORKFORCE DEVELOPMENT'],
     status: 'on-roadmap',
-    persona: 'Provost · Curriculum Council · Workforce Office',
+    persona: 'Students · Universities · Career Services · Workforce Development · Certification Programs',
   },
 
   // ============================================================

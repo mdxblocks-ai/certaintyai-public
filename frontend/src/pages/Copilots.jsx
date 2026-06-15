@@ -173,7 +173,11 @@ export default function Copilots() {
         >
           <div className="max-w-7xl mx-auto px-6">
             <header className="flex items-start justify-between gap-6 flex-wrap mb-10">
-              <div className="max-w-2xl">
+              {/* Left column: title + blurb. flex-1 + min-w-0 lets the title
+                  consume all remaining horizontal space before wrapping. The
+                  blurb keeps its own max-width so the body text stays at a
+                  readable measure even when the title goes wide. */}
+              <div className="flex-1 min-w-0">
                 <div
                   className="inline-flex items-center gap-2 text-[10px] font-bold tracking-[0.22em] uppercase mb-3"
                   style={{ color: group.domain.accent }}
@@ -184,11 +188,13 @@ export default function Copilots() {
                 <h2 className="font-serif-brand text-3xl sm:text-4xl text-[#14161A] font-normal leading-tight">
                   {group.domain.name} Copilots
                 </h2>
-                <p className="text-sm text-[#3B3D42] mt-3">
+                <p className="text-sm text-[#3B3D42] mt-3 max-w-3xl">
                   {group.domain.blurb}
                 </p>
               </div>
-              <div className="text-right text-[11px] text-[#73706A] tracking-wide">
+              {/* Right column: count + CTA. shrink-0 keeps it at its natural
+                  width so the title side can grow into the leftover space. */}
+              <div className="text-right text-[11px] text-[#73706A] tracking-wide shrink-0">
                 <div className="uppercase font-semibold tracking-widest text-[#14161A]/70 mb-1">
                   {group.copilots.length} copilot{group.copilots.length === 1 ? '' : 's'}
                 </div>
