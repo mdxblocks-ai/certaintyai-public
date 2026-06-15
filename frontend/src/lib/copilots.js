@@ -51,14 +51,6 @@ export const DOMAINS = [
       'Personalized learning and workforce upskilling that respect FERPA and COPPA, with faculty-in-the-loop on every consequential decision.',
   },
   {
-    id: 'it-consulting',
-    name: 'IT Consulting',
-    accent: '#7C3AED',                          // Purple
-    glow: 'rgba(124, 58, 237, 0.22)',
-    blurb:
-      'Delivery-grade copilots for consultancies — proposal velocity, knowledge capture, and engagement governance, all with audit-ready provenance.',
-  },
-  {
     id: 'cybersecurity',
     name: 'Cybersecurity',
     accent: '#DC2626',                          // Red / crimson
@@ -83,7 +75,7 @@ export const COPILOTS = [
   {
     id: 'ai-cdss',
     domain: 'healthcare',
-    name: 'AI-CDSS Copilot',
+    name: 'AI-CDSS Copilot™',
     tagline: 'Clinical decision support grounded in evidence, governance, and explainability.',
     capabilities: [
       'Evidence-grounded suggestions with SNOMED / LOINC / ICD-10 lookups',
@@ -98,7 +90,7 @@ export const COPILOTS = [
   {
     id: 'ai-pfis',
     domain: 'healthcare',
-    name: 'AI-PFIS Copilot',
+    name: 'AI-PFIS Copilot™',
     tagline: 'Patient Financial Information System — pre-eligibility, estimation, and propensity-to-pay, governed.',
     capabilities: [
       'Real-time eligibility and benefits verification across payer rules',
@@ -113,8 +105,8 @@ export const COPILOTS = [
   {
     id: 'prior-auth',
     domain: 'healthcare',
-    name: 'Prior Authorization Copilot',
-    tagline: 'Accelerate authorization workflows with AI-assisted reviews and audit trails.',
+    name: 'Prior Authorization Compliance Copilot™',
+    tagline: 'Accelerate authorization workflows with AI-assisted reviews, audit trails, and continuous compliance attestation.',
     capabilities: [
       'Policy + medical-necessity matching against payer rule sets',
       'Document evidence extraction from EHR and uploaded packets',
@@ -126,34 +118,19 @@ export const COPILOTS = [
     persona: 'Utilization Mgmt · Revenue Cycle · Payer Operations',
   },
   {
-    id: 'healthcare-compliance',
+    id: 'healthcare-grc',
     domain: 'healthcare',
-    name: 'Healthcare Compliance Copilot',
-    tagline: 'Continuous HIPAA / HITECH / state-rule attestation with evidence on demand.',
+    name: 'Healthcare GRC Copilot™',
+    tagline: 'Unified Governance, Risk, and Compliance copilot for healthcare — control attestation, risk triage, and audit assembly in one.',
     capabilities: [
       'Continuous control attestation against HIPAA / HITECH baselines',
-      'Privacy-impact triage for AI-influenced workflows',
-      'Breach-notification readiness pack assembly',
-      'Auditor-ready evidence retrieval with citation lineage',
+      'Risk register grounded in your evidence vault with cited lineage',
+      'Privacy-impact triage for AI-influenced clinical workflows',
+      'Auditor-ready GRC pack assembly with traceable citations',
     ],
-    frameworks: ['HIPAA', 'HITECH', 'NIST AI RMF', 'State Privacy Acts'],
+    frameworks: ['HIPAA', 'HITECH', 'NIST AI RMF', 'ISO 42001'],
     status: 'working-in-progress',
-    persona: 'CCO · Privacy Officer · Compliance Operations',
-  },
-  {
-    id: 'care-coordination',
-    domain: 'healthcare',
-    name: 'Care Coordination Assistant',
-    tagline: 'Bridge clinical, social-determinant, and operational signal so the right next step is obvious.',
-    capabilities: [
-      'Cross-source case-conference summary with cited evidence',
-      'SDoH-aware care-plan suggestions with clinician-override gate',
-      'Follow-up adherence tracking with privacy-preserving aggregations',
-      'Care-team-ready briefing assembly with traceable lineage',
-    ],
-    frameworks: ['HIPAA', 'NIST AI RMF', 'ISO 42001', 'SDoH Guidelines'],
-    status: 'on-roadmap',
-    persona: 'CMIO · Care Management · Population Health',
+    persona: 'CCO · Privacy Officer · GRC Operations',
   },
 
   // ============================================================
@@ -175,21 +152,6 @@ export const COPILOTS = [
     persona: 'CFO · Corporate Tax · Treasury',
   },
   {
-    id: 'financial-controls',
-    domain: 'finance',
-    name: 'Financial Controls Copilot',
-    tagline: 'SOX-aligned controls attestation with evidence retrieval and exception triage.',
-    capabilities: [
-      'Continuous SOX control monitoring with traceable evidence',
-      'Segregation-of-duties anomaly detection',
-      'Quarter-close pack assembly with cited workpapers',
-      'Policy-aware exception routing for finance leadership',
-    ],
-    frameworks: ['SOX', 'COSO', 'GAAP / IFRS', 'NIST AI RMF'],
-    status: 'working-in-progress',
-    persona: 'CFO · Controller · Internal Audit',
-  },
-  {
     id: 'quanto-finops',
     domain: 'finance',
     name: 'Quanto FinOps Copilot',
@@ -203,21 +165,6 @@ export const COPILOTS = [
     frameworks: ['FinOps Framework', 'SOX', 'NIST AI RMF', 'ISO 42001'],
     status: 'on-roadmap',
     persona: 'CFO · FinOps · Cloud Operations',
-  },
-  {
-    id: 'audit-readiness',
-    domain: 'finance',
-    name: 'Audit Readiness Assistant',
-    tagline: 'Always-on assembly of the audit-pack the regulators are about to ask for.',
-    capabilities: [
-      'Control-narrative drafting grounded in your evidence vault',
-      'Workpaper retrieval with policy + version citation',
-      'PBC-list assembly with completeness scoring',
-      'Materiality-aware risk routing for the audit committee',
-    ],
-    frameworks: ['SOX', 'PCAOB', 'COSO', 'NIST AI RMF'],
-    status: 'on-roadmap',
-    persona: 'Controller · Internal Audit · CFO',
   },
 
   // ============================================================
@@ -268,148 +215,30 @@ export const COPILOTS = [
     status: 'on-roadmap',
     persona: 'Provost · Curriculum Council · Workforce Office',
   },
-  {
-    id: 'institutional-analytics',
-    domain: 'education',
-    name: 'Institutional Analytics Assistant',
-    tagline: 'Enrollment, retention, and outcomes analytics with governance the board will accept.',
-    capabilities: [
-      'Enrollment and retention forecasting with cited drivers',
-      'Cohort outcomes analytics with equity guardrails',
-      'Board-ready memo synthesis from the same audit trail',
-      'Privacy-preserving aggregations for federal reporting',
-    ],
-    frameworks: ['FERPA', 'IPEDS', 'NIST AI RMF', 'ISO 42001'],
-    status: 'on-roadmap',
-    persona: 'CIO · Provost · Institutional Research',
-  },
 
   // ============================================================
-  // IT Consulting
+  // IT Consulting — DOMAIN REMOVED per spec. All 4 entries
+  // (RFP Response, Knowledge Management, Project Delivery, Proposal
+  // Intelligence) deleted along with the domain itself.
   // ============================================================
-  {
-    id: 'rfp-response',
-    domain: 'it-consulting',
-    name: 'RFP Response Copilot',
-    tagline: 'Compose defensible RFP responses grounded in your past wins and current capabilities.',
-    capabilities: [
-      'Question-by-question response drafting with cited prior wins',
-      'Capability-matrix grounding against the firm\'s service catalog',
-      'Compliance-clause detection with red-flag routing',
-      'Partner-in-the-loop sign-off on every consequential commitment',
-    ],
-    frameworks: ['SOC 2', 'ISO 27001', 'NIST AI RMF', 'Firm Policy'],
-    status: 'on-roadmap',
-    persona: 'Pursuit Lead · Practice Director · Bid Manager',
-  },
-  {
-    id: 'knowledge-management',
-    domain: 'it-consulting',
-    name: 'Knowledge Management Copilot',
-    tagline: 'Turn engagement deliverables into a defensible, retrievable institutional memory.',
-    capabilities: [
-      'Project artifact capture with provenance tagging',
-      'Practice-area search grounded in your taxonomy',
-      'Confidentiality enforcement at retrieval time',
-      'Reuse analytics so partners see what\'s actually leveraged',
-    ],
-    frameworks: ['SOC 2', 'ISO 27001', 'NIST AI RMF', 'Firm Policy'],
-    status: 'on-roadmap',
-    persona: 'CIO · Knowledge Officer · Practice Director',
-  },
-  {
-    id: 'project-delivery',
-    domain: 'it-consulting',
-    name: 'Project Delivery Assistant',
-    tagline: 'Engagement governance copilot — status, risk, and escalation with cited evidence.',
-    capabilities: [
-      'Status-report drafting from time and milestone data',
-      'Risk surface from project artifacts with cited rationale',
-      'Escalation routing aligned to firm policy',
-      'Partner sign-off trail for client commitments',
-    ],
-    frameworks: ['PMI', 'SOC 2', 'NIST AI RMF', 'Firm Policy'],
-    status: 'on-roadmap',
-    persona: 'Engagement Manager · Delivery Director · PMO',
-  },
-  {
-    id: 'proposal-intelligence',
-    domain: 'it-consulting',
-    name: 'Proposal Intelligence Assistant',
-    tagline: 'Win/loss intelligence and pricing recommendations grounded in your firm\'s history.',
-    capabilities: [
-      'Win/loss pattern analysis with cited engagements',
-      'Pricing benchmarks grounded in past deal data',
-      'Competitive positioning with confidence bands',
-      'Partner-in-the-loop review on every recommended ask',
-    ],
-    frameworks: ['SOC 2', 'NIST AI RMF', 'Firm Policy'],
-    status: 'on-roadmap',
-    persona: 'Sales Operations · Pricing Council · Practice Director',
-  },
 
   // ============================================================
   // Cybersecurity
   // ============================================================
   {
-    id: 'ai-security-auditor',
+    id: 'cyberintel',
     domain: 'cybersecurity',
-    name: 'AI Security Auditor',
-    tagline: 'Audit AI workloads against NIST AI RMF + your control catalog with cited evidence.',
+    name: 'CyberIntel Copilot',
+    tagline: 'Unified security intelligence — alert triage, threat-actor context, and incident-response support in one governed copilot.',
     capabilities: [
-      'Continuous AI control attestation against NIST AI RMF',
-      'Vendor model risk triage with policy guardrails',
-      'Evidence retrieval from your control catalog with citations',
-      'Auditor-ready report assembly with traceable lineage',
+      'Source-grounded threat-actor and TTP context with citations',
+      'Tier-1 alert enrichment bounded by rules-of-engagement policy',
+      'Runbook-grounded IR action recommendations with chain-of-custody',
+      'Executive-ready briefing assembly with traceable lineage',
     ],
-    frameworks: ['NIST AI RMF', 'ISO 42001', 'SOC 2', 'ISO 27001'],
+    frameworks: ['NIST AI RMF', 'NIST SP 800-61', 'MITRE ATT&CK', 'ISO 27001'],
     status: 'on-roadmap',
-    persona: 'CISO · Internal Audit · Security Operations',
-  },
-  {
-    id: 'soc-analyst',
-    domain: 'cybersecurity',
-    name: 'SOC Analyst Copilot',
-    tagline: 'Tier-1 triage assistant that respects rules of engagement and cites every conclusion.',
-    capabilities: [
-      'Alert enrichment with cited playbook references',
-      'Triage recommendations bounded by rules-of-engagement policy',
-      'Analyst-in-the-loop on every escalation',
-      'Lineage for every disposition for downstream review',
-    ],
-    frameworks: ['NIST SP 800-61', 'MITRE ATT&CK', 'SOC 2', 'NIST AI RMF'],
-    status: 'on-roadmap',
-    persona: 'SOC Manager · Tier-1/2 Analyst · CISO',
-  },
-  {
-    id: 'threat-intelligence',
-    domain: 'cybersecurity',
-    name: 'Threat Intelligence Copilot',
-    tagline: 'Curate, score, and brief on threat actors and TTPs without hallucinating attribution.',
-    capabilities: [
-      'Source-grounded threat-actor profiles with citations',
-      'TTP mapping against MITRE ATT&CK with confidence bands',
-      'Sector-relevance scoring with cited reasoning',
-      'Brief generation for executive consumption',
-    ],
-    frameworks: ['MITRE ATT&CK', 'NIST AI RMF', 'TLP', 'ISO 27001'],
-    status: 'on-roadmap',
-    persona: 'CTI Lead · CISO · Threat Hunter',
-  },
-  {
-    id: 'incident-response',
-    domain: 'cybersecurity',
-    name: 'Incident Response Assistant',
-    tagline: 'Runbook-grounded IR copilot with chain-of-custody on every artifact.',
-    capabilities: [
-      'Runbook-grounded action recommendations with citations',
-      'Chain-of-custody capture on every artifact touched',
-      'Communications draft templates with legal review gates',
-      'Post-incident report assembly from the same audit trail',
-    ],
-    frameworks: ['NIST SP 800-61', 'MITRE ATT&CK', 'SOC 2', 'NIST AI RMF'],
-    status: 'on-roadmap',
-    persona: 'IR Lead · CISO · Legal & Comms',
+    persona: 'CISO · SOC Manager · Threat Hunter',
   },
 
   // ============================================================

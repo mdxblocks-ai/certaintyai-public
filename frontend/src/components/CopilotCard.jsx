@@ -22,13 +22,6 @@ const DOMAIN_ICONS = {
       <path d="M6 12v5c0 2 2 3 6 3s6-1 6-3v-5" />
     </svg>
   ),
-  'it-consulting': (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className="w-5 h-5">
-      <rect x="3" y="4" width="18" height="12" rx="2" />
-      <line x1="8" y1="20" x2="16" y2="20" />
-      <line x1="12" y1="16" x2="12" y2="20" />
-    </svg>
-  ),
   cybersecurity: (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className="w-5 h-5">
       <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
