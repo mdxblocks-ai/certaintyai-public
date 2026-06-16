@@ -818,7 +818,7 @@ function enterApp(){
   const fn=document.getElementById('firmNameLead');if(fn)fn.textContent=firm.name;
   const ah=document.querySelector('.apphead');if(ah)ah.style.borderTop='3px solid '+firm.accent;
   renderAll();applyRole(rk);var _wo=CP_OPEN;cpReset();
-  if(!cpAutoInit){cpAutoInit=true;cpDetectLang();setTimeout(function(){var ap=document.getElementById('screen-app');if(ap&&ap.classList.contains('active')&&!CP_OPEN)cpToggle();},650);}
+  if(!cpAutoInit){cpAutoInit=true;cpDetectLang();}
   else if(_wo){setTimeout(function(){var ap=document.getElementById('screen-app');if(ap&&ap.classList.contains('active')&&!CP_OPEN)cpToggle();},300);}
 }
 
@@ -929,10 +929,11 @@ function svgChart(data){const W=1180,H=320,pl=70,pr=20,pt=20,pb=40,iw=W-pl-pr,ih
   let dots='';data.forEach((d,i)=>dots+=`<circle cx="${X(i)}" cy="${Y(d.p50)}" r="4" fill="#3E7A52"/>`);
   return `<svg viewBox="0 0 ${W} ${H}" width="100%">${grid}${labels}${xl}<path d="${band}" fill="#3E7A52" opacity="0.13"/><path d="${line('base')}" fill="none" stroke="#b3a894" stroke-width="2" stroke-dasharray="6 5"/><path d="${line('p50')}" fill="none" stroke="#3E7A52" stroke-width="2.5"/>${dots}</svg>`;}
 function renderProjection(){const p=activePlan==='live'?livePlan():PLANS[activePlan];const data=project(p,projHorizon);
+  window.CY_PROJ={};data.forEach(function(d){window.CY_PROJ[d.y]=d;});
   document.getElementById('projChart').innerHTML=svgChart(data);
   const tb=document.getElementById('projTbody');tb.innerHTML='';
   data.forEach(d=>{const delta=d.p50-d.base;const tr=document.createElement('tr');tr.className='trace';
-    tr.innerHTML=`<td><b>${d.y}</b></td><td class="num">${fmt(d.p10)}</td><td class="num"><span style="background:var(--gold-soft);padding:2px 6px;border-radius:4px">${fmt(d.p50)}</span></td><td class="num">${fmt(d.p90)}</td><td class="num ${delta<0?'pos':'neg'}">${delta<0?'−':'+'}${fmt(Math.abs(delta))}</td><td class="num">⤷</td>`;
+    tr.innerHTML=`<td><b>${d.y}</b></td><td class="num">${fmt(d.p10)}</td><td class="num"><span style="background:var(--gold-soft);padding:2px 6px;border-radius:4px">${fmt(d.p50)}</span></td><td class="num">${fmt(d.p90)}</td><td class="num ${delta<0?'pos':'neg'}">${delta<0?'−':'+'}${fmt(Math.abs(delta))}</td><td class="num"><span class="cyExplain" data-inline="1" data-anchor="projyear:${d.y}" role="button" tabindex="0" title="Ask Pulsera to explain" onclick="event.stopPropagation();pulseraExplain('projyear:${d.y}')"><span class="cyEx">explain</span></span> ⤷</td>`;
     tr.onclick=()=>openLineage(d.y,activePlan);tb.appendChild(tr)});}
 function renderScenarioCards(){const wrap=document.getElementById('scenCards');wrap.innerHTML='';const base10=cumulative(PLANS.baseline,10);
   Object.entries(PLANS).filter(([k])=>k!=='baseline').forEach(([k,p])=>{const sav=base10-cumulative(p,10);const d=document.createElement('div');d.className='scen'+(activePlan===k?' sel':'');
@@ -949,7 +950,7 @@ function renderLevers(){document.getElementById('lvCompOut').textContent=fmtK(li
   if(!flags.innerHTML)flags.innerHTML='<span class="pill v">✓ No defensibility flags</span>';}
 function renderAssumptions(){const rows=[['S-corp income growth','6.0% / yr ± 5%','v2025.2','Analyst · M. Ito'],['Rental income growth','3.0% / yr ± 4%','v2025.2','Market index · auto'],['Bracket inflation index','3.0% / yr','v2025.2','IRS indexation · SME'],['QBI phaseout range','$50,000 (MFJ)','v2025.1','§199A · legal-reviewed'],['Discount rate (NPV)','5.0%','v2025.2','Finance policy'],['Reasonable-comp floor','$160,000','v2025.2','SME defensibility rule']];
   const t=document.getElementById('assumpTable');[...t.querySelectorAll('div:not(.hd)')].forEach(d=>d.remove());
-  rows.forEach(r=>r.forEach((c,i)=>{const d=document.createElement('div');d.innerHTML=i===2?`<span class="tag">${c}</span>`:c;t.appendChild(d)}));}
+  rows.forEach(r=>r.forEach((c,i)=>{const d=document.createElement('div');d.innerHTML=i===2?`<span class="tag">${c}</span>`:(i===0?`<span class="cyExplain" role="button" tabindex="0" data-anchor="assumption:${c}" title="Ask Pulsera to explain">${c}<span class="cyEx">explain</span></span>`:c);t.appendChild(d)}));}
 function renderEval(){const golden=[['GS-01 single-member S-corp',18420,18420,0.0],['GS-02 MFJ + QBI phaseout',96310,96118,0.2],['GS-03 rental passthrough loss',4275,4275,0.0],['GS-04 Roth ladder bracket fill',61840,61902,0.1],['GS-05 trust DNI distribution',12090,12090,0.0],['GS-06 high-income SSTB cliff',214500,219330,2.3]];
   const tb=document.getElementById('goldenTbody');tb.innerHTML='';
   golden.forEach(([n,e,c,d])=>{const pass=d<=1.0;const tr=document.createElement('tr');tr.innerHTML=`<td>${n}</td><td class="num">${fmt(e)}</td><td class="num">${fmt(c)}</td><td class="num">${d.toFixed(1)}%</td><td class="num">1.0%</td><td>${pass?'<span class="pill v">pass</span>':'<span class="pill r">fail</span>'}</td>`;tb.appendChild(tr)});
@@ -1052,7 +1053,7 @@ function dBars(items,prefix,suffix){var max=Math.max.apply(null,items.map(functi
 function renderDashboard(rk){rk=rk||(session&&session.roleKey)||'dana';var el=document.getElementById('dashBody');if(!el)return;var r=ROLES[rk];var firm=FIRMS[r.org]||{name:r.org,accent:r.color};var first=((session&&session.name)||r.name).split(' ')[0];function head(eyebrow,title,lead){return '<div class="viewhead"><div class="eyebrow">'+eyebrow+'</div><h2 class="serif">'+title+'</h2><p class="lead">'+lead+'</p></div>';}var G=DPAL,html='';
   if(rk==='dana'){var mo=['Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar','Apr','May','Jun'];var sav=[62,78,95,110,148,132,176,205,238,262,288,312].map(function(v){return v*1000;});
     html=head(firm.name+' \u00b7 CPA / tax advisor','Advisor analytics, '+first,'How your book is performing \u2014 savings identified, where they come from, and pipeline throughput.')
-    +'<div class="grid g3" style="margin-bottom:16px">'+dStat('Identified savings \u00b7 YTD','$1.24M','18% vs last quarter','up',sav,G.green)+dStat('Active client plans','24','+3 this quarter','up',[18,19,19,21,22,22,23,24],G.blue)+dStat('Avg savings / plan','$51.6k','+6% QoQ','up',[44,46,47,48,49,50,51,52],G.gold)+'</div>'+'<div class="card" style="margin-bottom:16px;border-left:3px solid '+G.green+'"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:11px;gap:10px"><h3 class="serif" style="font-size:17px;margin:0">\u2726 Opportunity radar \u2014 unrealized savings across your book</h3><span class="cpchip g">Grounded \u00b7 v2025.2</span></div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">'+dRadar('Riverside Holdings','S-corp reasonable-comp split','$96k')+dRadar('Delgado Family Trust','Roth conversion ladder','$71k')+dRadar('Aster Mfg LLC','entity restructure','$47k')+'</div><div style="margin-top:11px;font-size:12px;color:var(--muted)">The copilot scanned 24 client plans and surfaced these. Open <b>Ask Pulsera</b> to draft plans \u2014 each needs your approval before it reaches a client.</div></div>'
+    +'<div class="grid g3" style="margin-bottom:16px">'+dStat('Identified savings \u00b7 YTD','$1.24M','18% vs last quarter','up',sav,G.green)+dStat('Active client plans','24','+3 this quarter','up',[18,19,19,21,22,22,23,24],G.blue)+dStat('Avg savings / plan','$51.6k','+6% QoQ','up',[44,46,47,48,49,50,51,52],G.gold)+'</div>'+'<div class="card" style="margin-bottom:16px;border-left:3px solid '+G.green+'"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:11px;gap:10px"><h3 class="serif" style="font-size:17px;margin:0">\u2726 Opportunity radar \u2014 unrealized savings across your book</h3><span class="cpchip g">Grounded \u00b7 v2025.2</span></div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">'+dRadar('Riverside Holdings','S-corp reasonable-comp split','$96k','riverside')+dRadar('Delgado Family Trust','Roth conversion ladder','$71k','delgado')+dRadar('Aster Mfg LLC','entity restructure','$47k','aster')+'</div><div style="margin-top:11px;font-size:12px;color:var(--muted)">The copilot scanned 24 client plans and surfaced these. Open <b>Ask Pulsera</b> to draft plans \u2014 each needs your approval before it reaches a client.</div></div>'
     +'<div class="grid g2" style="margin-bottom:16px">'+dCard('Savings identified \u2014 monthly',dArea(mo,[{vals:sav,color:G.green}],{fmt:dMk}),dLeg([['Identified',G.green]]))+dCard('Savings by strategy',dDonut([{label:'S-corp comp split',value:480,color:G.green},{label:'Roth conversion ladder',value:310,color:G.gold},{label:'Entity restructure',value:250,color:G.blue},{label:'QBI timing',value:200,color:G.sienna}],'$1.24M','identified'))+'</div>'
     +'<div class="grid g2">'+dCard('Plan pipeline by stage',dBars([['Intake',6,G.grey],['Modeling',5,G.gold],['In review',3,G.amber],['Ready to send',4,G.blue],['Sent',6,G.green]]))+dCard('Weekly turnaround (days to review)',dArea(['w1','w2','w3','w4','w5','w6','w7','w8'],[{vals:[5.1,4.6,4.8,4.2,3.9,4.1,3.6,3.4],color:G.blue}],{gate:5,gateLabel:'5-day SLA',fmt:function(v){return v.toFixed(1)+'d';}}),dLeg([['Turnaround',G.blue]]))+'</div>';
   } else if(rk==='margaret'){var pr=project(PLANS.combo,10);var yrs=pr.map(function(d){return ''+d.y;});var baseV=pr.map(function(d){return d.base;});var planV=pr.map(function(d){return d.p50;});
@@ -1087,7 +1088,91 @@ function renderDashboard(rk){rk=rk||(session&&session.roleKey)||'dana';var el=do
 /* ===================== PULSERA COPILOT ===================== */
 var CP_OPEN=false, CP_LANG='en-US', CP_HISTORY=[], cpRec=null, cpRecOn=false, CP_LASTA='', cpVoiceMode=false, cpMicTimer=null, cpAutoInit=false, cpGateN=0, CP_ASKED=[], cpSugI=0, CP_MUTED=false;
 var CPLANGS={'en-US':'English','es-ES':'Espanol','hi-IN':'Hindi','fr-FR':'Francais','de-DE':'Deutsch','zh-CN':'Chinese'};
-function dRadar(name,strat,amt){return '<div style="background:var(--green-soft);border-radius:10px;padding:12px 13px"><div style="font-size:21px;font-family:var(--serif);font-weight:700;color:var(--green);line-height:1.1">'+amt+'</div><div style="font-size:12.5px;font-weight:600;margin-top:3px">'+name+'</div><div style="font-size:11.5px;color:var(--muted)">'+strat+'</div></div>';}
+function dRadar(name,strat,amt,key){return '<div class="oppTile" data-wif="'+key+'" tabindex="0" role="button" aria-label="'+name+', '+strat+', '+amt+' — ask what-if" onclick="radarWhatIf(\''+key+'\')" style="position:relative;background:var(--green-soft);border-radius:10px;padding:12px 13px 30px;cursor:pointer"><div style="font-size:21px;font-family:var(--serif);font-weight:700;color:var(--green);line-height:1.1">'+amt+'</div><div style="font-size:12.5px;font-weight:600;margin-top:3px">'+name+'</div><div style="font-size:11.5px;color:var(--muted)">'+strat+'</div><div class="oppAsk" style="position:absolute;left:13px;bottom:9px;font-size:11px;font-weight:600;color:var(--green)">Ask what-if &rarr;</div></div>';}
+/* ===== Interactive opportunity-radar what-if (Pulsera) ===== */
+var RADAR={
+ riverside:{name:'Riverside Holdings',q:'What if Riverside adopts the reasonable-comp split?',leverLab:'Reasonable compensation (W-2)',from:'$230,000',to:'$150,000',asFiled:880000,rec:784000,save:96000,p10:78000,p50:96000,p90:111000,cites:['Source &middot; client workpapers 1120-S (2024)','Reconciled &middot; validated','Per IRS &sect;199A &amp; reasonable-comp guidance','assumption-set v2025.2']},
+ delgado:{name:'Delgado Family Trust',q:'What if Delgado runs a Roth conversion ladder?',leverLab:'Annual conversion (fill 24% bracket)',from:'$0 / yr',to:'$60,000 / yr',asFiled:612000,rec:541000,save:71000,p10:58000,p50:71000,p90:86000,cites:['Source &middot; client workpapers 1040 + 1099-R (2024)','Reconciled &middot; validated','Per IRS &sect;408A &amp; bracket guidance','assumption-set v2025.2']},
+ aster:{name:'Aster Mfg LLC',q:'What if Aster elects S-corp treatment?',leverLab:'Entity election',from:'LLC &middot; Sch C (full SE tax)',to:'S-corp election',asFiled:643000,rec:596000,save:47000,p10:38000,p50:47000,p90:55000,cites:['Source &middot; client workpapers 1065 / Sch C (2024)','Reconciled &middot; validated','Per IRS &sect;1361 &amp; SE-tax / &sect;199A','assumption-set v2025.2']}
+};
+function radarFmt(n){return '$'+Math.round(n).toLocaleString('en-US');}
+function radarK(n){return '$'+Math.round(n/1000)+'k';}
+function radarInner(key,state){
+ var R=RADAR[key];var rk=(typeof session!=='undefined'&&session&&session.roleKey)||'dana';var tech=(rk==='pcto'||rk==='sam');
+ var bOn=(state==='B');var axis=R.p90*1.15;var pc=function(v){return (v/axis*100);};
+ var band=bOn?('<div class="fill" style="left:'+pc(R.p10)+'%;width:'+(pc(R.p90)-pc(R.p10))+'%"></div><div class="p50" style="left:'+pc(R.p50)+'%"></div>'):'<div class="fill" style="width:0%;opacity:.35"></div>';
+ var ticks=bOn?('<div>P10<b>'+radarK(R.p10)+'</b></div><div style="text-align:center">P50<b>'+radarK(R.p50)+'</b></div><div style="text-align:right">P90<b>'+radarK(R.p90)+'</b></div>'):'<div>P10<b>&mdash;</b></div><div style="text-align:center">P50<b>&mdash;</b></div><div style="text-align:right">P90<b>&mdash;</b></div>';
+ var cites=R.cites.map(function(c){return '<span class="cpchip g">'+c+'</span>';}).join('');
+ var eng=tech?'<div class="wifEng">engine &middot; Bronze&rarr;Silver&rarr;Gold &middot; seed 4242 &middot; calc-svc &middot; RAG &sect;199A chunks</div>':'';
+ return '<div class="wifSeg"><button class="'+(state==='A'?'on':'')+'" onclick="radarSet(\''+key+'\',\'A\')">As filed (current)</button><button class="'+(bOn?'on':'')+'" onclick="radarSet(\''+key+'\',\'B\')">Recommended</button></div>'+
+  '<div class="wifLever"><div class="wifLab">'+R.leverLab+'</div><div class="wifRow"><span class="wifFrom">'+R.from+'</span><span style="color:var(--green)">&rarr;</span><span class="wifTo">'+R.to+'</span></div></div>'+
+  '<div class="wifRes"><div class="wifR"><span class="wifK">10-yr federal &middot; as filed</span><span class="wifV">'+radarFmt(R.asFiled)+'</span></div><div class="wifR"><span class="wifK" style="'+(bOn?'color:#2f8f5b':'')+'">10-yr federal &middot; recommended</span><span class="wifV">'+radarFmt(R.rec)+'</span></div><div class="wifSave"><span><b>Modeled saving</b></span><span class="wifSaveV">'+(bOn?radarK(R.save):'&mdash;')+'</span></div></div>'+
+  '<div class="wifBand"><div class="wifBL"><span>Projection range</span><span style="color:#2f8f5b">uncertainty quantified</span></div><div class="wifTrack">'+band+'</div><div class="wifTicks">'+ticks+'</div></div>'+
+  '<div class="wifCites">'+cites+'</div>'+
+  '<div class="wifDisc">Deterministic engine &middot; re-derived from source workpapers and the pinned assumption set. Illustrative synthetic figures &mdash; not tax advice. Draft only &mdash; needs your approval before it reaches a client.'+eng+'</div>';
+}
+function radarCard(key,state){return '<div style="font-weight:600;margin-bottom:4px">'+RADAR[key].name+' &mdash; what-if</div><div id="wif-'+key+'" class="wif">'+radarInner(key,state)+'</div>';}
+function radarSet(key,state){var el=document.getElementById('wif-'+key);if(el)el.innerHTML=radarInner(key,state);}
+function radarWhatIf(key){if(!RADAR[key])return;
+ try{if(typeof CP_OPEN!=='undefined'&&!CP_OPEN&&typeof cpToggle==='function')cpToggle();}catch(e){}
+ var b=document.getElementById('cpBody');if(!b)return;
+ var old=document.getElementById('wif-'+key);if(old){var pm=old.closest?old.closest('.cpmsg'):null;if(pm&&pm.parentNode)pm.parentNode.removeChild(pm);}
+ if(typeof cpPush==='function')cpPush('u',RADAR[key].q);
+ var t=document.createElement('div');t.className='cptyping';t.innerHTML='<i></i><i></i><i></i>';b.appendChild(t);b.scrollTop=b.scrollHeight;
+ setTimeout(function(){t.remove();if(typeof cpPush==='function')cpPush('a',radarCard(key,'A'));b.scrollTop=b.scrollHeight;},520);
+}
+document.addEventListener('keydown',function(e){var el=document.activeElement;if(el&&el.classList&&el.classList.contains('oppTile')&&(e.key==='Enter'||e.key===' ')){e.preventDefault();radarWhatIf(el.getAttribute('data-wif'));}});
+try{document.head.insertAdjacentHTML('beforeend','<style>.oppTile{transition:transform .14s ease,box-shadow .14s ease}.oppTile:hover,.oppTile:focus-visible{transform:translateY(-2px);box-shadow:0 6px 16px rgba(46,42,34,.12);outline:none}.oppAsk{opacity:0;transition:opacity .14s ease}.oppTile:hover .oppAsk,.oppTile:focus-visible .oppAsk{opacity:1}.wif{font-size:13px;line-height:1.45}.wifSeg{display:flex;background:#efe9dc;border:1px solid var(--line2);border-radius:9px;padding:3px;margin:6px 0 10px}.wifSeg button{flex:1;border:none;background:transparent;padding:7px 4px;border-radius:6px;font-size:12px;font-weight:600;color:#6b6253;cursor:pointer}.wifSeg button.on{background:#fff;color:#2e2a22;box-shadow:0 1px 3px rgba(46,42,34,.12)}.wifLever,.wifRes,.wifBand{background:#fff;border:1px solid var(--line2);border-radius:8px;padding:10px;margin-bottom:9px}.wifLab{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}.wifRow{display:flex;gap:7px;align-items:center}.wifFrom{color:var(--muted);text-decoration:line-through}.wifTo{font-weight:700}.wifR{display:flex;justify-content:space-between;padding:2px 0}.wifK{color:var(--muted)}.wifV{font-weight:600;font-variant-numeric:tabular-nums}.wifSave{display:flex;justify-content:space-between;align-items:baseline;border-top:1px dashed var(--line2);margin-top:6px;padding-top:6px}.wifSaveV{font-family:var(--serif);font-size:20px;color:#2f8f5b;font-weight:700;font-variant-numeric:tabular-nums}.wifBL{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;display:flex;justify-content:space-between}.wifTrack{position:relative;height:7px;background:#eee7d7;border-radius:99px;margin:14px 4px 4px}.wifTrack .fill{position:absolute;height:100%;background:linear-gradient(90deg,#bfe0cd,#2f8f5b);border-radius:99px;transition:left .35s ease,width .35s ease}.wifTrack .p50{position:absolute;top:-4px;width:2px;height:15px;background:#1f5a3a}.wifTicks{display:flex;justify-content:space-between;font-size:10.5px;color:#6b6253;margin-top:6px;font-variant-numeric:tabular-nums}.wifTicks b{display:block;color:#2e2a22}.wifCites{display:flex;flex-wrap:wrap;gap:6px;margin:2px 0 8px}.wifDisc{font-size:11px;color:var(--muted);border-top:1px solid var(--line2);padding-top:8px}.wifEng{font-size:10.5px;color:#7a6f5a;background:#f3efe6;border:1px dashed var(--line2);border-radius:6px;padding:5px 7px;margin-top:6px;font-family:var(--mono)}</style>');}catch(e){}
+/* ===== CertaintyAI grounding seam — explainability & reasoning via Pulsera =====
+   cyGround(anchor) is the integration boundary. OFFLINE: local registry below.
+   PRODUCTION: replace the body of cyGround with a call to the CertaintyAI engine
+   grounding endpoint; the card/refusal renderers stay unchanged. */
+var CY_GROUNDED={
+ 'assumption:S-corp income growth':{label:'S-corp income growth',value:'6.0% / yr \u00b1 5%',version:'v2025.2',source:'Analyst override \u2014 M. Ito',rule:'Entity growth prior, bounded by sector comparables',cite:'CertaintyAI engine \u00b7 growth-model'},
+ 'assumption:Rental income growth':{label:'Rental income growth',value:'3.0% / yr \u00b1 4%',version:'v2025.2',source:'Market index \u2014 automated feed',rule:'Indexed to regional rental CPI',cite:'CertaintyAI engine \u00b7 growth-model'},
+ 'assumption:Bracket inflation index':{label:'Bracket inflation index',value:'3.0% / yr',version:'v2025.2',source:'IRS indexation \u2014 SME confirmed',rule:'Annual bracket inflation per IRS Rev. Proc.',cite:'Per IRS indexation guidance'},
+ 'assumption:QBI phaseout range':{label:'QBI phaseout range',value:'$50,000 (MFJ)',version:'v2025.1',source:'Legal-reviewed \u2014 \u00a7199A',rule:'\u00a7199A phase-in threshold band (permanent post-OBBBA)',cite:'Per IRS \u00a7199A'},
+ 'assumption:Discount rate (NPV)':{label:'Discount rate (NPV)',value:'5.0%',version:'v2025.2',source:'Finance policy',rule:'NPV discount rate for multi-year comparisons',cite:'CertaintyAI engine \u00b7 npv-policy'},
+ 'assumption:Reasonable-comp floor':{label:'Reasonable-comp floor',value:'$160,000',version:'v2025.2',source:'SME defensibility rule',rule:'Minimum defensible S-corp reasonable compensation',cite:'Per IRS reasonable-comp guidance'}
+};
+function cyGround(anchor){
+ if(CY_GROUNDED[anchor])return Object.assign({grounded:true},CY_GROUNDED[anchor]);
+ if(anchor.indexOf('projyear:')===0){
+   var y=anchor.split(':')[1];var P=(window.CY_PROJ&&window.CY_PROJ[y]);
+   if(P){var delta=P.p50-P.base;return {grounded:true,label:'Median federal tax \u00b7 '+y,value:(typeof fmt==='function'?fmt(P.p50):P.p50),version:'v2025.2',
+     source:'Reconciled entity & owner figures \u00b7 '+y,rule:'Deterministic projection \u2014 '+(delta<0?'saving ':'increase ')+(typeof fmt==='function'?fmt(Math.abs(delta)):Math.abs(delta))+' vs baseline; range '+(typeof fmt==='function'?fmt(P.p10)+'\u2013'+fmt(P.p90):P.p10+'-'+P.p90),cite:'Per IRS \u00a7199A & bracket guidance'};}
+ }
+ return {grounded:false,anchor:anchor};
+}
+function cyExplainCard(g){
+ var rk=(typeof session!=='undefined'&&session&&session.roleKey)||'dana';var tech=(rk==='pcto'||rk==='sam');
+ var eng=tech?'<div class="wifEng">engine \u00b7 '+(g.cite||'')+' \u00b7 grounded record \u00b7 seed 4242 \u00b7 calc-svc</div>':'';
+ return '<div style="font-weight:600;margin-bottom:4px">'+g.label+' &mdash; explained</div>'+
+  '<div class="wif"><div class="wifRes">'+
+    '<div class="wifR"><span class="wifK">Value</span><span class="wifV">'+g.value+'</span></div>'+
+    '<div class="wifR"><span class="wifK">Source</span><span class="wifV" style="font-weight:500;text-align:right;max-width:62%">'+g.source+'</span></div>'+
+    '<div class="wifR"><span class="wifK">Rule</span><span class="wifV" style="font-weight:500;text-align:right;max-width:62%">'+g.rule+'</span></div>'+
+    '<div class="wifR"><span class="wifK">Assumption set</span><span class="wifV">'+g.version+'</span></div>'+
+   '</div>'+
+   '<div class="wifCites"><span class="cpchip g">'+g.cite+'</span><span class="cpchip g">assumption-set '+g.version+'</span></div>'+
+   '<div class="wifDisc">Grounded explanation \u00b7 traced to source and pinned to the assumption set. Illustrative synthetic figures &mdash; not tax advice.'+eng+'</div></div>';
+}
+function cyRefuseCard(anchor){
+ return '<div style="font-weight:600;margin-bottom:4px">I can\u2019t ground that</div>'+
+  '<div class="wif"><div class="wifDisc" style="border-top:none;padding-top:0">I don\u2019t have a grounded source for that in CertaintyAI\u2019s engine, so I won\u2019t guess \u2014 grounded answers only.<div style="margin-top:8px"><span class="cpchip a">Route to your advisor</span></div></div></div>';
+}
+function pulseraExplain(anchor){
+ try{var dr=document.getElementById('drawer');if(dr)dr.classList.remove('open');var db=document.getElementById('drawerBg');if(db)db.classList.remove('open');}catch(e){}
+ try{if(typeof CP_OPEN!=='undefined'&&!CP_OPEN&&typeof cpToggle==='function')cpToggle();}catch(e){}
+ var b=document.getElementById('cpBody');if(!b)return;
+ var g=cyGround(anchor);
+ if(typeof cpPush==='function')cpPush('u',g.grounded?('Explain: '+g.label):'Explain this figure');
+ var t=document.createElement('div');t.className='cptyping';t.innerHTML='<i></i><i></i><i></i>';b.appendChild(t);b.scrollTop=b.scrollHeight;
+ setTimeout(function(){t.remove();if(typeof cpPush==='function')cpPush('a',g.grounded?cyExplainCard(g):cyRefuseCard(anchor));b.scrollTop=b.scrollHeight;},480);
+}
+document.addEventListener('click',function(e){var el=e.target.closest&&e.target.closest('.cyExplain');if(el&&!el.getAttribute('data-inline')){e.preventDefault();e.stopPropagation();pulseraExplain(el.getAttribute('data-anchor'));}});
+document.addEventListener('keydown',function(e){var el=document.activeElement;if(el&&el.classList&&el.classList.contains('cyExplain')&&(e.key==='Enter'||e.key===' ')){e.preventDefault();pulseraExplain(el.getAttribute('data-anchor'));}});
+try{document.head.insertAdjacentHTML('beforeend','<style>.cyExplain{cursor:pointer}.cyEx{display:inline-block;font-size:9.5px;font-weight:600;color:var(--green);background:var(--green-soft);border-radius:5px;padding:1px 5px;margin-left:5px;opacity:1;transition:opacity .14s ease;vertical-align:middle}.cyExplain:hover .cyEx,.cyExplain:focus-visible .cyEx{opacity:1}.cpchip.a{background:#faf4e6;color:#7a5f25;border:1px solid #ecdcbb}</style>');}catch(e){}
 
 var CPGREET={
  'en-US':"Hi NM \u2014 I'm Pulsera, MDxBlocks' AI avatar. I can scan your book for unrealized savings, model a what-if scenario, explain a plan in plain English, or trace any number to its source. What do you need?",
