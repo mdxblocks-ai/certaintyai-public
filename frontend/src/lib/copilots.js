@@ -150,6 +150,7 @@ export const COPILOTS = [
     frameworks: ['SOX', 'GAAP / IFRS', 'IRC', 'NIST AI RMF'],
     status: 'ready-for-demo',
     persona: 'CFO · Corporate Tax · Treasury',
+    demoUrl: '/AITaxPlanner/index.html?screen=signin',
   },
   {
     id: 'quanto-finops',

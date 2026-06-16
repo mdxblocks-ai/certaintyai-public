@@ -1,0 +1,1362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CertaintyAI — Tax Planner POC</title>
+<style>
+  :root{
+    --bone:#F4F1EA; --bone2:#ECE7DB; --card:#FFFFFF; --card2:#FBFAF5;
+    --ink:#1B1813; --ink2:#4A453B; --muted:#7A7264; --line:#DED7C7; --line2:#EAE5D9;
+    --gold:#9A7B3F; --gold-deep:#7C611F; --gold-soft:#EFE6D2;
+    --blue:#22309B; --blue-soft:#E5E7F4;
+    --green:#3E7A52; --green-soft:#E6EFE6;
+    --sienna:#9A4A2A; --sienna-soft:#F3E6DD;
+    --amber:#8A6D1E; --amber-soft:#F1E8CE;
+    --serif:Georgia,"Iowan Old Style","Times New Roman",serif;
+    --sans:ui-sans-serif,system-ui,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono","Cascadia Code",Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bone);color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.55;-webkit-font-smoothing:antialiased}
+  .figure{font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+  button{font-family:inherit;cursor:pointer}
+  h1,h2,h3,h4{margin:0;font-weight:600}
+  .serif{font-family:var(--serif)}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold-deep);font-weight:600;display:flex;align-items:center;gap:10px}
+  .eyebrow::before{content:"";width:22px;height:1.5px;background:var(--gold)}
+  a{color:var(--blue);text-decoration:none}a:hover{text-decoration:underline}
+
+  /* logo mark */
+  .mark{width:34px;height:34px;display:inline-grid;place-items:center;border:1px solid var(--line);border-radius:9px;background:var(--card)}
+  .mark svg{width:22px;height:22px}
+  .wordmark{font-family:var(--serif);font-weight:700;font-size:19px;letter-spacing:-.01em}
+  .wordmark sup{font-size:9px;font-weight:400;top:-.7em}
+  .tagline{font-family:var(--serif);font-style:italic;font-size:11.5px;color:var(--muted)}
+
+  /* buttons */
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-weight:600;font-size:13.5px;border-radius:8px;padding:11px 18px;border:1px solid transparent;transition:.15s}
+  .btn-dark{background:var(--ink);color:#fff}.btn-dark:hover{background:#000}
+  .btn-ghost{background:transparent;color:var(--ink);border-color:var(--line)}.btn-ghost:hover{background:var(--card)}
+  .btn-gold{background:var(--gold);color:#fff}.btn-gold:hover{background:var(--gold-deep)}
+  .btn-block{width:100%}
+
+  .screen{display:none}.screen.active{display:block;animation:fade .3s ease}
+  @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+  @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}}
+
+  /* ===== top nav (landing) ===== */
+  .lnav{max-width:1240px;margin:0 auto;padding:22px 26px;display:flex;align-items:center;gap:26px}
+  .lnav .brand{display:flex;align-items:center;gap:11px}
+  .lnav .links{display:flex;gap:26px;margin-left:18px}
+  .lnav .links a{color:var(--ink2);font-weight:500;font-size:14px}
+  .lnav .links a.on{color:var(--ink);font-weight:600;border-bottom:2px solid var(--gold);padding-bottom:3px}
+  .lnav .spacer{flex:1}
+  .lnav .chip{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--ink2);border:1px solid var(--line);border-radius:8px;padding:7px 11px;background:var(--card)}
+  .lnav .chip .d{width:7px;height:7px;border-radius:50%;background:var(--gold)}
+  @media(max-width:860px){.lnav .links{display:none}}
+
+  /* ===== hero ===== */
+  .hero{max-width:1240px;margin:0 auto;padding:30px 26px 50px;display:grid;grid-template-columns:1.05fr .95fr;gap:50px;align-items:center}
+  .hero h1{font-family:var(--serif);font-size:62px;line-height:1.03;letter-spacing:-.02em;margin:18px 0 0}
+  .hero h1 em{font-style:italic}
+  .hero .sub{font-size:17px;color:var(--ink2);max-width:480px;margin:20px 0 26px;line-height:1.6}
+  .hero .cta{display:flex;gap:12px;flex-wrap:wrap}
+  .hero .aligned{margin-top:30px;font-size:12px;color:var(--muted);letter-spacing:.02em}
+  .hero .aligned b{color:var(--ink2);font-weight:600}
+  @media(max-width:920px){.hero{grid-template-columns:1fr;gap:30px}.hero h1{font-size:46px}}
+
+  /* readiness card (sample + result share styles) */
+  .rcard{background:var(--card2);border:1px solid var(--line);border-radius:16px;padding:26px;box-shadow:0 24px 60px -30px rgba(40,32,12,.35)}
+  .rcard .rhd{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1px solid var(--line2);padding-bottom:14px;margin-bottom:16px}
+  .rcard .rhd .lbl{font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:var(--muted);font-weight:600}
+  .rcard .samp{background:var(--gold);color:#fff;font-family:var(--mono);font-size:10px;letter-spacing:.1em;padding:4px 9px;border-radius:5px;font-weight:700}
+  .rcard .co{font-family:var(--serif);font-size:21px;font-weight:700}
+  .rcard .prep{font-size:12.5px;color:var(--muted);margin-top:2px}
+  .gaugewrap{display:flex;align-items:center;gap:20px;margin:18px 0}
+  .gaugewrap .gtxt b{font-family:var(--serif);font-size:20px;display:block}
+  .gaugewrap .gtxt span{font-size:13px;color:var(--muted)}
+  .badges{display:flex;gap:7px;flex-wrap:wrap;margin:14px 0}
+  .badges span{font-size:11.5px;color:var(--ink2);background:var(--bone2);border:1px solid var(--line);border-radius:6px;padding:5px 9px;font-weight:500}
+  .toprec{background:var(--bone);border-left:3px solid var(--gold);border-radius:0 8px 8px 0;padding:12px 14px;font-size:13px;color:var(--ink2)}
+  .toprec b{color:var(--ink)}
+
+  /* how it works strip */
+  .hiw{background:var(--bone2);border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:40px 26px}
+  .hiw .wrap{max-width:1240px;margin:0 auto}
+  .hiw .row{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:22px}
+  .hiw .step{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px}
+  .hiw .step .n{font-family:var(--mono);color:var(--gold-deep);font-weight:700;font-size:13px}
+  .hiw .step h4{font-family:var(--serif);font-size:17px;margin:6px 0 6px}
+  .hiw .step p{font-size:13px;color:var(--ink2);margin:0}
+  @media(max-width:860px){.hiw .row{grid-template-columns:1fr}}
+
+  .lfoot{max-width:1240px;margin:0 auto;padding:26px;font-size:12.5px;color:var(--muted);display:flex;gap:18px;flex-wrap:wrap;align-items:center}
+  .seehow{display:inline-block;margin-top:14px;font-size:13px;font-weight:600;color:var(--gold-deep)}
+  .herowrap{background:radial-gradient(130% 110% at 0% 0%,#2b2620 0%,#15120d 46%,#0b0907 100%)}
+  .hero-dark{grid-template-columns:1fr;color:#F4EFE6;padding-top:52px;padding-bottom:64px}
+  .hero-dark .eyebrow.gold{color:#D9B877}
+  .hero-dark .eyebrow.gold::before{background:#C99A52}
+  .hero-dark h1{font-size:66px;color:#F6F1E7;max-width:none}
+  .hero-dark h1 .gold-grad{background:linear-gradient(92deg,#EAD09A 0%,#D7A35C 52%,#C07E3F 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+  .hero-dark .sub{color:#C7BFB1;max-width:560px}
+  .btn-goldgrad{background:linear-gradient(95deg,#E7CB8E,#CFA158);color:#2a2008;font-weight:700}
+  .btn-ambergrad{background:linear-gradient(95deg,#DE9356,#B6632D);color:#fff;font-weight:700}
+  .btn-darkline{background:#16130e;color:#fff;border:1px solid #3c352a}
+  .btn-darkline:hover{background:#1f1b14}
+  .builton{margin-top:30px;font-size:12px;color:#8c8474;letter-spacing:.02em}
+  .builton b{color:#C99A52;letter-spacing:.08em;margin-right:8px}
+  .archlink{display:inline-block;margin-top:16px;font-size:12.5px;color:#D98A4F;font-weight:600}
+  @media(max-width:920px){.hero-dark h1{font-size:44px}}
+  .apptop .chip{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--ink2);border:1px solid var(--line);border-radius:8px;padding:6px 10px;background:var(--card2)}
+  .apptop .chip .d{width:7px;height:7px;border-radius:50%;background:var(--gold)}
+  .appbody{display:flex;max-width:1320px;margin:0 auto;align-items:stretch}
+  .sidebar{width:238px;flex-shrink:0;border-right:1px solid var(--line);background:var(--card);display:flex;flex-direction:column;padding:14px 12px}
+  .sidenav{display:flex;flex-direction:column;gap:2px}
+  .sidenav .tab{display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:10px 12px;border:0;border-radius:9px;font-size:13.5px;font-weight:600;color:var(--ink2);white-space:normal;line-height:1.3}
+  .sidenav .tab .ti{width:18px;text-align:center;font-size:13px;flex-shrink:0;filter:grayscale(.2)}
+  .sidenav .tab:hover{background:var(--bone2)}
+  .sidenav .tab.active{background:var(--gold-soft);color:var(--gold-deep)}
+  .sidefoot{margin-top:auto;padding-top:14px}
+  .builtcard{border:1px solid var(--line);border-radius:10px;padding:11px 12px;font-size:11px;color:var(--muted);line-height:1.6;background:var(--card2)}
+  .builtcard b{color:var(--gold-deep);letter-spacing:.07em;font-size:10px}
+  .appbody main{flex:1;min-width:0;max-width:none;margin:0;padding:22px 26px}
+  .wsbanner{background:var(--bone2);border:1px solid var(--line);border-radius:11px;padding:12px 16px;font-size:12.5px;color:var(--ink2);margin-bottom:18px;display:flex;align-items:center;gap:11px;flex-wrap:wrap}
+  .wsbanner .wsname{font-family:var(--serif);font-size:16px;color:var(--ink);font-weight:700}
+  @media(max-width:820px){.appbody{flex-direction:column}.sidebar{width:auto;border-right:0;border-bottom:1px solid var(--line);flex-direction:row;overflow-x:auto;padding:8px}.sidenav{flex-direction:row}.sidenav .tab{white-space:nowrap}.sidefoot{display:none}}
+  .copilotcta{max-width:1240px;margin:18px auto 0;padding:22px 26px;background:var(--ink);border-radius:16px;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+  .copilotcta .cct{flex:1;min-width:240px}
+  .copilotcta .cct b{font-family:var(--serif);font-size:19px;color:#fff;display:block}
+  .copilotcta .cct span{font-size:13px;color:#D8D2C4}
+
+  /* ===== auth / survey center layouts ===== */
+  .center{min-height:100vh;display:grid;place-items:center;padding:30px 18px}
+  .authcard{width:100%;max-width:418px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:30px 30px 26px;box-shadow:0 24px 60px -34px rgba(40,32,12,.35)}
+  .authcard .abrand{display:flex;align-items:center;gap:11px;justify-content:center;margin-bottom:18px}
+  .authcard h2{font-family:var(--serif);font-size:25px;text-align:center}
+  .authcard .asub{text-align:center;color:var(--muted);font-size:13.5px;margin:5px 0 22px}
+  .field{margin-bottom:14px}
+  .field label{display:block;font-size:12.5px;font-weight:600;color:var(--ink2);margin-bottom:5px}
+  .field input,.field select{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:9px;font-family:inherit;font-size:14px;background:var(--card2);color:var(--ink)}
+  .field input:focus,.field select:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px var(--gold-soft)}
+  .authrow{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;margin:4px 0 16px}
+  .err{background:var(--sienna-soft);color:var(--sienna);font-size:12.5px;border-radius:8px;padding:9px 11px;margin-bottom:14px;display:none}
+  .ok{background:var(--green-soft);color:var(--green);font-size:12.5px;border-radius:8px;padding:9px 11px;margin-bottom:14px;display:none}
+  .demohint{margin-top:18px;border-top:1px dashed var(--line);padding-top:14px;font-size:12px;color:var(--muted)}
+  .demohint code{font-family:var(--mono);background:var(--bone2);padding:1px 6px;border-radius:4px;color:var(--ink2)}
+  .demohint code.qlogin{cursor:pointer;border:1px solid transparent;transition:.12s}
+  .demohint code.qlogin:hover{background:var(--gold-soft);border-color:var(--gold);color:var(--gold-deep)}
+  .demohint .qhint{font-size:11.5px;color:var(--gold-deep);margin-top:6px;font-style:italic}
+  .switch{text-align:center;font-size:13px;color:var(--muted);margin-top:18px}
+
+  /* survey */
+  .surveycard{width:100%;max-width:560px}
+  .progress{height:5px;background:var(--bone2);border-radius:99px;overflow:hidden;margin-bottom:22px}
+  .progress .bar{height:100%;background:var(--gold);transition:.3s;width:0}
+  .qopt{display:block;width:100%;text-align:left;border:1.5px solid var(--line);background:var(--card2);border-radius:10px;padding:13px 15px;margin-bottom:10px;font-size:14px;color:var(--ink);transition:.12s}
+  .qopt:hover{border-color:var(--gold)}
+  .qcount{font-family:var(--mono);font-size:11.5px;color:var(--muted);letter-spacing:.08em}
+
+  /* ===== APP (dashboard) ===== */
+  .apphead{background:var(--card);border-bottom:1px solid var(--line);padding:0 24px}
+  .apptop{display:flex;align-items:center;gap:16px;height:62px;max-width:1320px;margin:0 auto}
+  .apptop .brand{display:flex;align-items:center;gap:11px}
+  .apptop .sub{color:var(--muted);font-size:12px;border-left:1px solid var(--line);padding-left:16px}
+  .apptop .spacer{flex:1}
+  .synthbadge{font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;color:var(--sienna);background:var(--sienna-soft);border:1px solid #E2C3B2;padding:5px 9px;border-radius:5px}
+  .acct{position:relative}
+  .acctbtn{display:flex;align-items:center;gap:9px;background:var(--card2);border:1px solid var(--line);border-radius:9px;padding:5px 11px;font-size:13px;font-weight:600;color:var(--ink)}
+  .acctbtn .dot{width:8px;height:8px;border-radius:50%;background:var(--green)}
+  .acctmenu{position:absolute;right:0;top:46px;background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:0 18px 44px -22px rgba(40,32,12,.4);min-width:200px;padding:6px;display:none;z-index:30}
+  .acctmenu.open{display:block}
+  .acctmenu .who{padding:9px 11px;border-bottom:1px solid var(--line2);font-size:12px;color:var(--muted)}
+  .acctmenu button{display:block;width:100%;text-align:left;background:none;border:0;padding:9px 11px;border-radius:7px;font-size:13px;color:var(--ink)}
+  .acctmenu button:hover{background:var(--bone2)}
+
+  nav.tabs{background:var(--bone2);border-bottom:1px solid var(--line);padding:0 24px}
+  .tabrow{display:flex;gap:2px;max-width:1320px;margin:0 auto;overflow-x:auto}
+  .tab{background:transparent;border:0;color:var(--ink2);padding:13px 15px;font-size:13px;font-weight:600;border-bottom:3px solid transparent;white-space:nowrap;display:flex;align-items:center;gap:8px}
+  .tab .n{font-family:var(--mono);font-size:11px;color:var(--muted)}
+  .tab:hover{color:var(--ink)}
+  .tab.active{color:var(--ink);border-bottom-color:var(--gold)}
+  .tab.locked{opacity:.38;cursor:not-allowed}
+
+  main{max-width:1320px;margin:0 auto;padding:24px;min-height:60vh}
+  .view{display:none}.view.active{display:block;animation:fade .25s ease}
+  .lead{color:var(--ink2);max-width:760px;margin:6px 0 0}
+  .viewhead{margin-bottom:20px}.viewhead h2{font-family:var(--serif);font-size:25px;margin-top:5px}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px}
+  .grid{display:grid;gap:16px}.g2{grid-template-columns:1fr 1fr}.g3{grid-template-columns:repeat(3,1fr)}
+  .g-2-1{grid-template-columns:2fr 1fr}.g-1-2{grid-template-columns:1fr 2fr}
+  @media(max-width:900px){.grid{grid-template-columns:1fr!important}.hero,.flow{grid-template-columns:1fr!important}}
+
+  .kpi .lbl{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:600}
+  .kpi .val{font-family:var(--serif);font-size:30px;font-weight:700;display:block;margin:2px 0}
+  .kpi .delta{font-size:12.5px;font-weight:600}
+  .pos{color:var(--green)}.neg{color:var(--sienna)}
+
+  .pill{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:999px;font-family:var(--mono)}
+  .pill.v{background:var(--green-soft);color:var(--green)}.pill.r{background:var(--sienna-soft);color:var(--sienna)}
+  .pill.a{background:var(--amber-soft);color:var(--amber)}.pill.i{background:var(--blue-soft);color:var(--blue)}
+
+  table{width:100%;border-collapse:collapse}
+  th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600;padding:8px 10px;border-bottom:1.5px solid var(--line)}
+  td{padding:9px 10px;border-bottom:1px solid var(--line2);font-size:13px}
+  td.num{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
+  tr.trace{cursor:pointer}tr.trace:hover{background:var(--gold-soft)}
+
+  .entity{display:flex;align-items:center;gap:10px;padding:9px 12px;border:1px solid var(--line);border-radius:9px;margin-bottom:8px;background:var(--card)}
+  .entity .badge{font-family:var(--mono);font-size:10px;padding:2px 7px;border-radius:5px;font-weight:600}
+  .entity .meta{margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--muted)}
+  .child{margin-left:26px;border-left:2px dotted var(--line);padding-left:14px}
+
+  .scen{border:1.5px solid var(--line);border-radius:11px;padding:14px;cursor:pointer;background:var(--card);transition:.15s}
+  .scen:hover{border-color:var(--gold)}.scen.sel{border-color:var(--gold);box-shadow:0 0 0 3px var(--gold-soft)}
+  .scen h4{font-size:14.5px;display:flex;align-items:center;gap:8px}
+  .scen .desc{font-size:12px;color:var(--muted);margin:6px 0 10px}
+  .scen .savings{font-family:var(--mono);font-size:20px;font-weight:700}
+
+  .ctrlrow{display:flex;align-items:center;gap:12px;margin:10px 0}
+  .ctrlrow label{font-size:12.5px;font-weight:600;min-width:190px}
+  input[type=range]{flex:1;accent-color:var(--gold)}
+  .ctrlrow .out{font-family:var(--mono);font-size:13px;min-width:74px;text-align:right;font-weight:600}
+
+  .assump{display:grid;grid-template-columns:1.4fr .7fr .8fr 1.1fr;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+  .assump>div{padding:10px 12px;border-bottom:1px solid var(--line2);font-size:12.5px}
+  .assump .hd{background:var(--bone);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+
+  .drawer-bg{position:fixed;inset:0;background:rgba(27,24,19,.4);opacity:0;pointer-events:none;transition:.2s;z-index:40}
+  .drawer-bg.open{opacity:1;pointer-events:auto}
+  .drawer{position:fixed;top:0;right:0;height:100%;width:min(560px,94vw);background:var(--bone);box-shadow:-12px 0 40px rgba(0,0,0,.2);transform:translateX(100%);transition:.25s cubic-bezier(.2,.7,.2,1);z-index:50;overflow-y:auto}
+  .drawer.open{transform:none}
+  .drawer .dhead{position:sticky;top:0;background:var(--ink);color:#fff;padding:16px 20px;display:flex;align-items:center;gap:12px}
+  .drawer .dhead .x{margin-left:auto;background:#33302a;border:0;color:#fff;width:30px;height:30px;border-radius:7px;font-size:16px}
+  .drawer .dbody{padding:18px 20px}
+  .stage{position:relative;padding:0 0 18px 28px;border-left:2px solid var(--line)}
+  .stage:last-child{border-left-color:transparent}
+  .stage .dot{position:absolute;left:-8px;top:1px;width:14px;height:14px;border-radius:50%;border:3px solid var(--bone)}
+  .stage .stagettl{font-weight:700;font-size:13px;display:flex;align-items:center;gap:8px}
+  .stage .box{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-top:7px;font-size:12px}
+  .kv{display:flex;justify-content:space-between;gap:12px;padding:3px 0;border-bottom:1px dotted var(--line2)}
+  .kv:last-child{border:0}.kv .k{color:var(--muted)}.kv .v{font-family:var(--mono);font-weight:600;text-align:right}
+  .cite{font-size:11.5px;background:var(--blue-soft);color:var(--blue);border-radius:6px;padding:6px 9px;margin-top:7px;font-family:var(--mono)}
+
+  .note{font-size:12px;color:var(--muted);margin-top:8px}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;margin-top:8px}
+  .legend span{display:flex;align-items:center;gap:6px}.sw{width:14px;height:14px;border-radius:3px}
+  .hbtn{padding:7px 14px;border:1px solid var(--line);background:var(--card);border-radius:8px;font-weight:600;font-size:12.5px;color:var(--ink)}
+  .hbtn.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+  .primary{background:var(--gold);color:#fff;border:0;padding:8px 14px;border-radius:8px;font-weight:600;font-size:13px}
+  .primary:hover{background:var(--gold-deep)}
+  .gate{display:flex;align-items:center;gap:10px;padding:11px 14px;border:1px solid var(--line);border-radius:9px;margin-bottom:8px;background:var(--card)}
+  .gate .ic{width:24px;height:24px;border-radius:6px;display:grid;place-items:center;font-family:var(--mono);font-weight:700;color:#fff;font-size:13px}
+  .gate .gtxt{flex:1}.gate .gtxt b{font-size:13.5px}.gate .gtxt div{font-size:12px;color:var(--muted)}
+  .flow{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  .node{background:var(--card);border:1.5px solid var(--line);border-radius:10px;padding:12px;font-size:12px}
+  .node .nt{font-weight:700;font-size:12.5px;margin-bottom:4px;display:flex;align-items:center;gap:7px}
+  .node .nmeta{color:var(--muted);font-size:11.5px}
+  .node.med-b{border-top:4px solid #8a6d3b}.node.med-s{border-top:4px solid #6a7686}.node.med-g{border-top:4px solid var(--amber)}
+  .node.rag{border-top:4px solid var(--blue)}.node.plan{border-top:4px solid var(--green)}
+  .arrow{text-align:center;color:var(--muted);font-size:18px;align-self:center}
+  .boundary{border:1.5px dashed var(--sienna);border-radius:11px;padding:12px;background:var(--sienna-soft)}
+  .tag{font-family:var(--mono);font-size:10.5px;background:var(--bone);border:1px solid var(--line);padding:2px 7px;border-radius:5px;color:var(--muted)}
+  .appfoot{margin-top:28px;padding-top:16px;border-top:1px solid var(--line);font-size:11.5px;color:var(--muted);display:flex;gap:18px;flex-wrap:wrap}
+  .seedbox{font-family:var(--mono);font-size:11px}
+</style>
+</head>
+<body>
+
+<!-- ================= LANDING ================= -->
+<section class="screen active" id="screen-landing">
+  <div class="lnav">
+    <div class="brand"><span class="mark" id="lm1"></span>
+      <div><div class="wordmark">CertaintyAI<sup>™</sup></div><div class="tagline">Defensible AI for regulated industries</div></div>
+    </div>
+    <div class="links">
+      <a class="on" href="#" onclick="return false">Home</a>
+      <a href="#" onclick="go('signin');return false">Copilot Marketplace</a>
+      <a href="#hiw" onclick="document.getElementById('hiw').scrollIntoView({behavior:'smooth'});return false">About Our Foundry</a>
+      <a href="#" onclick="go('app','pcto');return false">Open Architecture</a>
+      <a href="#" onclick="go('survey');return false">AI Readiness</a>
+    </div>
+    <div class="spacer"></div>
+    <div class="chip"><span class="d"></span>Ontology Engine ▾</div>
+    <div class="chip">🌐 N. America</div>
+    <button class="btn btn-dark" onclick="go('signin')">Sign in</button>
+  </div>
+
+  <div class="herowrap">
+    <div class="hero hero-dark">
+      <div>
+        <div class="eyebrow gold">Open architecture for governed agentic AI</div>
+        <h1>Defensible AI <span class="gold-grad">for regulated industries.</span></h1>
+        <p class="sub">Assess your organization's AI maturity, explore industry-specific AI copilots, and establish a trusted path from experimentation to operationalization.</p>
+        <div class="cta">
+          <button class="btn btn-goldgrad" onclick="go('signin')">Launch the AI Tax Planner Copilot →</button>
+          <button class="btn btn-ambergrad" onclick="go('survey')">Assess your AI readiness →</button>
+          <button class="btn btn-darkline" onclick="document.getElementById('hiw').scrollIntoView({behavior:'smooth'})">See how it works →</button>
+        </div>
+        <div class="builton"><b>BUILT ON</b> Built on Google Cloud · Vertex AI · NIST AI RMF · ISO 42001 · EU AI Act · Apache-2.0</div>
+        <a class="archlink" href="#hiw" onclick="document.getElementById('hiw').scrollIntoView({behavior:'smooth'});return false">See the 3-step architecture narrative ↓</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="hiw" id="hiw">
+    <div class="wrap">
+      <div class="eyebrow">How the Foundry works</div>
+      <h2 class="serif" style="font-size:27px;margin-top:8px">From raw returns to a plan you can sign</h2>
+      <div class="row">
+        <div class="step"><div class="n">01 · Ground</div><h4>Open ingestion + Medallion</h4><p>Connect any source. Raw → conformed → analytics layers in a NoSQL lake, with full lineage from every input.</p></div>
+        <div class="step"><div class="n">02 · Project</div><h4>Multi-year, with uncertainty</h4><p>Forecasting + scenario simulation gives 3/5/10-year ranges — never a single-point fiction — with explicit assumptions.</p></div>
+        <div class="step"><div class="n">03 · Defend</div><h4>Evaluate &amp; explain</h4><p>Golden scenarios, drift monitors, release gates, and a citation trail behind every number. Nothing ships unproven.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="copilotcta">
+    <span class="mark" style="width:30px;height:30px;border-color:rgba(255,255,255,.25);background:rgba(255,255,255,.06)" id="lmcta"></span>
+    <div class="cct"><b>See defensible tax planning in action.</b><span>Walk a live, multi-year plan with full lineage on every number — synthetic data, no install. No sign-up, no card, no contract.</span></div>
+    <button class="btn btn-gold" onclick="go('signin')">Launch the AI Tax Planner Copilot →</button>
+  </div>
+
+  <div class="lfoot">
+    <span class="mark" style="width:24px;height:24px" id="lm2"></span>
+    <span>© 2026 CertaintyAI™ · Defensible AI for regulated industries.</span><span style="flex-basis:100%;color:var(--muted);margin-top:4px">All firms, clients and users in this demo are fictional — not real clients, customers or users.</span>
+    <span class="spacer" style="flex:1"></span>
+    <a href="#" onclick="go('signin');return false">Sign in</a><a href="#" onclick="go('signup');return false">Create account</a>
+  </div>
+</section>
+
+
+<!-- ================= SURVEY ================= -->
+<section class="screen" id="screen-survey">
+  <div class="center">
+    <div class="authcard surveycard">
+      <div class="abrand"><span class="mark" id="sm0"></span><div class="wordmark">CertaintyAI<sup>™</sup></div></div>
+      <div id="surveyBody"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= SIGN IN ================= -->
+<section class="screen" id="screen-signin">
+  <div class="center">
+    <div class="authcard">
+      <div class="abrand"><span class="mark" id="siFirmBadge" style="border:none;background:#2F6F4E;color:#fff;font-family:var(--serif);font-weight:700;font-size:15px">TS</span><div style="text-align:left"><div class="wordmark" style="font-size:17px;line-height:1.12">Tallystone CPA</div><div style="font-size:10.5px;color:var(--muted);margin-top:3px">AI Tax Planner Copilot · powered by CertaintyAI<sup>™</sup></div></div></div>
+      <h2 class="serif">Sign in</h2>
+      <div class="asub">Defensible multi-year tax planning</div>
+      <div class="err" id="siErr"></div>
+      <div class="field"><label>Work email</label><input id="siEmail" type="email" placeholder="dana@tallystonecpa.example"></div>
+      <div class="field"><label>Password</label><input id="siPass" type="password" placeholder="••••••••"></div>
+      <div class="authrow"><span><input type="checkbox" id="siRemember"> Remember me</span><a href="#" onclick="go('reset');return false">Forgot password?</a></div>
+      <button class="btn btn-dark btn-block" onclick="doSignIn()">Sign in</button>
+      <div class="demohint"><b>Demo accounts</b> — password <code>demo1234</code> for all.
+        <div class="qhint">↳ Click any email to sign in instantly as that person.</div>
+        <div style="margin-top:8px"><b style="color:var(--ink2)">Tallystone CPA — sample firm (fictional)</b><br>
+          <code class="qlogin" onclick="quickLogin('dana@tallystonecpa.example')">dana@tallystonecpa.example</code> advisor · <code class="qlogin" onclick="quickLogin('margaret@chen.example')">margaret@chen.example</code> client · <code class="qlogin" onclick="quickLogin('sam@tallystonecpa.example')">sam@tallystonecpa.example</code> governance</div>
+        <div style="margin-top:8px"><b style="color:var(--ink2)">Meridian Labs — prospective partner (stand-in for Accion)</b><br>
+          <code class="qlogin" onclick="quickLogin('priya@meridianlabs.example')">priya@meridianlabs.example</code> managing partner · <code class="qlogin" onclick="quickLogin('marcus@meridianlabs.example')">marcus@meridianlabs.example</code> CTO/architect · <code class="qlogin" onclick="quickLogin('helen@meridianlabs.example')">helen@meridianlabs.example</code> CFO</div><div style="margin-top:8px;font-style:italic;color:var(--muted)">These are fictional demo personas — not real people, clients or customers.</div></div>
+      <div class="switch">New here? <a href="#" onclick="go('signup');return false">Create an account</a></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= SIGN UP ================= -->
+<section class="screen" id="screen-signup">
+  <div class="center">
+    <div class="authcard">
+      <div class="abrand"><span class="mark" id="sm2"></span><div class="wordmark">CertaintyAI<sup>™</sup></div></div>
+      <h2 class="serif">Create your account</h2>
+      <div class="asub">Start a defensible tax-planning workspace</div>
+      <div class="err" id="suErr"></div>
+      <div class="field"><label>Full name</label><input id="suName" placeholder="Jordan Patel"></div>
+      <div class="field"><label>Work email</label><input id="suEmail" type="email" placeholder="jordan@tallystonecpa.example"></div>
+      <div class="field"><label>Role</label><select id="suRole">
+        <option value="dana">CPA / Tax advisor (Tallystone)</option>
+        <option value="sam">AI governance (Tallystone)</option>
+        <option value="margaret">Client (read-only)</option>
+        <option value="pmd">Managing Partner (partner)</option>
+        <option value="pcto">CTO / Architect (partner)</option>
+        <option value="pcfo">CFO (partner)</option>
+      </select></div>
+      <div class="field"><label>Password</label><input id="suPass" type="password" placeholder="At least 8 characters"></div>
+      <button class="btn btn-dark btn-block" onclick="doSignUp()">Create account</button>
+      <div class="switch">Already have an account? <a href="#" onclick="go('signin');return false">Sign in</a></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= RESET / CHANGE PASSWORD ================= -->
+<section class="screen" id="screen-reset">
+  <div class="center">
+    <div class="authcard">
+      <div class="abrand"><span class="mark" id="sm3"></span><div class="wordmark">CertaintyAI<sup>™</sup></div></div>
+      <h2 class="serif" id="resetTitle">Reset your password</h2>
+      <div class="asub" id="resetSub">Enter your email and choose a new password</div>
+      <div class="err" id="rsErr"></div>
+      <div class="ok" id="rsOk"></div>
+      <div class="field"><label>Work email</label><input id="rsEmail" type="email" placeholder="you@tallystonecpa.example"></div>
+      <div class="field" id="rsCurWrap" style="display:none"><label>Current password</label><input id="rsCur" type="password"></div>
+      <div class="field"><label>New password</label><input id="rsNew" type="password" placeholder="At least 8 characters"></div>
+      <div class="field"><label>Confirm new password</label><input id="rsNew2" type="password"></div>
+      <button class="btn btn-dark btn-block" onclick="doReset()" id="rsBtn">Update password</button>
+      <div class="switch"><a href="#" id="rsBack" onclick="go('signin');return false">← Back to sign in</a></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= APP ================= -->
+<section class="screen" id="screen-app">
+  <div class="apphead">
+    <div class="apptop">
+      <div class="brand"><span class="mark" id="firmBadge" style="border:none;background:#2F6F4E;color:#fff;font-family:var(--serif);font-weight:700;font-size:15px">TS</span>
+        <div><div class="wordmark" style="font-size:16px" id="firmNameLead">Tallystone CPA</div><div class="tagline">AI Tax Planner Copilot</div></div>
+      </div>
+      <div class="spacer"></div>
+      <div class="chip" id="engineChip"><span class="d"></span>Ontology Engine ▾</div>
+      <div class="chip">🌐 N. America</div>
+      <span class="synthbadge">SYNTHETIC · ILLUSTRATIVE</span>
+      <div class="acct">
+        <button class="acctbtn" id="acctBtn"><span class="dot" id="acctDot"></span><span id="acctName">—</span> ▾</button>
+        <div class="acctmenu" id="acctMenu">
+          <div class="who" id="acctWho"></div>
+          <div style="font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:8px 12px 4px">Explore as any role &mdash; no login</div>
+          <button onclick="viewAs('dana')">Dana &middot; CPA advisor</button>
+          <button onclick="viewAs('margaret')">Margaret &middot; Client (read-only)</button>
+          <button onclick="viewAs('sam')">Sam &middot; AI governance</button>
+          <div style="font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:8px 12px 4px;border-top:1px solid var(--line2);margin-top:4px">Prospective partner &mdash; Meridian Labs</div>
+          <button onclick="viewAs('pmd')">Priya &middot; Managing Partner</button>
+          <button onclick="viewAs('pcto')">Marcus &middot; CTO / Architect</button>
+          <button onclick="viewAs('pcfo')">Helen &middot; CFO</button>
+          <button onclick="go('reset',null,true)" style="border-top:1px solid var(--line2);margin-top:4px">Change password</button>
+          <button onclick="signOut()">Sign out</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="appbody">
+    <aside class="sidebar">
+      <div class="sidenav" id="tabrow">
+        <button class="tab" data-v="dashboard"><span class="ti">📊</span> Dashboard</button>
+        <button class="tab" data-v="myplan"><span class="ti">🧾</span> My Plan</button>
+        <button class="tab" data-v="partnership"><span class="ti">🤝</span> Partnership</button>
+        <button class="tab" data-v="valuecase"><span class="ti">💵</span> Value &amp; Savings</button>
+        <button class="tab" data-v="overview"><span class="ti">🏢</span> Client &amp; Entities</button>
+        <button class="tab" data-v="projection"><span class="ti">📈</span> Multi-Year Projection</button>
+        <button class="tab" data-v="scenario"><span class="ti">🧪</span> Scenario Lab</button>
+        <button class="tab" data-v="assumptions"><span class="ti">⚙️</span> Assumption Engine</button>
+        <button class="tab" data-v="lineage"><span class="ti">🔗</span> Lineage &amp; Explainability</button>
+        <button class="tab" data-v="eval"><span class="ti">✅</span> Evaluation Harness</button>
+        <button class="tab" data-v="arch"><span class="ti">🗂️</span> Architecture</button>
+      </div>
+      <div class="sidefoot">
+        <div style="font-size:11px;color:var(--muted);padding:2px 4px 12px;border-bottom:1px solid var(--line2);margin-bottom:12px"><b style="color:var(--ink2);font-weight:600">Powered by CertaintyAI<sup>™</sup></b><br>a product of MDxBlocks Inc</div>
+        <div class="builtcard"><b>BUILT ON</b><br>☁ Google Cloud<br><span>Powered by Vertex AI · Cloud Run</span><br><span>Aligned to NIST AI RMF · ISO 42001 · EU AI Act</span></div>
+      </div>
+    </aside>
+
+    <main>
+      <div id="roleBanner" class="wsbanner"></div>
+    <!-- CLIENT: MY PLAN -->
+    <!-- 00 ROLE DASHBOARD -->
+    <section class="view" id="dashboard"><div id="dashBody"></div></section>
+
+    <section class="view" id="myplan">
+      <div class="viewhead"><div class="eyebrow">Your plan · Margaret &amp; David Chen</div>
+        <h2 class="serif">Your tax plan, in plain terms</h2>
+        <p class="lead">A clear picture of where you're headed and how the recommended strategy helps — reviewed and approved by your advisor at Tallystone CPA.</p></div>
+      <div class="grid g3" style="margin-bottom:16px">
+        <div class="card kpi"><span class="lbl">Projected savings over 10 years</span><span class="val figure pos" id="cpSave">—</span><span class="delta pos">vs. doing nothing</span></div>
+        <div class="card kpi"><span class="lbl">Recommended strategy</span><span class="val serif" style="font-size:21px">Combined plan</span><span class="delta">Salary mix + Roth ladder + timing</span></div>
+        <div class="card kpi"><span class="lbl">Status</span><span class="val serif" style="font-size:21px;color:var(--green)">Advisor approved</span><span class="delta">Every step can be explained</span></div>
+      </div>
+      <div class="grid g-2-1">
+        <div class="card"><h3 class="serif" style="font-size:18px;margin-bottom:10px">What you'd pay — with and without a plan</h3><div id="cpChart"></div>
+          <p class="note">Estimated federal tax each year. The lower line is the recommended plan.</p></div>
+        <div class="card"><h3 class="serif" style="font-size:18px;margin-bottom:10px">What we're recommending</h3><div id="cpSteps"></div>
+          <div style="margin-top:12px;background:var(--green-soft);border-radius:9px;padding:11px 13px;font-size:12.5px;color:var(--green)">Every recommendation was reviewed by your advisor and can be traced back to the tax rules behind it.</div></div>
+      </div>
+    </section>
+
+    <!-- PARTNER: PARTNERSHIP -->
+    <section class="view" id="partnership">
+      <div class="viewhead"><div class="eyebrow">Meridian Labs · partnership overview</div>
+        <h2 class="serif">Why CertaintyAI fits Meridian Labs</h2>
+        <p class="lead">A defensible-AI platform for regulated advisory — built to be delivered and sold by an engineering partner like yours.</p></div>
+      <div class="card" style="margin-bottom:16px;border-left:3px solid var(--gold)">
+        <p style="margin:0;font-size:15px;color:var(--ink2)">MDxBlocks built <b>CertaintyAI</b>, a governed AI platform for multi-year tax &amp; financial planning. We're inviting Meridian to be our <b>preferred delivery and go-to-market partner</b> — our IP plus your engineering scale and regulated-industry client base.</p></div>
+      <div class="grid g2" style="margin-bottom:16px">
+        <div class="card"><h3 class="serif" style="font-size:16px;margin-bottom:6px">Meridian brings</h3><p class="note" style="margin:0">Engineering scale, a financial-services client base, delivery accelerators, and a proven preferred-partner + Center-of-Excellence model.</p></div>
+        <div class="card"><h3 class="serif" style="font-size:16px;margin-bottom:6px">MDxBlocks brings</h3><p class="note" style="margin:0">CertaintyAI — productized defensible-AI IP: data foundation, RAG grounding, projection &amp; scenario engines, evaluation harness, and a governance layer aligned to Circular 230 / SOC 2 / ISO 42001.</p></div>
+      </div>
+      <div class="card" style="margin-bottom:16px"><h3 class="serif" style="font-size:16px;margin-bottom:8px">Three ways to partner</h3>
+        <div style="display:flex;gap:13px;padding:9px 0;border-bottom:1px solid var(--line2)"><span class="serif" style="color:var(--gold);font-weight:700;font-size:18px;min-width:26px">01</span><div><b>Preferred delivery partner + Center of Excellence.</b> <span class="note">Meridian implements and customizes CertaintyAI for clients — services pull-through on every deployment.</span></div></div>
+        <div style="display:flex;gap:13px;padding:9px 0;border-bottom:1px solid var(--line2)"><span class="serif" style="color:var(--gold);font-weight:700;font-size:18px;min-width:26px">02</span><div><b>Joint go-to-market for regulated financial services.</b> <span class="note">Bundle CertaintyAI as the "defensible AI" reference architecture; co-sell into your client base.</span></div></div>
+        <div style="display:flex;gap:13px;padding:9px 0"><span class="serif" style="color:var(--gold);font-weight:700;font-size:18px;min-width:26px">03</span><div><b>Embed the governance layer into your accelerators.</b> <span class="note">Use the lineage + evaluation + assumption-versioning patterns as the trust layer in your GenAI offerings.</span></div></div>
+      </div>
+      <div class="card"><h3 class="serif" style="font-size:16px;margin-bottom:8px">What's in it for Meridian</h3>
+        <div class="grid g2"><div><span class="pill v">Differentiated IP</span><p class="note" style="margin:5px 0 0">A regulated, high-margin vertical — not another generic GenAI pilot.</p></div>
+        <div><span class="pill v">Services pull-through</span><p class="note" style="margin:5px 0 0">Data, integration, customization, and managed delivery on every deployment.</p></div>
+        <div><span class="pill v">BFSI expansion</span><p class="note" style="margin:5px 0 0">A working, governed platform you can demo to financial-services buyers today.</p></div>
+        <div><span class="pill v">Lower delivery risk</span><p class="note" style="margin:5px 0 0">A ready reference for explainability, evaluation, and audit.</p></div></div>
+        <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap"><button class="primary" onclick="switchView('overview')">See the working planner →</button><button class="hbtn" onclick="switchView('valuecase')">View the numbers →</button></div>
+      </div>
+    </section>
+
+    <!-- PARTNER CFO: VALUE & SAVINGS -->
+    <section class="view" id="valuecase">
+      <div class="viewhead"><div class="eyebrow">Meridian Labs · financial summary</div>
+        <h2 class="serif">The numbers — client value and partner economics</h2>
+        <p class="lead">No architecture, just outcomes. Figures are an illustrative model — adjust them to your own deal sizes.</p></div>
+      <div class="grid g3" style="margin-bottom:16px">
+        <div class="card kpi"><span class="lbl">Client savings per engagement · 10-yr</span><span class="val figure pos" id="vcClient">—</span><span class="delta pos">makes the product easy to sell</span></div>
+        <div class="card kpi"><span class="lbl">Services revenue / deployment</span><span class="val figure" id="vcSvcKpi">—</span><span class="delta">implementation + data + managed</span></div>
+        <div class="card kpi"><span class="lbl">Year-1 services pipeline</span><span class="val figure" id="vcPipe">—</span><span class="delta" id="vcPipeLbl"></span></div>
+      </div>
+      <div class="grid g-1-2">
+        <div class="card"><h3 class="serif" style="font-size:18px;margin-bottom:8px">Model your deal economics</h3>
+          <p class="note" style="margin-bottom:10px">Adjust to your own assumptions. Non-binding illustration.</p>
+          <div class="ctrlrow"><label>Client deployments · year 1</label><input type="range" id="vcDep" min="5" max="60" step="5" value="15"><span class="out figure" id="vcDepOut"></span></div>
+          <div class="ctrlrow"><label>Services revenue / deployment</label><input type="range" id="vcSvc" min="80000" max="400000" step="20000" value="180000"><span class="out figure" id="vcSvcOut"></span></div>
+          <div class="ctrlrow"><label>Annual managed services / client</label><input type="range" id="vcMgd" min="0" max="120000" step="10000" value="40000"><span class="out figure" id="vcMgdOut"></span></div>
+          <div style="margin-top:8px"><span class="pill i">illustrative</span> <span class="pill a">not a forecast</span></div>
+        </div>
+        <div class="card"><h3 class="serif" style="font-size:18px;margin-bottom:10px">Why this is a business, not a science project</h3>
+          <table><thead><tr><th>Driver</th><th style="text-align:right">Year 1</th><th style="text-align:right">3-yr (illustrative)</th></tr></thead><tbody id="vcTbody"></tbody></table>
+          <div style="margin-top:12px;background:var(--bone);border-left:3px solid var(--gold);border-radius:0 8px 8px 0;padding:11px 13px;font-size:12.5px;color:var(--ink2)"><b>Risk reduction:</b> regulated buyers stall on un-auditable AI. CertaintyAI's governance layer turns a stalled pilot into a defensible deployment — shortening sales cycles and protecting services revenue.</div>
+        </div>
+      </div>
+      <div class="card" style="margin-top:16px"><h3 class="serif" style="font-size:18px;margin-bottom:10px">Client value that makes it sell</h3><div id="vcChart"></div>
+        <p class="note">Total estimated federal tax for one client engagement over 10 years — without a plan vs. with CertaintyAI's recommended plan.</p></div>
+    </section>
+
+    <!-- 01 OVERVIEW -->
+    <section class="view" id="overview">
+      <div class="viewhead"><div class="eyebrow">Tallystone CPA · sample client (fictional) · synthetic data</div>
+        <h2 class="serif">Riverside Holdings — Margaret &amp; David Chen (MFJ)</h2>
+        <p class="lead">Cross-entity planning across an S-corp, a rental partnership, a personal 1040, and a family trust. Click any <span class="figure" style="background:var(--gold-soft);padding:1px 5px;border-radius:4px">traceable figure</span> to open its lineage.</p>
+        <p class="note" style="margin:6px 0 0;font-style:italic">Fictional sample client, created for demonstration only — not a real client relationship.</p></div>
+      <div class="grid g3" style="margin-bottom:16px">
+        <div class="card kpi"><span class="lbl">Baseline 10-yr federal tax</span><span class="val figure" id="ovTax">—</span><span class="delta">Median (P50) · seed-locked</span></div>
+        <div class="card kpi"><span class="lbl">Best plan 10-yr savings</span><span class="val figure pos" id="ovSav">—</span><span class="delta pos" id="ovSavLbl"></span></div>
+        <div class="card kpi"><span class="lbl">Open governance flags</span><span class="val figure" id="ovFlags">—</span><span class="delta">Reasonable-comp &amp; phaseout watch</span></div>
+      </div>
+      <div class="grid g-2-1">
+        <div class="card"><h3 class="serif" style="margin-bottom:12px;font-size:18px">Entity hierarchy &amp; income mix</h3><div id="entityTree"></div></div>
+        <div class="card"><h3 class="serif" style="margin-bottom:6px;font-size:18px">What this POC proves</h3><p class="note" style="margin-bottom:12px">Mapped to the role's first-30-day outcomes.</p><div id="provesList"></div></div>
+      </div>
+    </section>
+
+    <!-- 02 PROJECTION -->
+    <section class="view" id="projection">
+      <div class="viewhead"><div class="eyebrow">Forecasting · uncertainty-quantified</div>
+        <h2 class="serif">Multi-year federal tax projection</h2>
+        <p class="lead">Statistical baseline + scenario simulation. Bands show the P10–P90 range from a seeded Monte Carlo — no single-point fiction.</p></div>
+      <div class="card" style="margin-bottom:16px">
+        <div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap;margin-bottom:6px">
+          <div style="display:flex;gap:6px"><button class="hbtn" data-h="3">3-yr</button><button class="hbtn active" data-h="5">5-yr</button><button class="hbtn" data-h="10">10-yr</button></div>
+          <div style="display:flex;gap:6px;align-items:center"><span class="note" style="margin:0">Active plan:</span>
+            <select id="projScen" style="padding:6px 9px;border-radius:7px;border:1px solid var(--line);font-family:inherit;font-weight:600;background:var(--card2)"></select></div>
+          <div class="legend" style="margin:0"><span><span class="sw" style="background:var(--green)"></span>Active P50</span><span><span class="sw" style="background:var(--green-soft)"></span>P10–P90</span><span><span class="sw" style="background:#b3a894;border:1px dashed #7a7264"></span>Baseline</span></div>
+        </div>
+        <div id="projChart"></div>
+      </div>
+      <div class="card"><h3 class="serif" style="margin-bottom:10px;font-size:18px">Year-by-year detail</h3>
+        <table><thead><tr><th>Tax year</th><th style="text-align:right">P10</th><th style="text-align:right">P50</th><th style="text-align:right">P90</th><th style="text-align:right">vs baseline</th><th></th></tr></thead><tbody id="projTbody"></tbody></table>
+        <p class="note">Click any row to trace that year's median figure end-to-end.</p></div>
+    </section>
+
+    <!-- 03 SCENARIO -->
+    <section class="view" id="scenario">
+      <div class="viewhead"><div class="eyebrow">Optimization · constrained scenario search</div>
+        <h2 class="serif">Scenario Lab</h2>
+        <p class="lead">Candidate plans are framed as discrete elections (MIP-style), scored by a scenario simulator, ranked by 10-yr after-tax wealth under liquidity and defensibility constraints.</p></div>
+      <div class="grid g3" id="scenCards" style="margin-bottom:16px"></div>
+      <div class="grid g-1-2">
+        <div class="card"><h3 class="serif" style="margin-bottom:8px;font-size:18px">Tune the active plan</h3><p class="note" style="margin-bottom:10px">Levers feed the assumption engine; outputs re-solve live.</p>
+          <div class="ctrlrow"><label>S-corp reasonable comp</label><input type="range" id="lvComp" min="110000" max="220000" step="5000" value="180000"><span class="out figure" id="lvCompOut"></span></div>
+          <div class="ctrlrow"><label>Roth conversion / yr (5-yr)</label><input type="range" id="lvRoth" min="0" max="120000" step="10000" value="0"><span class="out figure" id="lvRothOut"></span></div>
+          <div class="ctrlrow"><label>Income-timing deferral</label><input type="range" id="lvDefer" min="0" max="80000" step="10000" value="0"><span class="out figure" id="lvDeferOut"></span></div>
+          <div id="lvFlags" style="margin-top:8px"></div></div>
+        <div class="card"><h3 class="serif" style="margin-bottom:10px;font-size:18px">Plan comparison <span class="note" style="font-weight:400">— 10-yr, NPV @ 5%</span></h3>
+          <table><thead><tr><th>Candidate plan</th><th style="text-align:right">10-yr tax (P50)</th><th style="text-align:right">Savings</th><th style="text-align:right">Risk</th><th>Defensibility</th></tr></thead><tbody id="scenTbody"></tbody></table>
+          <p class="note">Recommended = max after-tax wealth where all defensibility constraints hold. Flagged plans need human review (human-in-the-loop gate).</p></div>
+      </div>
+    </section>
+
+    <!-- 04 ASSUMPTIONS -->
+    <section class="view" id="assumptions">
+      <div class="viewhead"><div class="eyebrow">Assumption engine · versioned</div>
+        <h2 class="serif">Every assumption is explicit, versioned, and reproducible</h2>
+        <p class="lead">Projections never bury assumptions in code. Each carries an owner, version, effective date, and source — so any projection can be reproduced and explained.</p></div>
+      <div class="card" style="margin-bottom:16px">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px"><span class="pill i">assumption-set v2025.2</span><span class="note" style="margin:0">Effective 2025-01-01 · approved by Tax SME · supersedes v2025.1</span><span style="flex:1"></span><span class="tag techfoot">seed 0x5EED2025</span></div>
+        <div class="assump" id="assumpTable"><div class="hd">Assumption</div><div class="hd">Value</div><div class="hd">Version</div><div class="hd">Source / owner</div></div></div>
+      <div class="grid g2">
+        <div class="card"><h3 class="serif" style="margin-bottom:8px;font-size:18px">Reproducibility contract</h3><p class="note" style="margin:0 0 8px">Same inputs + same assumption-set + same seed ⇒ byte-identical projection. This is what makes an output defensible, not merely plausible.</p>
+          <div class="kv"><span class="k">Inputs hash</span><span class="v">b91f…a072</span></div><div class="kv"><span class="k">Assumption-set</span><span class="v">v2025.2</span></div><div class="kv"><span class="k">Engine contract</span><span class="v">calc-svc@1.4</span></div><div class="kv"><span class="k">Seed</span><span class="v">0x5EED2025</span></div><div class="kv"><span class="k">Result digest</span><span class="v">3c7e…ff18</span></div></div>
+        <div class="card"><h3 class="serif" style="margin-bottom:8px;font-size:18px">Year-to-year rule evolution</h3><p class="note" style="margin:0 0 8px">Tax tables and thresholds are time-versioned data, partnered with analysts — not hard-coded constants.</p>
+          <table><thead><tr><th>Parameter</th><th style="text-align:right">2025</th><th style="text-align:right">2026e</th><th style="text-align:right">2027e</th></tr></thead><tbody>
+            <tr><td>Std deduction (MFJ)</td><td class="num">$30,000</td><td class="num">$30,900</td><td class="num">$31,700</td></tr>
+            <tr><td>QBI phaseout start</td><td class="num">$383,900</td><td class="num">$395,400</td><td class="num">$405,300</td></tr>
+            <tr><td>Top bracket entry</td><td class="num">$751,600</td><td class="num">$774,100</td><td class="num">$793,500</td></tr></tbody></table></div>
+      </div>
+    </section>
+
+    <!-- 05 LINEAGE -->
+    <section class="view" id="lineage">
+      <div class="viewhead"><div class="eyebrow">Explainability · end-to-end lineage</div>
+        <h2 class="serif">From raw return to recommendation — nothing unexplained</h2>
+        <p class="lead" id="lineLead">Pick a year, open its trace, and follow the figure through Bronze/Silver/Gold, the feature store, versioned assumptions, the decoupled calc-engine call, and the grounded citation.</p></div>
+      <div class="card">
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
+          <span class="note" style="margin:0">Trace median federal tax for</span>
+          <select id="lineYear" style="padding:6px 9px;border-radius:7px;border:1px solid var(--line);font-family:var(--mono);font-weight:600;background:var(--card2)"></select>
+          <span class="note" style="margin:0">under plan</span>
+          <select id="lineScen" style="padding:6px 9px;border-radius:7px;border:1px solid var(--line);font-weight:600;background:var(--card2)"></select>
+          <button class="primary" id="openTrace">Open lineage trace →</button></div>
+        <div class="grid g2">
+          <div id="lineWhy"><h4 class="serif" style="margin-bottom:8px;font-size:16px">Why lineage is first-class here</h4><p class="note" style="margin:0 0 10px">A projection is only useful if a professional can defend it. Lineage turns "the model said so" into a chain of evidence a CPA can sign.</p>
+            <div class="kv"><span class="k">Inputs traced to source line items</span><span class="v">✓</span></div><div class="kv"><span class="k">Each transform recorded</span><span class="v">✓</span></div><div class="kv"><span class="k">Assumption version pinned</span><span class="v">✓</span></div><div class="kv"><span class="k">Calc request/response logged</span><span class="v">✓</span></div><div class="kv"><span class="k">Grounded citation attached</span><span class="v">✓</span></div></div>
+          <div id="lineGround"><h4 class="serif" style="margin-bottom:8px;font-size:16px">Grounding (RAG) snapshot</h4><p class="note" style="margin:0 0 8px">Recommendations are grounded in retrieved source chunks with tags and citations — not free-form generation.</p>
+            <div class="cite">§199A QBI deduction · chunk qbi-0142 · sim 0.91</div><div class="cite" style="margin-top:6px">Reasonable-comp guidance · chunk rc-0078 · sim 0.88</div><div class="cite" style="margin-top:6px">Workpaper prior-yr 1120-S · chunk wp-2024-11 · sim 0.93</div></div>
+        </div></div>
+    </section>
+
+    <!-- 06 EVAL -->
+    <section class="view" id="eval">
+      <div class="viewhead"><div class="eyebrow">Evaluation-first governance</div>
+        <h2 class="serif">Golden scenarios, regression, drift &amp; release gates</h2>
+        <p class="lead">You don't just build the advisor — you build the harness that proves it before it touches a client. Nothing ships unless every gate is green.</p></div>
+      <div class="grid g-2-1">
+        <div class="card"><h3 class="serif" style="margin-bottom:10px;font-size:18px">Golden scenario suite <span class="note" style="font-weight:400">— run #1187 · v2025.2</span></h3>
+          <table><thead><tr><th>Golden case</th><th style="text-align:right">Expected</th><th style="text-align:right">Computed</th><th style="text-align:right">Δ</th><th>Tol</th><th>Status</th></tr></thead><tbody id="goldenTbody"></tbody></table>
+          <p class="note">SME-authored returns with known outcomes. Drift = quiet degradation against these anchors over time.</p></div>
+        <div class="card"><h3 class="serif" style="margin-bottom:10px;font-size:18px">Release gates</h3><div id="gates"></div>
+          <h4 class="serif" style="margin:14px 0 8px;font-size:15px">Drift signal (last 8 runs)</h4><div id="driftSpark"></div>
+          <p class="note">Median % error vs golden anchors. Threshold breach blocks release.</p></div>
+      </div>
+    </section>
+
+    <!-- 07 ARCH -->
+    <section class="view" id="arch">
+      <div class="viewhead"><div class="eyebrow">Architecture workstream</div>
+        <h2 class="serif">Open ingestion → Medallion → RAG grounding → decoupled planner</h2>
+        <p class="lead">The data backbone. The most important boundary is the dashed one: the planner consumes calculation outputs through a contract, never coupled to the compliance engine's roadmap.</p></div>
+      <div class="card" style="margin-bottom:16px"><h4 class="serif" style="margin-bottom:12px;font-size:16px">Medallion data foundation (NoSQL lake)</h4>
+        <div class="flow"><div class="node med-b"><div class="nt">🟤 Bronze · Raw</div><div class="nmeta">1040 / 1120-S / K-1 / ledgers, as landed. 300+ connectors, open APIs.</div></div><div class="arrow">→</div><div class="node med-s"><div class="nt">⚪ Silver · Conformed</div><div class="nmeta">Normalized, deduped, PII-handled, mapped to canonical planning model.</div></div><div class="arrow">→</div></div>
+        <div class="flow" style="margin-top:10px"><div class="node med-g"><div class="nt">🟡 Gold · Analytics</div><div class="nmeta">Entity-aware features: QBI base, comp ratio, carryforwards, jurisdiction.</div></div><div class="arrow">→</div><div class="node rag"><div class="nt">🔵 RAG · Vector store</div><div class="nmeta">Chunks + embeddings + tags from tax law, workpapers, prior returns → grounded, cited context.</div></div><div class="arrow"></div></div></div>
+      <div class="grid g2" style="margin-bottom:16px">
+        <div class="card plan" style="border-top:4px solid var(--green)"><h4 class="serif" style="margin-bottom:6px;font-size:16px">🟢 Planning service (this product)</h4><p class="note" style="margin:0">Forecasting + scenario simulation + constrained optimization + agentic orchestration + explanation layer. Owns the roadmap.</p></div>
+        <div class="boundary"><h4 class="serif" style="margin-bottom:6px;font-size:16px;color:var(--sienna)">⛓ Integration contract — the decoupling boundary</h4><p class="note" style="margin:0;color:#7a3a1a">Planner calls <span class="figure">calc-svc@1.4</span> with inputs, receives liability + line items. No shared schema, no shared release train. Swap or upgrade the engine without touching the planner.</p></div></div>
+      <div class="card"><h4 class="serif" style="margin-bottom:10px;font-size:16px">AI/ML approach — layered, not a single model</h4>
+        <div class="grid g3">
+          <div><span class="pill v">statistical baseline</span><p class="note" style="margin:6px 0 0">Trend + inflation-indexed projection per income line.</p></div>
+          <div><span class="pill i">scenario simulation</span><p class="note" style="margin:6px 0 0">Seeded Monte Carlo → P10/P50/P90 bands.</p></div>
+          <div><span class="pill a">constrained optimization</span><p class="note" style="margin:6px 0 0">MIP-style elections; heuristic fallback for interactive UX.</p></div>
+          <div><span class="pill i">agentic workflow</span><p class="note" style="margin:6px 0 0">Gather → project → review → document, with human gates.</p></div>
+          <div><span class="pill v">RAG grounding</span><p class="note" style="margin:6px 0 0">Every recommendation cites retrieved source chunks.</p></div>
+          <div><span class="pill r">governance</span><p class="note" style="margin:6px 0 0">RBAC, data minimization, immutable audit, eval gates.</p></div>
+        </div></div>
+    </section>
+
+    <div class="appfoot"><span style="color:var(--ink2);font-weight:500">Powered by CertaintyAI<sup>™</sup> · a product of MDxBlocks Inc</span><span class="seedbox techfoot">seed 0x5EED2025</span><span class="seedbox">assumption-set v2025.2</span><span class="seedbox techfoot">calc-svc@1.4 (stub)</span><span>All firms, clients and users shown are fictional — for demonstration only, not real clients, customers or users. Synthetic data; not tax advice.</span></div>
+  </main>
+  </div>
+</section>
+
+<!-- LINEAGE DRAWER -->
+<div class="drawer-bg" id="drawerBg"></div>
+<aside class="drawer" id="drawer">
+  <div class="dhead"><div><div style="font-size:11px;color:#cfc7b6;font-family:var(--mono)">LINEAGE TRACE</div><h3 id="drawerTitle" style="font-size:16px"></h3></div><button class="x" id="drawerX">×</button></div>
+  <div class="dbody" id="drawerBody"></div>
+</aside>
+
+<script>
+/* ---------- logo mark (recreated SVG) ---------- */
+function hexMark(){
+  const c=50,R=42,r=31;const pts=a=>[c+R*Math.cos(a*Math.PI/180),c+R*Math.sin(a*Math.PI/180)];
+  const ang=[-90,-30,30,90,150,210];
+  const poly=k=>ang.map((a,i)=>{const x=c+k*Math.cos(a*Math.PI/180),y=c+k*Math.sin(a*Math.PI/180);return (i?'L':'M')+x.toFixed(1)+','+y.toFixed(1)}).join(' ')+'Z';
+  const v=k=>{const a=k*Math.PI/180;return (c+r*Math.cos(a)).toFixed(1)+','+(c+r*Math.sin(a)).toFixed(1)};
+  // Y for isometric cube: center to top(-90), to 30, to 150
+  return `<svg viewBox="0 0 100 100" fill="none" stroke="#22309B" stroke-width="6.5" stroke-linejoin="round" stroke-linecap="round">
+    <path d="${poly(R)}"/><path d="${poly(r)}" stroke-width="5"/>
+    <path d="M50,50 L${v(-90)} M50,50 L${v(30)} M50,50 L${v(150)}" stroke-width="5"/></svg>`;
+}
+['lm1','lm2','lmcta','sm0','sm2','sm3','cpm'].forEach(id=>{const e=document.getElementById(id);if(e)e.innerHTML=hexMark()});
+
+/* ---------- gauge ---------- */
+function gauge(score,el,size){if(!el)return;size=size||104;const r=size/2-9,c=size/2,circ=2*Math.PI*r;const off=circ*(1-score/100);
+  const col=score>=75?'#3E7A52':score>=50?'#9A7B3F':'#9A4A2A';
+  el.innerHTML=`<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+    <circle cx="${c}" cy="${c}" r="${r}" fill="none" stroke="#EAE5D9" stroke-width="9"/>
+    <circle cx="${c}" cy="${c}" r="${r}" fill="none" stroke="${col}" stroke-width="9" stroke-linecap="round"
+      stroke-dasharray="${circ}" stroke-dashoffset="${off}" transform="rotate(-90 ${c} ${c})"/>
+    <text x="${c}" y="${c+8}" text-anchor="middle" font-family="Georgia,serif" font-size="${size*0.32}" font-weight="700" fill="#1B1813">${score}</text></svg>`;}
+gauge(64,document.getElementById('heroGauge'));
+
+/* ========================================================= AUTH ========================================================= */
+const PARTNER='Meridian Labs (prospective partner)';
+const STANDIN='<span class="tag">stand-in for Accion Labs</span>';
+const FIRMS={
+  'Tallystone CPA LLC':{short:'TS',name:'Tallystone CPA',accent:'#2F6F4E'},
+  [PARTNER]:{short:'ML',name:'Meridian Labs',accent:'#3A3DA8'}
+};
+const ROLES={
+  dana:{name:'Dana Reyes',role:'CPA / Tax advisor',org:'Tallystone CPA LLC',color:'#3E7A52',
+    tabs:['dashboard','overview','projection','scenario','assumptions','lineage'],def:'dashboard',
+    banner:'Using the planner as an <b>advisor</b> — the full multi-year planning workspace.'},
+  margaret:{name:'Margaret Chen',role:'Client (read-only)',org:'Tallystone CPA LLC',color:'#22309B',
+    tabs:['dashboard','myplan','projection'],def:'dashboard',
+    banner:'<b>Client view</b> — a read-only window into your plan and your multi-year projection. Internal tooling stays hidden.'},
+  sam:{name:'Sam Okafor',role:'AI governance',org:'Tallystone CPA LLC',color:'#9A7B3F',
+    tabs:['dashboard','eval','lineage','assumptions'],def:'dashboard',
+    banner:'<b>Governance view</b> — evaluation, drift, lineage and assumption versioning for trust &amp; audit.'},
+  pmd:{name:'Priya Nair',role:'Managing Partner',org:PARTNER,color:'#7C611F',
+    tabs:['dashboard','partnership','valuecase'],def:'dashboard',
+    banner:'Partner · <b>Managing Partner</b> — the partnership case: pipeline, revenue and value. '+STANDIN},
+  pcto:{name:'Marcus Vale',role:'CTO / Chief Architect',org:PARTNER,color:'#22309B',
+    tabs:['dashboard','projection','assumptions','lineage','eval','arch'],def:'dashboard',
+    banner:'Partner · <b>CTO / Architect</b> — full technical depth: architecture, lineage, evaluation, governance. '+STANDIN},
+  pcfo:{name:'Helen Cho',role:'CFO',org:PARTNER,color:'#3E7A52',
+    tabs:['dashboard','valuecase'],def:'dashboard',
+    banner:'Partner · <b>CFO</b> — financial summary only, no technical detail. '+STANDIN},
+};
+const users={
+  'dana@tallystonecpa.example':{pass:'demo1234',roleKey:'dana'},
+  'margaret@chen.example':{pass:'demo1234',roleKey:'margaret'},
+  'sam@tallystonecpa.example':{pass:'demo1234',roleKey:'sam'},
+  'priya@meridianlabs.example':{pass:'demo1234',roleKey:'pmd'},
+  'marcus@meridianlabs.example':{pass:'demo1234',roleKey:'pcto'},
+  'helen@meridianlabs.example':{pass:'demo1234',roleKey:'pcfo'},
+};
+let session=null;
+
+function go(screen,roleKey,fromApp){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+screen).classList.add('active');
+  window.scrollTo(0,0);
+  if(screen!=='app'){var _f=document.getElementById('cpFab');if(_f)_f.style.display='none';var _p=document.getElementById('cpPanel');if(_p)_p.classList.remove('open');CP_OPEN=false;}
+  if(screen==='survey')startSurvey();
+  if(screen==='reset'){setupReset(fromApp)}
+  if(screen==='app'){
+    if(roleKey){const em=Object.keys(users).find(e=>users[e].roleKey===roleKey)||('guest@'+roleKey);session={email:em,roleKey}}
+    if(!session)session={email:'guest',roleKey:'dana'};
+    enterApp();
+  }
+}
+function err(id,msg){const e=document.getElementById(id);e.textContent=msg;e.style.display='block'}
+function clr(id){const e=document.getElementById(id);if(e)e.style.display='none'}
+
+function doSignIn(){clr('siErr');
+  const em=document.getElementById('siEmail').value.trim().toLowerCase(), pw=document.getElementById('siPass').value;
+  if(!em||!pw)return err('siErr','Enter your email and password.');
+  const u=users[em];
+  if(!u||u.pass!==pw)return err('siErr','Email or password is incorrect. Try a demo account below.');
+  session={email:em,roleKey:u.roleKey,name:u.custom};go('app');
+}
+function quickLogin(em){const u=users[em];if(!u)return;
+  document.getElementById('siEmail').value=em;document.getElementById('siPass').value=u.pass;
+  session={email:em,roleKey:u.roleKey,name:u.custom};go('app');
+}
+function doSignUp(){clr('suErr');
+  const nm=document.getElementById('suName').value.trim(),em=document.getElementById('suEmail').value.trim().toLowerCase(),
+    role=document.getElementById('suRole').value,pw=document.getElementById('suPass').value;
+  if(!nm||!em)return err('suErr','Name and email are required.');
+  if(pw.length<8)return err('suErr','Password must be at least 8 characters.');
+  if(users[em])return err('suErr','An account with that email already exists. Sign in instead.');
+  users[em]={pass:pw,roleKey:role,custom:nm};
+  session={email:em,roleKey:role,name:nm};go('app');
+}
+function setupReset(fromApp){
+  clr('rsErr');clr('rsOk');
+  document.getElementById('rsNew').value='';document.getElementById('rsNew2').value='';
+  if(fromApp&&session){ // change password (logged in)
+    document.getElementById('resetTitle').textContent='Change password';
+    document.getElementById('resetSub').textContent='Confirm your current password, then set a new one';
+    document.getElementById('rsEmail').value=session.email;document.getElementById('rsEmail').readOnly=true;
+    document.getElementById('rsCurWrap').style.display='block';
+    document.getElementById('rsBtn').textContent='Update password';
+    document.getElementById('rsBack').textContent='← Back to planner';
+    document.getElementById('rsBack').onclick=()=>{go('app',session.roleKey);return false};
+  }else{
+    document.getElementById('resetTitle').textContent='Reset your password';
+    document.getElementById('resetSub').textContent='Enter your email and choose a new password';
+    document.getElementById('rsEmail').readOnly=false;document.getElementById('rsCurWrap').style.display='none';
+    document.getElementById('rsBack').textContent='← Back to sign in';
+    document.getElementById('rsBack').onclick=()=>{go('signin');return false};
+  }
+}
+function doReset(){clr('rsErr');clr('rsOk');
+  const em=document.getElementById('rsEmail').value.trim().toLowerCase(),n1=document.getElementById('rsNew').value,n2=document.getElementById('rsNew2').value;
+  const loggedIn=document.getElementById('rsCurWrap').style.display==='block';
+  if(!users[em])return err('rsErr','No account found for that email.');
+  if(loggedIn&&users[em].pass!==document.getElementById('rsCur').value)return err('rsErr','Current password is incorrect.');
+  if(n1.length<8)return err('rsErr','New password must be at least 8 characters.');
+  if(n1!==n2)return err('rsErr','Passwords do not match.');
+  users[em].pass=n1;
+  const e=document.getElementById('rsOk');e.textContent='Password updated successfully.';e.style.display='block';
+  setTimeout(()=>{ if(loggedIn&&session){go('app',session.roleKey)} else {go('signin')} },1100);
+}
+function signOut(){session=null;document.getElementById('acctMenu').classList.remove('open');go('signin')}
+function viewAs(rk){const r=ROLES[rk];if(!r)return;
+  const em=Object.keys(users).find(e=>users[e].roleKey===rk)||('demo+'+rk+'@certaintyai.example');
+  session={email:em,roleKey:rk,name:r.name};
+  document.getElementById('acctMenu').classList.remove('open');
+  enterApp();}
+
+function enterApp(){
+  const rk=session.roleKey;const r=ROLES[rk];
+  document.getElementById('acctName').textContent=session.name||r.name;
+  document.getElementById('acctWho').textContent=(session.name||r.name)+' · '+r.role+' · '+r.org;
+  document.getElementById('acctDot').style.background=r.color;
+  const firm=FIRMS[r.org]||{short:'·',name:r.org,accent:r.color};
+  const fb=document.getElementById('firmBadge');if(fb){fb.textContent=firm.short;fb.style.background=firm.accent;}
+  const fn=document.getElementById('firmNameLead');if(fn)fn.textContent=firm.name;
+  const ah=document.querySelector('.apphead');if(ah)ah.style.borderTop='3px solid '+firm.accent;
+  renderAll();applyRole(rk);var _wo=CP_OPEN;cpReset();
+  if(!cpAutoInit){cpAutoInit=true;cpDetectLang();setTimeout(function(){var ap=document.getElementById('screen-app');if(ap&&ap.classList.contains('active')&&!CP_OPEN)cpToggle();},650);}
+  else if(_wo){setTimeout(function(){var ap=document.getElementById('screen-app');if(ap&&ap.classList.contains('active')&&!CP_OPEN)cpToggle();},300);}
+}
+
+/* ========================================================= SURVEY ========================================================= */
+const SQ=[
+  {q:'How is your client &amp; entity data stored today?',o:[['Spreadsheets &amp; PDFs',5],['Mixed systems, some exports',12],['Central system, partial API',18],['Unified, API-accessible lake',25]]},
+  {q:'Can you trace any projected number back to its source?',o:[['No, it\'s manual',4],['Some workpapers',11],['Mostly, with effort',18],['Yes, full lineage',25]]},
+  {q:'How do you handle multi-year planning assumptions?',o:[['In analysts\' heads',4],['In static spreadsheets',10],['Documented, not versioned',16],['Versioned &amp; reproducible',22]]},
+  {q:'Do you test AI/model outputs before client use?',o:[['No testing',3],['Spot checks',9],['Some regression cases',15],['Golden scenarios + gates',23]]},
+  {q:'How mature is your AI governance &amp; audit posture?',o:[['Not started',3],['Informal',9],['Policies drafted',15],['Enforced &amp; audited',22]]},
+];
+let sIdx=0,sScore=0;
+function startSurvey(){sIdx=0;sScore=0;renderSurveyQ()}
+function renderSurveyQ(){
+  const b=document.getElementById('surveyBody');
+  const pct=Math.round(sIdx/SQ.length*100);
+  const q=SQ[sIdx];
+  b.innerHTML=`<div class="progress"><div class="bar" style="width:${pct}%"></div></div>
+    <div class="qcount">QUESTION ${sIdx+1} OF ${SQ.length}</div>
+    <h2 class="serif" style="font-size:22px;margin:8px 0 18px">${q.q}</h2>
+    <div id="opts"></div>
+    <div class="switch"><a href="#" onclick="go('landing');return false">← Cancel</a></div>`;
+  const o=document.getElementById('opts');
+  q.o.forEach(([label,pts])=>{const btn=document.createElement('button');btn.className='qopt';btn.innerHTML=label;
+    btn.onclick=()=>{sScore+=pts;sIdx++;if(sIdx<SQ.length)renderSurveyQ();else renderSurveyResult()};o.appendChild(btn)});
+}
+function renderSurveyResult(){
+  const score=Math.min(100,Math.round(sScore));
+  const band=score>=75?'Advanced':score>=50?'Developing':'Foundational';
+  const gaps=[];
+  if(score<70)gaps.push('Establish a versioned assumption registry');
+  if(score<75)gaps.push('Stand up a golden-scenario evaluation gate');
+  if(score<80)gaps.push('Add end-to-end lineage from source to output');
+  while(gaps.length<3)gaps.push('Formalize an AI governance committee');
+  const b=document.getElementById('surveyBody');
+  b.innerHTML=`<div class="progress"><div class="bar" style="width:100%"></div></div>
+    <div class="rcard" style="box-shadow:none;border:0;padding:6px 0">
+      <div class="rhd"><div class="lbl">YOUR AI READINESS REPORT</div><span class="samp">RESULT</span></div>
+      <div class="co">Tallystone CPA LLC</div><div class="prep">Prepared by CertaintyAI · synthetic assessment</div>
+      <div class="gaugewrap"><div id="surveyGauge"></div><div class="gtxt"><b>${band}</b><span>${score>=50?'Moderate':'Early'} readiness · ${gaps.slice(0,3).length} priority gaps</span></div></div>
+      <div class="badges"><span>Circular 230</span><span>SOC 2</span><span>ISO 42001</span><span>Explainability</span></div>
+      <div class="toprec"><b>Top recommendations:</b><br>${gaps.slice(0,3).map(g=>'• '+g).join('<br>')}</div>
+    </div>
+    <button class="btn btn-dark btn-block" style="margin-top:18px" onclick="go('signup')">Create account to build your plan</button>
+    <div class="switch"><a href="#" onclick="go('app','dana');return false">Skip to the live demo →</a></div>`;
+  gauge(score,document.getElementById('surveyGauge'),104);
+}
+
+/* ========================================================= TAX ENGINE (synthetic) ========================================================= */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const BASE_YEAR=2025;
+const entities=[
+  {name:'Chen Family 1040 (MFJ)',type:'1040',badge:'#22309B',bg:'#E5E7F4',meta:'David W-2 $110k · invest $40k',child:false},
+  {name:'Riverside Consulting LLC',type:'1120-S',badge:'#3E7A52',bg:'#E6EFE6',meta:'S-corp · Margaret 100% · net $420k',child:true},
+  {name:'Oakview Rentals LLC',type:'1065',badge:'#8A6D1E',bg:'#F1E8CE',meta:'Partnership · Margaret 60% · $54k',child:true},
+  {name:'Chen Family Trust',type:'1041',badge:'#7A7264',bg:'#ECE7DB',meta:'Grantor trust · pass-through',child:true},
+];
+const inc={scorpNet:{v:420000,g:0.06,sd:0.05},rental:{v:54000,g:0.03,sd:0.04},spouseW2:{v:110000,g:0.03,sd:0.02},invest:{v:40000,g:0.04,sd:0.08}};
+function stdDed(y){return 30000*Math.pow(1.03,y-BASE_YEAR)}
+function qbiPhaseStart(y){return 383900*Math.pow(1.03,y-BASE_YEAR)}
+const QBI_PHASE_RANGE=50000;
+function brackets(y){const k=Math.pow(1.03,y-BASE_YEAR);return [[0,.10],[23850,.12],[96950,.22],[206700,.24],[394600,.32],[501050,.35],[751600,.37]].map(b=>[b[0]*k,b[1]])}
+function fedTax(ti,y){const b=brackets(y);let t=0;for(let i=0;i<b.length;i++){const lo=b[i][0],hi=i+1<b.length?b[i+1][0]:Infinity;if(ti>lo)t+=(Math.min(ti,hi)-lo)*b[i][1];else break}return t}
+const SS_BASE=168600;function payrollTax(w){return Math.min(w,SS_BASE)*0.153+Math.max(0,w-SS_BASE)*0.029}
+const PLANS={
+  baseline:{name:'No action (baseline)',comp:180000,roth:0,defer:0,sstbRisk:false,desc:'Current comp split, no conversions. The defensible status quo.'},
+  comp:{name:'S-corp comp optimization',comp:140000,roth:0,defer:0,sstbRisk:true,desc:'Lower reasonable comp to a defensible floor → less payroll tax, more QBI-eligible distribution.'},
+  roth:{name:'Roth conversion ladder',comp:180000,roth:60000,defer:0,sstbRisk:false,desc:'Convert $60k/yr for 5 yrs to fill lower brackets before future rate sunset.'},
+  combo:{name:'Combined optimization',comp:150000,roth:50000,defer:40000,sstbRisk:true,desc:'Comp floor + measured Roth ladder + income timing. Highest savings, needs review.'},
+};
+let activePlan='combo';
+function computeYear(y,p,rng){const idx=y-BASE_YEAR;
+  function grow(o){let v=o.v;for(let i=0;i<idx;i++){const shock=rng?(1+(rng()*2-1)*o.sd):1;v*=(1+o.g)*shock}return v}
+  const scorpNet=grow(inc.scorpNet),rental=grow(inc.rental),spouse=grow(inc.spouseW2),invest=grow(inc.invest);
+  const comp=Math.min(p.comp,scorpNet*0.85),dist=Math.max(0,scorpNet-comp),rothYr=(idx<5)?p.roth:0,deferred=p.defer;
+  const ordinary=comp+spouse+rental+invest+rothYr-deferred;const qbiBase=dist+rental;const phaseStart=qbiPhaseStart(y);
+  let qbiPct=0.20;if(p.sstbRisk){const over=ordinary-phaseStart;if(over>=QBI_PHASE_RANGE)qbiPct=0;else if(over>0)qbiPct=0.20*(1-over/QBI_PHASE_RANGE)}
+  const qbiDed=qbiBase*qbiPct;const taxable=Math.max(0,ordinary-stdDed(y)-qbiDed);const fed=fedTax(taxable,y);const payroll=payrollTax(comp);
+  return {y,scorpNet,comp,dist,ordinary,qbiPct,qbiDed,taxable,fed,payroll,total:fed+payroll,rothYr};
+}
+function project(p,horizon){const years=[];for(let y=BASE_YEAR;y<BASE_YEAR+horizon;y++)years.push(y);const N=240,bench=PLANS.baseline;
+  return years.map(y=>{const sims=[],base=[];for(let s=0;s<N;s++){sims.push(computeYear(y,p,mulberry32(0x5EED2025+s*7+y)).total);base.push(computeYear(y,bench,mulberry32(0x5EED2025+s*7+y)).total)}
+    sims.sort((a,b)=>a-b);base.sort((a,b)=>a-b);const q=(a,p)=>a[Math.floor(p*(a.length-1))];
+    return {y,p10:q(sims,.1),p50:q(sims,.5),p90:q(sims,.9),base:q(base,.5)}});}
+function cumulative(p,h){return project(p,h).reduce((a,r)=>a+r.p50,0)}
+const fmt=n=>'$'+Math.round(n).toLocaleString();const fmtK=n=>'$'+Math.round(n/1000)+'k';
+let liveComp=180000,liveRoth=0,liveDefer=0;
+function livePlan(){return {name:'Tuned plan',comp:liveComp,roth:liveRoth,defer:liveDefer,sstbRisk:liveComp<160000,desc:'live'}}
+
+/* ---- renders ---- */
+function renderOverview(){const base10=cumulative(PLANS.baseline,10),best10=cumulative(PLANS.combo,10);
+  document.getElementById('ovTax').textContent=fmt(base10);document.getElementById('ovSav').textContent=fmt(base10-best10);
+  document.getElementById('ovSavLbl').textContent='vs. no-action · '+Math.round((base10-best10)/base10*100)+'% lower';document.getElementById('ovFlags').textContent='2';
+  const tree=document.getElementById('entityTree');tree.innerHTML='';
+  entities.forEach(e=>{const d=document.createElement('div');d.className='entity'+(e.child?' child':'');
+    d.innerHTML=`<span class="badge" style="background:${e.bg};color:${e.badge}">${e.type}</span><span style="font-weight:600">${e.name}</span><span class="meta">${e.meta}</span>`;tree.appendChild(d)});
+  const proves=[['C4 + data model + NFRs + ADRs','Architecture tab + lineage contract'],['Working multi-year projection','P10/P50/P90 over 3/5/10 yrs'],['Explainable assumptions','Versioned assumption engine'],['Evaluation harness + gates','Golden scenarios + drift + gates'],['Planner ⟂ calc-engine decoupling','calc-svc@1.4 contract boundary']];
+  const pl=document.getElementById('provesList');pl.innerHTML='';
+  proves.forEach(([a,b])=>{const d=document.createElement('div');d.style.cssText='display:flex;gap:9px;padding:7px 0;border-bottom:1px solid var(--line2)';
+    d.innerHTML=`<span class="pill v" style="flex-shrink:0">✓</span><div><b style="font-size:13px">${a}</b><div class="note" style="margin:0">${b}</div></div>`;pl.appendChild(d)});}
+let projHorizon=5;
+function svgChart(data){const W=1180,H=320,pl=70,pr=20,pt=20,pb=40,iw=W-pl-pr,ih=H-pt-pb,maxV=Math.max(...data.map(d=>d.p90))*1.08;
+  const X=i=>pl+(data.length===1?iw/2:iw*i/(data.length-1)),Y=v=>pt+ih-v/maxV*ih;
+  let band='';data.forEach((d,i)=>band+=(i?'L':'M')+X(i)+','+Y(d.p90)+' ');for(let i=data.length-1;i>=0;i--)band+='L'+X(i)+','+Y(data[i].p10)+' ';band+='Z';
+  const line=k=>data.map((d,i)=>(i?'L':'M')+X(i)+','+Y(d[k])).join(' ');
+  let grid='',labels='';for(let g=0;g<=4;g++){const v=maxV*g/4,yy=Y(v);grid+=`<line x1="${pl}" y1="${yy}" x2="${W-pr}" y2="${yy}" stroke="#EAE5D9"/>`;labels+=`<text x="${pl-8}" y="${yy+4}" text-anchor="end" font-size="11" fill="#7A7264" font-family="monospace">${fmtK(v)}</text>`}
+  let xl='';data.forEach((d,i)=>xl+=`<text x="${X(i)}" y="${H-14}" text-anchor="middle" font-size="11" fill="#7A7264">${d.y}</text>`);
+  let dots='';data.forEach((d,i)=>dots+=`<circle cx="${X(i)}" cy="${Y(d.p50)}" r="4" fill="#3E7A52"/>`);
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%">${grid}${labels}${xl}<path d="${band}" fill="#3E7A52" opacity="0.13"/><path d="${line('base')}" fill="none" stroke="#b3a894" stroke-width="2" stroke-dasharray="6 5"/><path d="${line('p50')}" fill="none" stroke="#3E7A52" stroke-width="2.5"/>${dots}</svg>`;}
+function renderProjection(){const p=activePlan==='live'?livePlan():PLANS[activePlan];const data=project(p,projHorizon);
+  document.getElementById('projChart').innerHTML=svgChart(data);
+  const tb=document.getElementById('projTbody');tb.innerHTML='';
+  data.forEach(d=>{const delta=d.p50-d.base;const tr=document.createElement('tr');tr.className='trace';
+    tr.innerHTML=`<td><b>${d.y}</b></td><td class="num">${fmt(d.p10)}</td><td class="num"><span style="background:var(--gold-soft);padding:2px 6px;border-radius:4px">${fmt(d.p50)}</span></td><td class="num">${fmt(d.p90)}</td><td class="num ${delta<0?'pos':'neg'}">${delta<0?'−':'+'}${fmt(Math.abs(delta))}</td><td class="num">⤷</td>`;
+    tr.onclick=()=>openLineage(d.y,activePlan);tb.appendChild(tr)});}
+function renderScenarioCards(){const wrap=document.getElementById('scenCards');wrap.innerHTML='';const base10=cumulative(PLANS.baseline,10);
+  Object.entries(PLANS).filter(([k])=>k!=='baseline').forEach(([k,p])=>{const sav=base10-cumulative(p,10);const d=document.createElement('div');d.className='scen'+(activePlan===k?' sel':'');
+    d.innerHTML=`<h4>${p.name} ${p.sstbRisk?'<span class="pill r">review</span>':'<span class="pill v">clear</span>'}</h4><div class="desc">${p.desc}</div><div class="savings pos">${fmt(sav)}</div><div class="note" style="margin:2px 0 0">10-yr savings vs baseline</div>`;
+    d.onclick=()=>{activePlan=k;syncPlanSelectors();renderAppViews()};wrap.appendChild(d)});
+  const tb=document.getElementById('scenTbody');tb.innerHTML='';
+  Object.entries(PLANS).forEach(([k,p])=>{const c=cumulative(p,10),sav=base10-c;const risk=p.sstbRisk?'<span class="pill r">SSTB phaseout</span>':'<span class="pill v">low</span>';const defens=p.sstbRisk?'Needs human review':'Defensible as-is';
+    const tr=document.createElement('tr');if(activePlan===k)tr.style.background='var(--gold-soft)';
+    tr.innerHTML=`<td><b>${p.name}</b></td><td class="num">${fmt(c)}</td><td class="num ${sav>0?'pos':''}">${sav>0?fmt(sav):'—'}</td><td>${risk}</td><td>${defens}</td>`;tb.appendChild(tr)});}
+function renderLevers(){document.getElementById('lvCompOut').textContent=fmtK(liveComp);document.getElementById('lvRothOut').textContent=fmtK(liveRoth);document.getElementById('lvDeferOut').textContent=fmtK(liveDefer);
+  const flags=document.getElementById('lvFlags');flags.innerHTML='';
+  if(liveComp<160000)flags.innerHTML+='<span class="pill r">⚠ Reasonable-comp below defensible floor — requires support file</span> ';
+  const ord=computeYear(BASE_YEAR,livePlan(),null).ordinary;if(ord>qbiPhaseStart(BASE_YEAR))flags.innerHTML+='<span class="pill a">QBI phaseout territory</span>';
+  if(!flags.innerHTML)flags.innerHTML='<span class="pill v">✓ No defensibility flags</span>';}
+function renderAssumptions(){const rows=[['S-corp income growth','6.0% / yr ± 5%','v2025.2','Analyst · M. Ito'],['Rental income growth','3.0% / yr ± 4%','v2025.2','Market index · auto'],['Bracket inflation index','3.0% / yr','v2025.2','IRS indexation · SME'],['QBI phaseout range','$50,000 (MFJ)','v2025.1','§199A · legal-reviewed'],['Discount rate (NPV)','5.0%','v2025.2','Finance policy'],['Reasonable-comp floor','$160,000','v2025.2','SME defensibility rule']];
+  const t=document.getElementById('assumpTable');[...t.querySelectorAll('div:not(.hd)')].forEach(d=>d.remove());
+  rows.forEach(r=>r.forEach((c,i)=>{const d=document.createElement('div');d.innerHTML=i===2?`<span class="tag">${c}</span>`:c;t.appendChild(d)}));}
+function renderEval(){const golden=[['GS-01 single-member S-corp',18420,18420,0.0],['GS-02 MFJ + QBI phaseout',96310,96118,0.2],['GS-03 rental passthrough loss',4275,4275,0.0],['GS-04 Roth ladder bracket fill',61840,61902,0.1],['GS-05 trust DNI distribution',12090,12090,0.0],['GS-06 high-income SSTB cliff',214500,219330,2.3]];
+  const tb=document.getElementById('goldenTbody');tb.innerHTML='';
+  golden.forEach(([n,e,c,d])=>{const pass=d<=1.0;const tr=document.createElement('tr');tr.innerHTML=`<td>${n}</td><td class="num">${fmt(e)}</td><td class="num">${fmt(c)}</td><td class="num">${d.toFixed(1)}%</td><td class="num">1.0%</td><td>${pass?'<span class="pill v">pass</span>':'<span class="pill r">fail</span>'}</td>`;tb.appendChild(tr)});
+  const gates=[['#3E7A52','✓','Golden scenarios','5 / 6 within tolerance — 1 blocking'],['#9A4A2A','!','Regression vs v2025.1','GS-06 regressed +2.3% — gate held'],['#3E7A52','✓','Citation coverage','100% recommendations grounded'],['#8A6D1E','~','Drift monitor','Trending up — within threshold']];
+  const g=document.getElementById('gates');g.innerHTML='';gates.forEach(([c,ic,t,d])=>{const div=document.createElement('div');div.className='gate';div.innerHTML=`<span class="ic" style="background:${c}">${ic}</span><div class="gtxt"><b>${t}</b><div>${d}</div></div>`;g.appendChild(div)});
+  const vals=[0.3,0.4,0.35,0.5,0.45,0.6,0.55,0.7],W=320,H=70,X=i=>10+i*(W-20)/(vals.length-1),Y=v=>H-8-v/1.0*(H-18);
+  const path=vals.map((v,i)=>(i?'L':'M')+X(i)+','+Y(v)).join(' ');
+  document.getElementById('driftSpark').innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%"><line x1="10" y1="${Y(1)}" x2="${W-10}" y2="${Y(1)}" stroke="#9A4A2A" stroke-dasharray="4 4" opacity=".5"/><text x="${W-10}" y="${Y(1)-4}" text-anchor="end" font-size="9" fill="#9A4A2A" font-family="monospace">1.0% gate</text><path d="${path}" fill="none" stroke="#8A6D1E" stroke-width="2.5"/>${vals.map((v,i)=>`<circle cx="${X(i)}" cy="${Y(v)}" r="3" fill="#8A6D1E"/>`).join('')}</svg>`;}
+function openLineage(year,planKey){const p=planKey==='live'?livePlan():PLANS[planKey];const yc=computeYear(year,p,null);
+  document.getElementById('drawerTitle').textContent=`TY ${year} · ${fmt(yc.total)} federal`;
+  const colors={b:'#8a6d3b',s:'#6a7686',g:'#8A6D1E',a:'#22309B',c:'#9A4A2A',r:'#3E7A52'};
+  var rk=(session&&session.roleKey)||'dana';var tech=(rk==='sam'||rk==='pcto');
+  var techStages=[['b','Bronze · raw landing',`<div class="kv"><span class="k">1120-S L1 gross receipts</span><span class="v">${fmt(yc.scorpNet/0.7)}</span></div><div class="kv"><span class="k">K-1 rental (60%)</span><span class="v">${fmt(54000)}</span></div><div class="kv"><span class="k">W-2 spouse</span><span class="v">${fmt(110000)}</span></div>`,'Source: connector pull · 1120s-2024.json · immutable'],
+    ['s','Silver · conformed',`<div class="kv"><span class="k">S-corp net (normalized)</span><span class="v">${fmt(yc.scorpNet)}</span></div><div class="kv"><span class="k">PII tokenized</span><span class="v">✓</span></div><div class="kv"><span class="k">Canonical model</span><span class="v">planning.v3</span></div>`,'Transform: normalize+dedup+tokenize · job silver-2207'],
+    ['g','Gold · features',`<div class="kv"><span class="k">Reasonable comp (W-2)</span><span class="v">${fmt(yc.comp)}</span></div><div class="kv"><span class="k">QBI-eligible distribution</span><span class="v">${fmt(yc.dist)}</span></div><div class="kv"><span class="k">Ordinary income</span><span class="v">${fmt(yc.ordinary)}</span></div>`,'Feature store: feat.entity_aware.v3 · ln-'+year],
+    ['a','Assumptions applied',`<div class="kv"><span class="k">Growth model</span><span class="v">v2025.2</span></div><div class="kv"><span class="k">Bracket index 3%</span><span class="v">applied</span></div><div class="kv"><span class="k">QBI % after phaseout</span><span class="v">${Math.round(yc.qbiPct*100)}%</span></div>`,'assumption-set v2025.2 · seed 0x5EED2025'],
+    ['c','Calc-engine call (decoupled)',`<div class="kv"><span class="k">→ request taxable</span><span class="v">${fmt(yc.taxable)}</span></div><div class="kv"><span class="k">← fed liability</span><span class="v">${fmt(yc.fed)}</span></div><div class="kv"><span class="k">+ payroll/SE</span><span class="v">${fmt(yc.payroll)}</span></div>`,'POST calc-svc@1.4 /compute · contract-bound'],
+    ['r','Result + grounding',`<div class="kv"><span class="k">Total federal (P50)</span><span class="v">${fmt(yc.total)}</span></div>`,'Grounded: §199A qbi-0142 · rc-0078 · sim≥0.88']];
+  var proStages=[['b','Source documents',`<div class="kv"><span class="k">1120-S gross receipts</span><span class="v">${fmt(yc.scorpNet/0.7)}</span></div><div class="kv"><span class="k">K-1 rental (60%)</span><span class="v">${fmt(54000)}</span></div><div class="kv"><span class="k">W-2 spouse</span><span class="v">${fmt(110000)}</span></div>`,'From client workpapers · 1120-S (2024)'],
+    ['s','Reconciled figures',`<div class="kv"><span class="k">S-corp net (reconciled)</span><span class="v">${fmt(yc.scorpNet)}</span></div><div class="kv"><span class="k">Entity &amp; owner figures validated</span><span class="v">✓</span></div>`,'Reconciled to source · validated'],
+    ['g','Tax features',`<div class="kv"><span class="k">Reasonable comp (W-2)</span><span class="v">${fmt(yc.comp)}</span></div><div class="kv"><span class="k">QBI-eligible distribution</span><span class="v">${fmt(yc.dist)}</span></div><div class="kv"><span class="k">Ordinary income</span><span class="v">${fmt(yc.ordinary)}</span></div>`,'Per IRS §199A &amp; reasonable-comp guidance'],
+    ['a','Assumptions applied',`<div class="kv"><span class="k">Growth model</span><span class="v">v2025.2</span></div><div class="kv"><span class="k">Bracket index 3%</span><span class="v">applied</span></div><div class="kv"><span class="k">QBI % after phaseout</span><span class="v">${Math.round(yc.qbiPct*100)}%</span></div>`,'Assumption-set v2025.2'],
+    ['c','Tax calculation',`<div class="kv"><span class="k">Taxable income</span><span class="v">${fmt(yc.taxable)}</span></div><div class="kv"><span class="k">Federal liability</span><span class="v">${fmt(yc.fed)}</span></div><div class="kv"><span class="k">Payroll / SE</span><span class="v">${fmt(yc.payroll)}</span></div>`,'Deterministic tax engine'],
+    ['r','Result &amp; citations',`<div class="kv"><span class="k">Total federal (P50)</span><span class="v">${fmt(yc.total)}</span></div>`,'Cited: §199A QBI · reasonable-comp guidance']];
+  var stages=tech?techStages:proStages;
+  let html='';stages.forEach(([c,t,body,cite])=>{html+=`<div class="stage"><span class="dot" style="background:${colors[c]}"></span><div class="stagettl"><span style="color:${colors[c]}">●</span> ${t}</div><div class="box">${body}<div class="cite">${cite}</div></div></div>`});
+  document.getElementById('drawerBody').innerHTML=html;document.getElementById('drawer').classList.add('open');document.getElementById('drawerBg').classList.add('open');if(CP_OPEN)cpToggle();}
+function closeDrawer(){document.getElementById('drawer').classList.remove('open');document.getElementById('drawerBg').classList.remove('open')}
+function syncPlanSelectors(){const opts=Object.entries(PLANS).map(([k,p])=>`<option value="${k}">${p.name}</option>`).join('')+`<option value="live">Tuned plan (live levers)</option>`;
+  ['projScen','lineScen'].forEach(id=>{const el=document.getElementById(id);if(el){el.innerHTML=opts;el.value=activePlan}});}
+function fillYears(){const sel=document.getElementById('lineYear');sel.innerHTML='';for(let y=BASE_YEAR;y<BASE_YEAR+10;y++)sel.innerHTML+=`<option>${y}</option>`}
+function renderAppViews(){renderOverview();renderProjection();renderScenarioCards();renderLevers();renderAssumptions();renderEval();renderClientPlan();renderValueCase()}
+function renderAll(){syncPlanSelectors();fillYears();renderAppViews()}
+
+/* ---- two-line client chart ---- */
+function lineChart(data,W,H){W=W||760;H=H||300;const pl=70,pr=20,pt=18,pb=36,iw=W-pl-pr,ih=H-pt-pb;
+  const maxV=Math.max(...data.map(d=>Math.max(d.base,d.plan)))*1.08;
+  const X=i=>pl+iw*i/(data.length-1),Y=v=>pt+ih-v/maxV*ih;
+  const line=k=>data.map((d,i)=>(i?'L':'M')+X(i)+','+Y(d[k])).join(' ');
+  let grid='',labels='';for(let g=0;g<=4;g++){const v=maxV*g/4,yy=Y(v);grid+=`<line x1="${pl}" y1="${yy}" x2="${W-pr}" y2="${yy}" stroke="#EAE5D9"/>`;labels+=`<text x="${pl-8}" y="${yy+4}" text-anchor="end" font-size="11" fill="#7A7264" font-family="monospace">${fmtK(v)}</text>`}
+  let xl='';data.forEach((d,i)=>{if(i%2===0||i===data.length-1)xl+=`<text x="${X(i)}" y="${H-12}" text-anchor="middle" font-size="11" fill="#7A7264">${d.y}</text>`});
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%">${grid}${labels}${xl}
+    <path d="${line('base')}" fill="none" stroke="#b3a894" stroke-width="2.5" stroke-dasharray="6 5"/>
+    <path d="${line('plan')}" fill="none" stroke="#3E7A52" stroke-width="3"/>
+    <text x="${X(data.length-1)}" y="${Y(data[data.length-1].base)-8}" text-anchor="end" font-size="11" fill="#8a7e68">Without a plan</text>
+    <text x="${X(data.length-1)}" y="${Y(data[data.length-1].plan)+16}" text-anchor="end" font-size="11" fill="#3E7A52" font-weight="600">Recommended plan</text></svg>`;}
+
+function renderClientPlan(){
+  const base10=cumulative(PLANS.baseline,10),best10=cumulative(PLANS.combo,10);
+  document.getElementById('cpSave').textContent=fmt(base10-best10);
+  const data=project(PLANS.combo,10).map(d=>({y:d.y,base:d.base,plan:d.p50}));
+  document.getElementById('cpChart').innerHTML=lineChart(data);
+  const steps=[['Adjust how your S-corp pays you','Balance salary vs. profit distribution to lower payroll tax while staying within defensible limits.'],
+    ['Move retirement savings to Roth, gradually','Convert a measured amount each year while you\'re in a lower bracket, ahead of future rate changes.'],
+    ['Time some income','Shift the timing of certain income to smooth out your tax across years.']];
+  const el=document.getElementById('cpSteps');el.innerHTML='';
+  steps.forEach(([t,d])=>{const div=document.createElement('div');div.style.cssText='display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--line2)';
+    div.innerHTML=`<span class="pill v" style="flex-shrink:0">✓</span><div><b style="font-size:13.5px">${t}</b><div class="note" style="margin:1px 0 0">${d}</div></div>`;el.appendChild(div)});}
+
+function renderValueCase(){
+  const base10=cumulative(PLANS.baseline,10),best10=cumulative(PLANS.combo,10),clientSave=base10-best10;
+  document.getElementById('vcClient').textContent=fmt(clientSave);
+  const dep=+document.getElementById('vcDep').value,svc=+document.getElementById('vcSvc').value,mgd=+document.getElementById('vcMgd').value;
+  document.getElementById('vcDepOut').textContent=dep;document.getElementById('vcSvcOut').textContent=fmtK(svc);document.getElementById('vcMgdOut').textContent=fmtK(mgd);
+  document.getElementById('vcSvcKpi').textContent=fmtK(svc);
+  const pipe=dep*svc;document.getElementById('vcPipe').textContent=fmt(pipe);
+  document.getElementById('vcPipeLbl').textContent=dep+' deployments × '+fmtK(svc);
+  const dep3=dep*5, impl3=dep*svc*5, mgd1=dep*mgd, mgd3=dep*mgd*6, tot1=pipe+mgd1, tot3=impl3+mgd3;
+  const rows=[['New client deployments',dep,dep3,true],['Implementation services',pipe,impl3,false],['Recurring managed services',mgd1,mgd3,false],['Total partner revenue',tot1,tot3,false]];
+  const tb=document.getElementById('vcTbody');tb.innerHTML='';
+  rows.forEach(([n,a,b,isCount],i)=>{const last=i===rows.length-1;const tr=document.createElement('tr');if(last)tr.style.fontWeight='700';
+    tr.innerHTML=`<td>${n}</td><td class="num">${isCount?a:fmt(a)}</td><td class="num">${isCount?b:fmt(b)}</td>`;tb.appendChild(tr)});
+  // bar chart without vs with
+  const W=760,H=210,base=Math.max(base10,best10)*1.1,bw=150;
+  const bars=[['Without a plan',base10,'#b3a894'],['Recommended plan',best10,'#3E7A52']];
+  let svg=`<svg viewBox="0 0 ${W} ${H}" width="100%">`;
+  bars.forEach(([lbl,val,col],i)=>{const x=180+i*260,h=val/base*(H-70),y=H-40-h;
+    svg+=`<rect x="${x}" y="${y}" width="${bw}" height="${h}" rx="6" fill="${col}"/>
+      <text x="${x+bw/2}" y="${y-8}" text-anchor="middle" font-family="monospace" font-size="14" font-weight="700" fill="#1B1813">${fmt(val)}</text>
+      <text x="${x+bw/2}" y="${H-18}" text-anchor="middle" font-size="12" fill="#4A453B">${lbl}</text>`});
+  const sx=180+260, midY=90;
+  svg+=`<text x="${(180+bw)+( (180+260)-(180+bw) )/2 +10}" y="60" text-anchor="middle" font-size="12" font-weight="700" fill="#3E7A52">saves ${fmt(clientSave)}</text></svg>`;
+  document.getElementById('vcChart').innerHTML=svg;
+}
+
+/* role profiles: show only relevant tabs, set default, set banner */
+
+/* ===================== ROLE DASHBOARDS ===================== */
+var DPAL={green:'#3E7A52',blue:'#2C4BC8',gold:'#9A7B3F',sienna:'#B0552F',amber:'#B8862A',ink:'#1B1813',mut:'#9c9488',grid:'#EAE5D9',grey:'#b9ad97'};
+function dMk(v){v=Math.abs(v);return '$'+(v>=1e6?(v/1e6).toFixed(1)+'M':v>=1e3?Math.round(v/1e3)+'k':Math.round(v));}
+function dLeg(items){return '<div style="display:flex;gap:13px;font-size:11px;color:var(--muted)">'+items.map(function(i){return '<span style="display:flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:2px;background:'+i[1]+';display:inline-block"></span>'+i[0]+'</span>';}).join('')+'</div>';}
+function dCard(title,inner,legend){return '<div class="card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;gap:10px"><h3 class="serif" style="font-size:16px;margin:0">'+title+'</h3>'+(legend||'')+'</div>'+inner+'</div>';}
+function dMicro(vals,color){var W=210,H=40,mx=Math.max.apply(null,vals)*1.08||1,mn=Math.min.apply(null,vals)*0.96;var X=function(i){return i/(vals.length-1)*W;};var Y=function(v){return H-2-(v-mn)/(mx-mn||1)*(H-6);};var pts=vals.map(function(v,i){return X(i).toFixed(1)+','+Y(v).toFixed(1);});var area='M'+pts.join(' L')+' L'+W+','+H+' L0,'+H+' Z';return '<svg viewBox="0 0 '+W+' '+H+'" width="100%" height="40" preserveAspectRatio="none"><path d="'+area+'" fill="'+color+'" opacity="0.10"/><path d="M'+pts.join(' L')+'" fill="none" stroke="'+color+'" stroke-width="2"/></svg>';}
+function dStat(label,value,trend,dir,vals,color){color=color||DPAL.green;var ar=dir==='up'?'\u25B2':dir==='down'?'\u25BC':'\u2022';var tc=dir==='up'?'pos':dir==='down'?'neg':'';return '<div class="card" style="padding:15px 17px"><div style="font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:600">'+label+'</div><div style="font-family:var(--serif);font-size:27px;font-weight:700;margin:2px 0 1px;line-height:1.1">'+value+'</div><div class="'+tc+'" style="font-size:11.5px;font-weight:600">'+ar+' '+trend+'</div>'+(vals?'<div style="margin-top:7px">'+dMicro(vals,color)+'</div>':'')+'</div>';}
+function dArea(labels,series,opts){opts=opts||{};var W=560,H=232,pl=54,pr=14,pt=14,pb=28,iw=W-pl-pr,ih=H-pt-pb;var all=[];series.forEach(function(s){all=all.concat(s.vals);});if(opts.gate!=null)all.push(opts.gate);var mx=Math.max.apply(null,all)*1.1||1;var mn=opts.min!=null?opts.min:0;var X=function(i){return pl+iw*i/(labels.length-1);};var Y=function(v){return pt+ih-(v-mn)/(mx-mn||1)*ih;};var grid='',yl='';for(var g=0;g<=4;g++){var v=mn+(mx-mn)*g/4,yy=Y(v);grid+='<line x1="'+pl+'" y1="'+yy.toFixed(1)+'" x2="'+(W-pr)+'" y2="'+yy.toFixed(1)+'" stroke="'+DPAL.grid+'"/>';yl+='<text x="'+(pl-7)+'" y="'+(yy+3.5).toFixed(1)+'" text-anchor="end" font-size="10" fill="'+DPAL.mut+'" font-family="monospace">'+(opts.fmt?opts.fmt(v):Math.round(v))+'</text>';}var xl='';var step=Math.max(1,Math.ceil(labels.length/7));labels.forEach(function(l,i){if(i%step===0||i===labels.length-1)xl+='<text x="'+X(i).toFixed(1)+'" y="'+(H-9)+'" text-anchor="middle" font-size="10" fill="'+DPAL.mut+'">'+l+'</text>';});var defs='',body='';series.forEach(function(sr,idx){var pts=sr.vals.map(function(v,i){return X(i).toFixed(1)+','+Y(v).toFixed(1);});if(sr.fill!==false){var gid='g'+idx+'_'+Math.floor(Math.random()*99999);defs+='<linearGradient id="'+gid+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="'+sr.color+'" stop-opacity="0.30"/><stop offset="100%" stop-color="'+sr.color+'" stop-opacity="0.02"/></linearGradient>';body+='<path d="M'+pts.join(' L')+' L'+X(labels.length-1).toFixed(1)+','+Y(mn).toFixed(1)+' L'+X(0).toFixed(1)+','+Y(mn).toFixed(1)+' Z" fill="url(#'+gid+')"/>';}body+='<path d="M'+pts.join(' L')+'" fill="none" stroke="'+sr.color+'" stroke-width="'+(sr.w||2.6)+'"'+(sr.dash?' stroke-dasharray="6 5"':'')+'/>';});var gate='';if(opts.gate!=null){var gy=Y(opts.gate);gate='<line x1="'+pl+'" y1="'+gy.toFixed(1)+'" x2="'+(W-pr)+'" y2="'+gy.toFixed(1)+'" stroke="'+DPAL.sienna+'" stroke-dasharray="5 4" opacity=".75"/><text x="'+(W-pr)+'" y="'+(gy-5).toFixed(1)+'" text-anchor="end" font-size="9.5" fill="'+DPAL.sienna+'" font-family="monospace">'+(opts.gateLabel||'gate')+'</text>';}return '<svg viewBox="0 0 '+W+' '+H+'" width="100%"><defs>'+defs+'</defs>'+grid+yl+xl+body+gate+'</svg>';}
+function dDonut(segs,cVal,cLbl){var total=segs.reduce(function(a,x){return a+x.value;},0)||1;var R=52,sw=19,C=2*Math.PI*R,cx=68,cy=68,off=0,ring='';segs.forEach(function(x){var len=x.value/total*C;ring+='<circle cx="'+cx+'" cy="'+cy+'" r="'+R+'" fill="none" stroke="'+x.color+'" stroke-width="'+sw+'" stroke-dasharray="'+len.toFixed(2)+' '+(C-len).toFixed(2)+'" stroke-dashoffset="'+(-off).toFixed(2)+'" transform="rotate(-90 '+cx+' '+cy+')"/>';off+=len;});var lg=segs.map(function(x){return '<div style="display:flex;align-items:center;gap:8px;font-size:12px;margin-bottom:6px"><span style="width:9px;height:9px;border-radius:2px;background:'+x.color+';flex:none"></span><span style="color:var(--ink2);flex:1">'+x.label+'</span><span style="font-family:var(--mono);color:var(--muted)">'+Math.round(x.value/total*100)+'%</span></div>';}).join('');return '<div style="display:flex;gap:20px;align-items:center"><svg viewBox="0 0 136 136" width="136" height="136" style="flex:none">'+ring+'<text x="68" y="64" text-anchor="middle" font-family="Georgia,serif" font-size="21" font-weight="700" fill="'+DPAL.ink+'">'+cVal+'</text><text x="68" y="82" text-anchor="middle" font-size="9.5" fill="'+DPAL.mut+'">'+cLbl+'</text></svg><div style="flex:1;min-width:0">'+lg+'</div></div>';}
+function dGauge(pct,cVal,sub,color){color=color||DPAL.green;var cx=92,cy=96,R=72,sw=15;function P(a){var rad=Math.PI*(1-a);return [(cx+R*Math.cos(rad)).toFixed(1),(cy-R*Math.sin(rad)).toFixed(1)];}var p0=P(0),pe=P(Math.max(0,Math.min(1,pct/100))),p1=P(1);return '<svg viewBox="0 0 184 118" width="100%" style="max-width:240px;display:block;margin:0 auto"><path d="M'+p0[0]+' '+p0[1]+' A'+R+' '+R+' 0 0 1 '+p1[0]+' '+p1[1]+'" fill="none" stroke="'+DPAL.grid+'" stroke-width="'+sw+'" stroke-linecap="round"/><path d="M'+p0[0]+' '+p0[1]+' A'+R+' '+R+' 0 0 1 '+pe[0]+' '+pe[1]+'" fill="none" stroke="'+color+'" stroke-width="'+sw+'" stroke-linecap="round"/><text x="92" y="88" text-anchor="middle" font-family="Georgia,serif" font-size="30" font-weight="700" fill="'+DPAL.ink+'">'+cVal+'</text><text x="92" y="108" text-anchor="middle" font-size="10.5" fill="'+DPAL.mut+'">'+sub+'</text></svg>';}
+function dBullet(label,actual,target,max,unit,disp){var aw=Math.min(100,actual/max*100),tw=Math.min(100,target/max*100);var ok=actual>=target;return '<div style="margin-bottom:14px"><div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:5px"><span style="color:var(--ink2)">'+label+'</span><span style="font-family:var(--mono);font-weight:600;color:'+(ok?DPAL.green:DPAL.sienna)+'">'+(disp||actual+(unit||''))+' <span style="color:var(--muted);font-weight:400">/ '+target+(unit||'')+'</span></span></div><div style="position:relative;height:11px;background:var(--bone2);border-radius:6px"><div style="position:absolute;left:0;top:0;height:100%;width:'+aw.toFixed(1)+'%;background:'+(ok?DPAL.green:DPAL.sienna)+';border-radius:6px"></div><div style="position:absolute;left:'+tw.toFixed(1)+'%;top:-3px;height:17px;width:2px;background:'+DPAL.ink+'"></div></div></div>';}
+function dBars(items,prefix,suffix){var max=Math.max.apply(null,items.map(function(i){return i[1];}))||1;return items.map(function(it){return '<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:3px"><span style="color:var(--ink2)">'+it[0]+'</span><span style="font-weight:600;font-family:var(--mono)">'+(prefix||'')+it[1].toLocaleString()+(suffix||'')+'</span></div><div style="height:9px;background:var(--bone2);border-radius:5px;overflow:hidden"><div style="height:100%;width:'+Math.round(it[1]/max*100)+'%;background:'+(it[2]||DPAL.gold)+'"></div></div></div>';}).join('');}
+function renderDashboard(rk){rk=rk||(session&&session.roleKey)||'dana';var el=document.getElementById('dashBody');if(!el)return;var r=ROLES[rk];var firm=FIRMS[r.org]||{name:r.org,accent:r.color};var first=((session&&session.name)||r.name).split(' ')[0];function head(eyebrow,title,lead){return '<div class="viewhead"><div class="eyebrow">'+eyebrow+'</div><h2 class="serif">'+title+'</h2><p class="lead">'+lead+'</p></div>';}var G=DPAL,html='';
+  if(rk==='dana'){var mo=['Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar','Apr','May','Jun'];var sav=[62,78,95,110,148,132,176,205,238,262,288,312].map(function(v){return v*1000;});
+    html=head(firm.name+' \u00b7 CPA / tax advisor','Advisor analytics, '+first,'How your book is performing \u2014 savings identified, where they come from, and pipeline throughput.')
+    +'<div class="grid g3" style="margin-bottom:16px">'+dStat('Identified savings \u00b7 YTD','$1.24M','18% vs last quarter','up',sav,G.green)+dStat('Active client plans','24','+3 this quarter','up',[18,19,19,21,22,22,23,24],G.blue)+dStat('Avg savings / plan','$51.6k','+6% QoQ','up',[44,46,47,48,49,50,51,52],G.gold)+'</div>'+'<div class="card" style="margin-bottom:16px;border-left:3px solid '+G.green+'"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:11px;gap:10px"><h3 class="serif" style="font-size:17px;margin:0">\u2726 Opportunity radar \u2014 unrealized savings across your book</h3><span class="cpchip g">Grounded \u00b7 v2025.2</span></div><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">'+dRadar('Riverside Holdings','S-corp reasonable-comp split','$96k')+dRadar('Delgado Family Trust','Roth conversion ladder','$71k')+dRadar('Aster Mfg LLC','entity restructure','$47k')+'</div><div style="margin-top:11px;font-size:12px;color:var(--muted)">The copilot scanned 24 client plans and surfaced these. Open <b>Ask Pulsera</b> to draft plans \u2014 each needs your approval before it reaches a client.</div></div>'
+    +'<div class="grid g2" style="margin-bottom:16px">'+dCard('Savings identified \u2014 monthly',dArea(mo,[{vals:sav,color:G.green}],{fmt:dMk}),dLeg([['Identified',G.green]]))+dCard('Savings by strategy',dDonut([{label:'S-corp comp split',value:480,color:G.green},{label:'Roth conversion ladder',value:310,color:G.gold},{label:'Entity restructure',value:250,color:G.blue},{label:'QBI timing',value:200,color:G.sienna}],'$1.24M','identified'))+'</div>'
+    +'<div class="grid g2">'+dCard('Plan pipeline by stage',dBars([['Intake',6,G.grey],['Modeling',5,G.gold],['In review',3,G.amber],['Ready to send',4,G.blue],['Sent',6,G.green]]))+dCard('Weekly turnaround (days to review)',dArea(['w1','w2','w3','w4','w5','w6','w7','w8'],[{vals:[5.1,4.6,4.8,4.2,3.9,4.1,3.6,3.4],color:G.blue}],{gate:5,gateLabel:'5-day SLA',fmt:function(v){return v.toFixed(1)+'d';}}),dLeg([['Turnaround',G.blue]]))+'</div>';
+  } else if(rk==='margaret'){var pr=project(PLANS.combo,10);var yrs=pr.map(function(d){return ''+d.y;});var baseV=pr.map(function(d){return d.base;});var planV=pr.map(function(d){return d.p50;});
+    html=head(firm.name+' \u00b7 your plan','Your plan at a glance, '+first,'A clear picture of your taxes, your savings, and where they come from \u2014 all reviewed by your advisor.')
+    +'<div class="grid g3" style="margin-bottom:16px">'+dStat('Projected 10-year savings','$150,447','vs no plan','up',[12,28,45,63,82,101,118,134,150].map(function(v){return v*1000;}),G.green)+dStat('Effective tax rate','18.2%','down from 22.4%','down',[22.4,21.8,21,20.2,19.5,18.9,18.2],G.green)+dStat("This year's estimated tax",'$78,420','federal, pre-credit','flat')+'</div>'
+    +'<div class="grid g2" style="margin-bottom:16px">'+dCard('Your federal tax \u2014 with vs without a plan',dArea(yrs,[{vals:baseV,color:G.grey,dash:true,fill:false},{vals:planV,color:G.green}],{fmt:dMk}),dLeg([['Without a plan',G.grey],['Recommended plan',G.green]]))+dCard('Where your savings come from',dDonut([{label:'S-corp comp',value:42,color:G.green},{label:'Roth ladder',value:27,color:G.gold},{label:'Entity setup',value:19,color:G.blue},{label:'QBI timing',value:12,color:G.sienna}],'$150k','total'))+'</div>'
+    +'<div class="grid g2">'+dCard('Savings opportunity captured',dGauge(86,'86%','of identified opportunity',G.green))+dCard('Your effective tax rate is trending down',dArea(['Y1','Y2','Y3','Y4','Y5','Y6','Y7','Y8','Y9','Y10'],[{vals:[22.4,21.6,20.9,20.1,19.6,19.1,18.7,18.4,18.2,18.0],color:G.green}],{min:15,fmt:function(v){return v.toFixed(0)+'%';}}),dLeg([['Effective rate',G.green]]))+'</div>';
+  } else if(rk==='sam'){
+    html=head(firm.name+' \u00b7 AI governance & assurance','Governance & evaluation','Eval pass rates, drift against gates, lineage coverage and release-gate status for every AI-assisted projection.')
+    +'<div class="grid g3" style="margin-bottom:16px">'+dStat('Golden-scenario pass rate','98.6%','+0.4pt vs last run','up',[97.8,98.0,98.2,98.1,98.4,98.5,98.6],G.green)+dStat('Mean projection drift','0.40%','well under 1.0% gate','down',[0.62,0.55,0.5,0.46,0.43,0.41,0.40],G.green)+dStat('Lineage coverage','100%','every output traced','flat',[96,97,98,99,100,100,100],G.blue)+'</div>'
+    +'<div class="grid g2" style="margin-bottom:16px">'+dCard('Projection drift vs release gate (12 weeks)',dArea(['w1','w2','w3','w4','w5','w6','w7','w8','w9','w10','w11','w12'],[{vals:[0.2,0.3,0.25,0.4,0.35,0.3,0.45,0.38,0.42,0.36,0.4,0.4],color:G.amber}],{gate:1.0,gateLabel:'1.0% gate',fmt:function(v){return v.toFixed(1)+'%';}}),dLeg([['Mean \u0394',G.amber]]))+dCard('Evaluation results \u2014 last run',dDonut([{label:'Pass (within tol)',value:5,color:G.green},{label:'Over tolerance',value:1,color:G.sienna}],'98.6%','pass rate'))+'</div>'
+    +'<div class="grid g2">'+dCard('Audit readiness',dGauge(96,'96%','controls evidenced',G.blue))+dCard('Release gates',dBullet('Eval suite (golden)',100,98,100,'%','pass')+dBullet('Drift monitor',96,90,100,'%','within gate')+dBullet('Lineage coverage',100,100,100,'%','100%')+dBullet('Assumption-set approval',80,100,100,'%','v2025.2 pending'))+'</div>';
+  } else if(rk==='pcto'){var hrs=['00','02','04','06','08','10','12','14','16','18','20','22'];
+    html=head(firm.name+' \u00b7 CTO / chief architect','Architecture & NFR observability','Live service health, NFR conformance against SLOs, event-stream lag and evaluation status across the platform.')
+    +'<div class="grid g3" style="margin-bottom:16px">'+dStat('Projection latency \u00b7 P95','1.8s','SLO 2.5s \u00b7 25% headroom','down',[2.1,2.0,1.9,2.0,1.85,1.8,1.78,1.8],G.green)+dStat('Throughput','420 rps','SLO 300 rps','up',[300,340,360,390,400,415,420,420],G.blue)+dStat('Availability (30d)','99.95%','SLO 99.9%','up',[99.9,99.92,99.94,99.95,99.95,99.96,99.95],G.green)+'</div>'
+    +'<div class="grid g2" style="margin-bottom:16px">'+dCard('Projection latency \u2014 P50 / P95 / P99 (24h)',dArea(hrs,[{vals:[2.4,2.5,2.6,2.5,2.7,2.6,2.5,2.4,2.6,2.5,2.4,2.5],color:G.sienna,fill:false,w:2},{vals:[1.7,1.8,1.9,1.8,2.0,1.9,1.85,1.8,1.9,1.85,1.8,1.8],color:G.amber,fill:false,w:2},{vals:[0.9,1.0,1.1,1.0,1.1,1.05,1.0,0.95,1.05,1.0,0.95,1.0],color:G.green}],{gate:2.5,gateLabel:'P95 SLO',fmt:function(v){return v.toFixed(1)+'s';}}),dLeg([['P50',G.green],['P95',G.amber],['P99',G.sienna]]))+dCard('Kafka consumer lag \u2014 projection.requested (12h)',dArea(hrs,[{vals:[180,210,240,220,260,300,280,240,230,250,240,235],color:G.blue}],{gate:500,gateLabel:'500ms budget',fmt:function(v){return Math.round(v)+'ms';}}),dLeg([['Lag',G.blue]]))+'</div>'
+    +'<div class="grid g2">'+dCard('NFR conformance \u2014 actual vs SLO',dBullet('Latency P95 (headroom)',98,72,100,'','1.8s / 2.5s')+dBullet('Throughput',420,300,500,' rps')+dBullet('Availability',99.95,99.9,100,'%')+dBullet('Correctness (golden eval)',98.6,98,100,'%')+dBullet('Lineage coverage',100,100,100,'%'))+dCard('Throughput (req/s, 24h)',dArea(hrs,[{vals:[300,330,360,380,400,415,420,410,418,420,415,420],color:G.blue}],{fmt:function(v){return Math.round(v);}}),dLeg([['req/s',G.blue]]))+'</div>';
+  } else if(rk==='pmd'){
+    html=head(firm.name+' \u00b7 managing partner \u00b7 '+STANDIN,'Partnership business case','Pipeline, projected revenue and delivery economics for standing up CertaintyAI as '+firm.name+'\u2019s governed-AI practice.')
+    +'<div class="grid g3" style="margin-bottom:16px">'+dStat('Qualified pipeline','$4.2M','7 target accounts','up',[1.8,2.3,2.9,3.4,3.8,4.0,4.2],G.green)+dStat('Projected Year-1 revenue','$1.6M','delivery + license','up',[0.3,0.6,0.9,1.1,1.3,1.5,1.6],G.blue)+dStat('Time to first delivery','~8 wks','using existing IP','flat')+'</div>'
+    +'<div class="grid g2" style="margin-bottom:16px">'+dCard('Opportunity funnel',dBars([['Identified',18,G.blue],['Qualified',9,G.gold],['In discussion',4,G.green],['Verbal commit',1,G.sienna]]))+dCard('Projected revenue (3-year)',dArea(['Y1','Y2','Y3'],[{vals:[1.6,3.4,5.1],color:G.green}],{fmt:function(v){return '$'+v.toFixed(1)+'M';}}),dLeg([['Revenue',G.green]]))+'</div>'
+    +'<div class="grid g2">'+dCard('Revenue mix (Year 1)',dDonut([{label:'Delivery services',value:60,color:G.green},{label:'Recurring license',value:40,color:G.gold}],'$1.6M','year 1'))+dCard('Win-readiness vs targets',dBullet('Reference demo ready',100,100,100,'%','live')+dBullet('CoE staffing plan',75,100,100,'%','3 of 4 roles')+dBullet('Pipeline coverage',140,100,200,'%','3.5\u00d7 quota')+dBullet('Governance story',100,100,100,'%','complete'))+'</div>';
+  } else if(rk==='pcfo'){
+    html=head(firm.name+' \u00b7 CFO \u00b7 value & deal economics','Value & financial dashboard','Client value delivered, what the platform costs to run, margin trend and payback on the investment.')
+    +'<div class="grid g3" style="margin-bottom:16px">'+dStat('3-year value created','$10.1M','cumulative','up',[1.6,3.0,5.0,6.6,8.4,10.1],G.green)+dStat('Delivery gross margin','62%','target 60%','up',[54,56,58,59,61,62],G.green)+dStat('Payback period','7 mo','on platform spend','down',[12,11,10,9,8,7],G.blue)+'</div>'
+    +'<div class="grid g2" style="margin-bottom:16px">'+dCard('Cumulative value vs cost (3-year)',dArea(['Q1','Q2','Q3','Q4','Q5','Q6','Q7','Q8','Q9','Q10','Q11','Q12'],[{vals:[0.4,0.9,1.6,2.4,3.4,4.6,5.9,7.0,8.0,8.9,9.6,10.1],color:G.green},{vals:[0.6,1.1,1.6,2.0,2.5,2.9,3.3,3.6,3.8,4.0,4.1,4.2],color:G.grey,dash:true,fill:false}],{fmt:function(v){return '$'+v.toFixed(0)+'M';}}),dLeg([['Value',G.green],['Cost',G.grey]]))+dCard('Cost to serve',dDonut([{label:'Delivery & advisory',value:46,color:G.blue},{label:'Cloud (Vertex \u00b7 Run)',value:28,color:G.green},{label:'Governance & eval',value:14,color:G.amber},{label:'Support',value:12,color:G.sienna}],'62%','margin'))+'</div>'
+    +'<div class="grid g2">'+dCard('Gross margin trend (quarterly)',dArea(['Q1','Q2','Q3','Q4','Q5','Q6'],[{vals:[54,56,58,59,61,62],color:G.green}],{min:40,gate:60,gateLabel:'60% target',fmt:function(v){return v.toFixed(0)+'%';}}),dLeg([['Margin',G.green]]))+dCard('Financial targets',dBullet('Gross margin',62,60,100,'%')+dBullet('Payback (headroom)',71,100,100,'','7mo / 10mo')+dBullet('Value : cost ratio',240,200,300,'%','2.4\u00d7')+dBullet('Cloud cost vs budget',82,100,100,'','within budget'))+'</div>';
+  } else { html=head(firm.name,'Dashboard','Overview.'); }
+  el.innerHTML=html;
+}
+
+/* ===================== PULSERA COPILOT ===================== */
+var CP_OPEN=false, CP_LANG='en-US', CP_HISTORY=[], cpRec=null, cpRecOn=false, CP_LASTA='', cpVoiceMode=false, cpMicTimer=null, cpAutoInit=false, cpGateN=0, CP_ASKED=[], cpSugI=0, CP_MUTED=false;
+var CPLANGS={'en-US':'English','es-ES':'Espanol','hi-IN':'Hindi','fr-FR':'Francais','de-DE':'Deutsch','zh-CN':'Chinese'};
+function dRadar(name,strat,amt){return '<div style="background:var(--green-soft);border-radius:10px;padding:12px 13px"><div style="font-size:21px;font-family:var(--serif);font-weight:700;color:var(--green);line-height:1.1">'+amt+'</div><div style="font-size:12.5px;font-weight:600;margin-top:3px">'+name+'</div><div style="font-size:11.5px;color:var(--muted)">'+strat+'</div></div>';}
+
+var CPGREET={
+ 'en-US':"Hi NM \u2014 I'm Pulsera, MDxBlocks' AI avatar. I can scan your book for unrealized savings, model a what-if scenario, explain a plan in plain English, or trace any number to its source. What do you need?",
+ 'es-ES':"Hola NM \u2014 soy Pulsera, el avatar de IA de MDxBlocks. Puedo revisar tu cartera en busca de ahorros no aprovechados, modelar un escenario, explicar un plan en lenguaje claro o rastrear cualquier cifra hasta su origen. \u00bfQu\u00e9 necesitas?",
+ 'hi-IN':"\u0928\u092e\u0938\u094d\u0924\u0947 NM \u2014 \u092e\u0948\u0902 Pulsera \u0939\u0942\u0901, MDxBlocks \u0915\u093e AI \u0905\u0935\u0924\u093e\u0930\u0964 \u092e\u0948\u0902 \u0906\u092a\u0915\u0940 \u092c\u0941\u0915 \u092e\u0947\u0902 \u091b\u093f\u092a\u0940 \u092c\u091a\u0924 \u0922\u0942\u0901\u0922 \u0938\u0915\u0924\u0940 \u0939\u0942\u0901, \u092a\u0930\u093f\u0926\u0943\u0936\u094d\u092f \u092c\u0928\u093e \u0938\u0915\u0924\u0940 \u0939\u0942\u0901, \u092f\u094b\u091c\u0928\u093e \u0938\u0930\u0932 \u092d\u093e\u0937\u093e \u092e\u0947\u0902 \u0938\u092e\u091d\u093e \u0938\u0915\u0924\u0940 \u0939\u0942\u0901\u0964 \u0906\u092a\u0915\u094b \u0915\u094d\u092f\u093e \u091a\u093e\u0939\u093f\u090f?",
+ 'fr-FR':"Bonjour NM \u2014 je suis Pulsera, l'avatar IA de MDxBlocks. Je peux analyser votre portefeuille pour trouver des economies, modeliser un scenario, expliquer un plan simplement, ou retracer n'importe quel chiffre jusqu'a sa source. Que souhaitez-vous ?",
+ 'de-DE':"Hallo NM \u2014 ich bin Pulsera, der KI-Avatar von MDxBlocks. Ich kann Ihr Portfolio nach ungenutzten Einsparungen durchsuchen, ein Szenario modellieren, einen Plan einfach erklaeren oder jede Zahl bis zur Quelle zurueckverfolgen. Was brauchen Sie?",
+ 'zh-CN':"\u4f60\u597d NM \u2014 \u6211\u662f Pulsera\uff0cMDxBlocks \u7684 AI \u865a\u62df\u5f62\u8c61\u3002\u6211\u53ef\u4ee5\u626b\u63cf\u60a8\u7684\u5ba2\u6237\u7c3f\u5bfb\u627e\u8282\u7a0e\u673a\u4f1a\u3001\u6a21\u62df\u60c5\u666f\u3001\u7528\u901a\u4fd7\u8bed\u8a00\u89e3\u91ca\u65b9\u6848\uff0c\u6216\u8ffd\u6eaf\u4efb\u4f55\u6570\u5b57\u7684\u6765\u6e90\u3002\u60a8\u9700\u8981\u4ec0\u4e48\uff1f"
+};
+var CPGREET_OTHER={
+ 'en-US':"Hi NM \u2014 I'm Pulsera. Ask me anything in this workspace.",
+ 'es-ES':"Hola NM \u2014 soy Pulsera. Preg\u00fantame lo que necesites aqu\u00ed.",
+ 'hi-IN':"\u0928\u092e\u0938\u094d\u0924\u0947 NM \u2014 \u092e\u0948\u0902 Pulsera \u0939\u0942\u0901\u0964 \u092e\u0941\u091d\u0938\u0947 \u0915\u0941\u091b \u092d\u0940 \u092a\u0942\u091b\u0947\u0902\u0964",
+ 'fr-FR':"Bonjour NM \u2014 je suis Pulsera. Posez-moi vos questions ici.",
+ 'de-DE':"Hallo NM \u2014 ich bin Pulsera. Fragen Sie mich alles.",
+ 'zh-CN':"\u4f60\u597d NM \u2014 \u6211\u662f Pulsera\u3002\u968f\u65f6\u95ee\u6211\u3002"
+};
+var CPSUG_DANA={
+ 'en-US':[['Find savings across my book','savings'],['Explain the Chen plan in plain English','explain'],['What if they convert $50k to Roth in 2026?','scenario'],["What's due this week?",'due']],
+ 'es-ES':[['Buscar ahorros en mi cartera','savings'],['Explica el plan Chen en lenguaje claro','explain'],['\u00bfY si convierten $50k a Roth en 2026?','scenario'],['\u00bfQu\u00e9 vence esta semana?','due']],
+ 'hi-IN':[['\u092e\u0947\u0930\u0940 \u092c\u0941\u0915 \u092e\u0947\u0902 \u092c\u091a\u0924 \u0916\u094b\u091c\u0947\u0902','savings'],['Chen \u092f\u094b\u091c\u0928\u093e \u0938\u0930\u0932 \u092d\u093e\u0937\u093e \u092e\u0947\u0902 \u0938\u092e\u091d\u093e\u090f\u0902','explain'],['\u092f\u0926\u093f \u0935\u0947 2026 \u092e\u0947\u0902 $50k Roth \u092e\u0947\u0902 \u092c\u0926\u0932\u0947\u0902 \u0924\u094b?','scenario'],['\u0907\u0938 \u0938\u092a\u094d\u0924\u093e\u0939 \u0915\u094d\u092f\u093e \u0926\u0947\u092f \u0939\u0948?','due']],
+ 'fr-FR':[['Trouver des economies dans mon portefeuille','savings'],['Expliquer le plan Chen simplement','explain'],['Et s\u2019ils convertissent 50 000 $ en Roth en 2026 ?','scenario'],['Qu\u2019est-ce qui est du cette semaine ?','due']],
+ 'de-DE':[['Einsparungen im Portfolio finden','savings'],['Den Chen-Plan einfach erklaeren','explain'],['Was, wenn sie 2026 50.000 $ in Roth umwandeln?','scenario'],['Was ist diese Woche faellig?','due']],
+ 'zh-CN':[['\u5728\u5ba2\u6237\u7c3f\u4e2d\u5bfb\u627e\u8282\u7a0e','savings'],['\u7528\u901a\u4fd7\u8bed\u8a00\u89e3\u91ca Chen \u65b9\u6848','explain'],['\u5982\u679c\u4ed6\u4eec\u57282026\u5e74\u8f6c\u6362$50k\u5230Roth\uff1f','scenario'],['\u672c\u5468\u6709\u4ec0\u4e48\u5230\u671f\uff1f','due']]
+};
+var CPI={
+ savings:{
+  'en-US':"Across your book I found <b>3 unrealized opportunities \u2248 $214k</b>:<br>\u2022 Riverside Holdings \u2014 S-corp reasonable-comp split \u2248 <b>$96k</b><br>\u2022 Delgado Family Trust \u2014 Roth conversion ladder \u2248 <b>$71k</b><br>\u2022 Aster Mfg LLC \u2014 entity restructure \u2248 <b>$47k</b><br>Want me to draft plans for your review?",
+  'es-ES':"En tu cartera encontr\u00e9 <b>3 oportunidades no aprovechadas \u2248 $214k</b>:<br>\u2022 Riverside Holdings \u2014 divisi\u00f3n de sueldo razonable S-corp \u2248 <b>$96k</b><br>\u2022 Delgado Family Trust \u2014 escalera de conversi\u00f3n Roth \u2248 <b>$71k</b><br>\u2022 Aster Mfg LLC \u2014 reestructuraci\u00f3n \u2248 <b>$47k</b><br>\u00bfQuieres que prepare los planes para tu revisi\u00f3n?",
+  'hi-IN':"\u0906\u092a\u0915\u0940 \u092c\u0941\u0915 \u092e\u0947\u0902 \u092e\u0941\u091d\u0947 <b>3 \u0905\u092a\u094d\u0930\u092f\u0941\u0915\u094d\u0924 \u0905\u0935\u0938\u0930 \u2248 $214k</b> \u092e\u093f\u0932\u0947:<br>\u2022 Riverside Holdings \u2014 S-corp \u0935\u0947\u0924\u0928 \u0935\u093f\u092d\u093e\u091c\u0928 \u2248 <b>$96k</b><br>\u2022 Delgado Family Trust \u2014 Roth \u0938\u0940\u0922\u093c\u0940 \u2248 <b>$71k</b><br>\u2022 Aster Mfg LLC \u2014 \u0907\u0915\u093e\u0908 \u092a\u0941\u0928\u0930\u094d\u0917\u0920\u0928 \u2248 <b>$47k</b><br>\u0915\u094d\u092f\u093e \u092e\u0948\u0902 \u092f\u094b\u091c\u0928\u093e\u090f\u0901 \u0924\u0948\u092f\u093e\u0930 \u0915\u0930\u0942\u0901?",
+  'fr-FR':"Dans votre portefeuille, j'ai trouv\u00e9 <b>3 opportunit\u00e9s inexploit\u00e9es \u2248 214 k$</b> :<br>\u2022 Riverside Holdings \u2014 r\u00e9partition de salaire S-corp \u2248 <b>96 k$</b><br>\u2022 Delgado Family Trust \u2014 \u00e9chelle de conversion Roth \u2248 <b>71 k$</b><br>\u2022 Aster Mfg LLC \u2014 restructuration \u2248 <b>47 k$</b><br>Voulez-vous que je pr\u00e9pare les plans ?",
+  'de-DE':"In Ihrem Portfolio fand ich <b>3 ungenutzte Chancen \u2248 214.000 $</b>:<br>\u2022 Riverside Holdings \u2014 S-corp-Gehaltsaufteilung \u2248 <b>96.000 $</b><br>\u2022 Delgado Family Trust \u2014 Roth-Umwandlungsleiter \u2248 <b>71.000 $</b><br>\u2022 Aster Mfg LLC \u2014 Umstrukturierung \u2248 <b>47.000 $</b><br>Soll ich die Pl\u00e4ne vorbereiten?",
+  'zh-CN':"\u5728\u60a8\u7684\u5ba2\u6237\u7c3f\u4e2d\uff0c\u6211\u53d1\u73b0<b>3\u4e2a\u672a\u5b9e\u73b0\u7684\u673a\u4f1a \u2248 $214k</b>\uff1a<br>\u2022 Riverside Holdings \u2014 S-corp \u85aa\u916c\u62c6\u5206 \u2248 <b>$96k</b><br>\u2022 Delgado Family Trust \u2014 Roth \u8f6c\u6362\u9636\u68af \u2248 <b>$71k</b><br>\u2022 Aster Mfg LLC \u2014 \u5b9e\u4f53\u91cd\u7ec4 \u2248 <b>$47k</b><br>\u9700\u8981\u6211\u8d77\u8349\u65b9\u6848\u5417\uff1f"
+ },
+ explain:{
+  'en-US':"The Chen (MFJ) plan lowers 10-year federal tax by <b>$150,447 (19%)</b> vs no action. Drivers: S-corp comp split 42%, Roth ladder 27%, entity setup 19%, QBI timing 12%. Every figure traces to a source line item and a versioned assumption.",
+  'es-ES':"El plan Chen (MFJ) reduce el impuesto federal a 10 a\u00f1os en <b>$150,447 (19%)</b>. Factores: S-corp 42%, Roth 27%, entidad 19%, QBI 12%. Cada cifra se rastrea a una partida de origen y un supuesto versionado.",
+  'hi-IN':"Chen (MFJ) \u092f\u094b\u091c\u0928\u093e 10-\u0935\u0930\u094d\u0937\u0940\u092f \u0938\u0902\u0918\u0940\u092f \u0915\u0930 \u0915\u094b <b>$150,447 (19%)</b> \u0918\u091f\u093e\u0924\u0940 \u0939\u0948\u0964 \u0915\u093e\u0930\u0915: S-corp 42%, Roth 27%, \u0907\u0915\u093e\u0908 19%, QBI 12%\u0964 \u0939\u0930 \u0906\u0901\u0915\u0921\u093c\u093e \u0938\u094d\u0930\u094b\u0924 \u0924\u0915 \u091c\u093e\u0924\u093e \u0939\u0948\u0964",
+  'fr-FR':"Le plan Chen (MFJ) r\u00e9duit l'imp\u00f4t f\u00e9d\u00e9ral sur 10 ans de <b>150 447 $ (19 %)</b>. Facteurs : S-corp 42 %, Roth 27 %, entit\u00e9 19 %, QBI 12 %. Chaque chiffre est trac\u00e9 jusqu'\u00e0 sa source.",
+  'de-DE':"Der Chen-Plan (MFJ) senkt die 10-Jahres-Bundessteuer um <b>150.447 $ (19 %)</b>. Treiber: S-corp 42 %, Roth 27 %, Entit\u00e4t 19 %, QBI 12 %. Jede Zahl ist bis zur Quelle r\u00fcckverfolgbar.",
+  'zh-CN':"Chen\uff08MFJ\uff09\u65b9\u6848\u4f7f10\u5e74\u8054\u90a6\u7a0e\u51cf\u5c11<b>$150,447\uff0819%\uff09</b>\u3002\u9a71\u52a8\uff1aS-corp 42%\u3001Roth 27%\u3001\u5b9e\u4f53 19%\u3001QBI 12%\u3002\u6bcf\u4e2a\u6570\u5b57\u90fd\u53ef\u8ffd\u6eaf\u5230\u6765\u6e90\u3002"
+ },
+ scenario:{
+  'en-US':"Modeling a <b>$50k Roth conversion in 2026</b> for the Chens: it fills the 24% bracket without tipping into 32%. Costs \u2248 $12k tax now, saves \u2248 <b>$38k over 10 years (P50)</b>. Seed 0x5EED2025 \u2014 fully reproducible. Add it to their plan?",
+  'es-ES':"Modelando una <b>conversi\u00f3n Roth de $50k en 2026</b> para los Chen: llena el tramo del 24% sin pasar al 32%. Cuesta \u2248 $12k ahora, ahorra \u2248 <b>$38k en 10 a\u00f1os (P50)</b>. Semilla 0x5EED2025 \u2014 reproducible. \u00bfLa a\u00f1ado al plan?",
+  'hi-IN':"Chen \u0915\u0947 \u0932\u093f\u090f <b>2026 \u092e\u0947\u0902 $50k Roth \u0930\u0942\u092a\u093e\u0902\u0924\u0930\u0923</b>: \u092f\u0939 24% \u092c\u094d\u0930\u0948\u0915\u0947\u091f \u092d\u0930\u0924\u093e \u0939\u0948, 32% \u092e\u0947\u0902 \u0928\u0939\u0940\u0902\u0964 \u0905\u092d\u0940 \u2248 $12k \u0915\u0930, 10 \u0935\u0930\u094d\u0937\u094b\u0902 \u092e\u0947\u0902 \u2248 <b>$38k (P50)</b> \u092c\u091a\u0924\u0964 \u0938\u0940\u0921 0x5EED2025\u0964 \u092f\u094b\u091c\u0928\u093e \u092e\u0947\u0902 \u091c\u094b\u0921\u093c\u0942\u0901?",
+  'fr-FR':"Mod\u00e9lisation d'une <b>conversion Roth de 50 000 $ en 2026</b> pour les Chen : elle remplit la tranche de 24 % sans passer \u00e0 32 %. Co\u00fbte \u2248 12 k$ maintenant, \u00e9conomise \u2248 <b>38 k$ sur 10 ans (P50)</b>. Graine 0x5EED2025. Je l'ajoute ?",
+  'de-DE':"Modell einer <b>50.000-$-Roth-Umwandlung 2026</b> f\u00fcr die Chens: f\u00fcllt die 24%-Stufe, ohne 32% zu erreichen. Kostet jetzt \u2248 12.000 $, spart \u2248 <b>38.000 $ \u00fcber 10 Jahre (P50)</b>. Seed 0x5EED2025. Hinzuf\u00fcgen?",
+  'zh-CN':"\u4e3a Chen \u5bb6\u5ead\u6a21\u62df<b>2026\u5e74$50k Roth\u8f6c\u6362</b>\uff1a\u586b\u6ee124%\u7a0e\u6863\u800c\u4e0d\u8fdb\u516532%\u3002\u73b0\u5728\u7ea6$12k\u7a0e\uff0c10\u5e74\u8282\u7701\u7ea6<b>$38k\uff08P50\uff09</b>\u3002\u79cd\u5b50 0x5EED2025\u3002\u52a0\u5165\u65b9\u6848\uff1f"
+ },
+ due:{
+  'en-US':"Next up: <b>Q3 federal estimates (1040-ES), due in 12 days (Jun 16)</b>. 4 clients still have estimates outstanding \u2014 want the list?",
+  'es-ES':"Lo pr\u00f3ximo: <b>estimados federales del 3T (1040-ES), vencen en 12 d\u00edas (16 jun)</b>. 4 clientes tienen estimados pendientes \u2014 \u00bfquieres la lista?",
+  'hi-IN':"\u0906\u0917\u0947: <b>Q3 \u0938\u0902\u0918\u0940\u092f \u0905\u0928\u0941\u092e\u093e\u0928 (1040-ES), 12 \u0926\u093f\u0928\u094b\u0902 \u092e\u0947\u0902 \u0926\u0947\u092f (16 \u091c\u0942\u0928)</b>\u0964 4 \u0915\u094d\u0932\u093e\u0907\u0902\u091f \u092c\u093e\u0915\u0940 \u2014 \u0938\u0942\u091a\u0940 \u091a\u093e\u0939\u093f\u090f?",
+  'fr-FR':"\u00c0 venir : <b>acomptes f\u00e9d\u00e9raux T3 (1040-ES), dus dans 12 jours (16 juin)</b>. 4 clients ont des acomptes en attente \u2014 voulez-vous la liste ?",
+  'de-DE':"Als N\u00e4chstes: <b>Q3-Bundesvorauszahlungen (1040-ES), f\u00e4llig in 12 Tagen (16. Juni)</b>. 4 Mandanten offen \u2014 Liste gew\u00fcnscht?",
+  'zh-CN':"\u63a5\u4e0b\u6765\uff1a<b>\u7b2c\u4e09\u5b63\u5ea6\u8054\u90a6\u9884\u7f34\uff081040-ES\uff09\uff0c12\u5929\u540e\u5230\u671f\uff086\u670816\u65e5\uff09</b>\u30024\u4f4d\u5ba2\u6237\u672a\u5b8c\u6210\u2014\u2014\u9700\u8981\u6e05\u5355\u5417\uff1f"
+ }
+};
+var CPICHIPS={savings:[['g','Grounded \u00b7 v2025.2'],['a','Approval required']],explain:[['g','Grounded \u00b7 v2025.2'],['l','Lineage available']],scenario:[['g','Grounded \u00b7 v2025.2'],['a','Approval required']],due:[['g','Grounded \u00b7 v2025.2']]};
+var CPDEFAULT={
+ 'en-US':"I can help with savings, scenario modeling, plain-language explanations, deadlines, and tracing any number to its source \u2014 only from governed, cited figures. Try a suggestion below.",
+ 'es-ES':"Puedo ayudar con ahorros, escenarios, explicaciones claras, vencimientos y rastrear cualquier cifra \u2014 solo con datos gobernados y citados. Prueba una sugerencia.",
+ 'hi-IN':"\u092e\u0948\u0902 \u092c\u091a\u0924, \u092a\u0930\u093f\u0926\u0943\u0936\u094d\u092f, \u0938\u0930\u0932 \u0935\u094d\u092f\u093e\u0916\u094d\u092f\u093e, \u0938\u092e\u092f-\u0938\u0940\u092e\u093e \u0914\u0930 \u0938\u094d\u0930\u094b\u0924 \u0916\u094b\u091c\u0928\u0947 \u092e\u0947\u0902 \u092e\u0926\u0926 \u0915\u0930 \u0938\u0915\u0924\u0940 \u0939\u0942\u0901 \u2014 \u0915\u0947\u0935\u0932 \u0936\u093e\u0938\u093f\u0924 \u0906\u0901\u0915\u0921\u093c\u094b\u0902 \u0938\u0947\u0964 \u0928\u0940\u091a\u0947 \u0938\u0941\u091d\u093e\u0935 \u0906\u091c\u093c\u092e\u093e\u090f\u0902\u0964",
+ 'fr-FR':"Je peux aider avec les \u00e9conomies, les sc\u00e9narios, les explications simples, les \u00e9ch\u00e9ances et le tra\u00e7age des chiffres \u2014 uniquement \u00e0 partir de donn\u00e9es gouvern\u00e9es. Essayez une suggestion.",
+ 'de-DE':"Ich helfe bei Einsparungen, Szenarien, einfachen Erkl\u00e4rungen, Fristen und der R\u00fcckverfolgung von Zahlen \u2014 nur aus gepr\u00fcften Daten. Probieren Sie einen Vorschlag.",
+ 'zh-CN':"\u6211\u53ef\u4ee5\u5e2e\u52a9\u8282\u7a0e\u3001\u60c5\u666f\u6a21\u62df\u3001\u901a\u4fd7\u89e3\u91ca\u3001\u622a\u6b62\u65e5\u671f\uff0c\u5e76\u8ffd\u6eaf\u4efb\u4f55\u6570\u5b57\u6765\u6e90\u2014\u2014\u4ec5\u57fa\u4e8e\u53d7\u6cbb\u7406\u6570\u636e\u3002\u8bf7\u8bd5\u8bd5\u4e0b\u65b9\u5efa\u8bae\u3002"
+};
+var CPLISTEN={'en-US':'Listening in English\u2026','es-ES':'Escuchando en Espa\u00f1ol\u2026','hi-IN':'\u0938\u0941\u0928 \u0930\u0939\u0940 \u0939\u0942\u0901\u2026','fr-FR':"J'\u00e9coute\u2026",'de-DE':'Ich h\u00f6re zu\u2026','zh-CN':'\u6b63\u5728\u8046\u542c\u2026'};
+
+function cpStrip(h){return h.replace(/<[^>]+>/g,' ').replace(/&[a-z]+;/g,' ').replace(/\s+/g,' ').trim();}
+function cpToggle(){CP_OPEN=!CP_OPEN;var p=document.getElementById('cpPanel'),f=document.getElementById('cpFab');if(!p)return;p.classList.toggle('open',CP_OPEN);f.style.display=CP_OPEN?'none':'flex';if(f)f.setAttribute('aria-expanded',CP_OPEN?'true':'false');if(!CP_OPEN){try{window.speechSynthesis&&window.speechSynthesis.cancel();}catch(e){}cpStopVoice();}if(CP_OPEN){var _dr=document.getElementById('drawer');if(_dr&&_dr.classList.contains('open'))closeDrawer();}if(CP_OPEN&&!p.dataset.init){p.dataset.init='1';cpGreet();}if(CP_OPEN){setTimeout(function(){var i=document.getElementById('cpInput'),ae=document.activeElement;if(i&&(!ae||ae===document.body))i.focus();},80);}}
+document.addEventListener('keydown',function(e){if(e.key==='Escape'&&CP_OPEN)cpToggle();});
+function cpReset(){CP_OPEN=false;cpStopVoice();try{window.speechSynthesis&&window.speechSynthesis.cancel();}catch(e){}var p=document.getElementById('cpPanel');if(p){p.classList.remove('open');delete p.dataset.init;}var b=document.getElementById('cpBody');if(b)b.innerHTML='';CP_HISTORY=[];CP_ASKED=[];cpSugI=0;var f=document.getElementById('cpFab');if(f)f.style.display='flex';}
+function cpNew(){var b=document.getElementById('cpBody');if(b)b.innerHTML='';CP_HISTORY=[];CP_ASKED=[];cpSugI=0;try{window.speechSynthesis&&window.speechSynthesis.cancel();}catch(e){}cpGreet();}
+function cpGreet(){var rk=(session&&session.roleKey)||'dana';var nm=((session&&session.name)||(ROLES[rk]&&ROLES[rk].name)||'there').split(' ')[0];var tbl=(rk==='dana')?CPGREET:CPGREET_OTHER;var msg=(tbl[CP_LANG]||tbl['en-US']).replace('NM',nm);cpPush('a',msg);cpSug(rk);}
+var CPPOOL={
+ dana:[['Find savings across my book','savings'],['Explain the Chen plan in plain English','explain'],['What if they convert $50k to Roth in 2026?','scenario'],["What's due this week?",'due'],['Trace the $96k to its source',''],['Draft the Delgado plan',''],['What should I focus on?',''],['Where are the biggest opportunities?','savings']],
+ margaret:[['Why is my tax going down?',''],['What should I do next?',''],['How much will I save?',''],['Is this safe?',''],['Can I trust these numbers?',''],['Explain my plan','']],
+ sam:[['Any drift this week?',''],['Show the last eval run',''],['Is anything blocking release?',''],['Where are the data sources?',''],['Which assumption set is active?',''],["What's flagged?",''],['Show audit evidence',''],['Are we ready to ship?','']],
+ pcto:[["What's our p95 latency?",''],['Show NFR status',''],['Any Kafka lag?',''],['Is it multi-tenant?',''],['How do you prevent hallucination?',''],['What model does it use?',''],['What about security?',''],["What's the tech stack?",'']],
+ pmd:[["What's our pipeline?",''],['Projected Year-1 revenue?',''],['Why partner instead of build?',''],['How do we make money?',''],['Why now?',''],["What's the business case?",''],['Time to first delivery?','']],
+ pcfo:[["What's our gross margin?",''],['When do we hit payback?',''],["What's the cost to serve?",''],["What's the unit economics?",''],['Value to clients?',''],["What's the ROI?",''],['Margin trend?','']]
+};
+function cpSug(rk){var el=document.getElementById('cpSug');if(!el)return;var pool=CPPOOL[rk]||CPPOOL.dana;
+  var un=pool.filter(function(p){return CP_ASKED.indexOf(p[0].toLowerCase())<0;});
+  var pick;
+  if(un.length>=3){pick=un.slice(0,3);}
+  else if(un.length>0){var extra=pool.filter(function(p){return un.indexOf(p)<0;});pick=un.concat(extra.slice(0,3-un.length));}
+  else{var st=cpSugI%pool.length;pick=pool.slice(st,st+3);if(pick.length<3)pick=pick.concat(pool.slice(0,3-pick.length));cpSugI+=3;}
+  el.innerHTML=pick.map(function(p){var oc=p[1]?('cpAsk(this.textContent,\''+p[1]+'\')'):'cpAsk(this.textContent)';return '<button onclick="'+oc+'">'+p[0]+'</button>';}).join('');}
+function cpPush(who,html,chips){var b=document.getElementById('cpBody');if(!b)return;var d=document.createElement('div');d.className='cpmsg '+who;d.innerHTML=html+((chips&&chips.length)?'<div class="chips">'+chips.map(function(c){return '<span class="cpchip '+c[0]+'">'+c[1]+'</span>';}).join('')+'</div>':'');b.appendChild(d);b.scrollTop=b.scrollHeight;CP_HISTORY.push({who:who,text:cpStrip(html)});}
+function cpApprove(id){var g=document.getElementById(id);if(!g)return;var rk=(session&&session.roleKey)||'dana';var nm=((session&&session.name)||(ROLES[rk]&&ROLES[rk].name)||'You').split(' ')[0];var tm=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});g.className='cpgate done';g.innerHTML='\u2713 Approved by '+nm+' \u00b7 '+tm+' \u00b7 logged to audit trail';CP_HISTORY.push({who:'sys',text:'[Approved by '+nm+' at '+tm+']'});}
+function cpReview(id){var g=document.getElementById(id);if(!g)return;g.className='cpgate hold';g.innerHTML='\u270E Held for review \u2014 nothing sent. Inspect lineage and assumptions first, then approve.';CP_HISTORY.push({who:'sys',text:'[Held for review]'});}
+function cpAsk(disp,intent){var spoke=cpVoiceMode;cpVoiceMode=false;var inp=document.getElementById('cpInput');disp=(disp||(inp?inp.value:'')||'').trim();if(!disp)return;if(inp)inp.value='';if(CP_ASKED.indexOf(disp.toLowerCase())<0)CP_ASKED.push(disp.toLowerCase());cpPush('u',disp.replace(/</g,'&lt;'));var b=document.getElementById('cpBody');var t=document.createElement('div');t.className='cptyping';t.innerHTML='<i></i><i></i><i></i>';b.appendChild(t);b.scrollTop=b.scrollHeight;setTimeout(function(){t.remove();var text,chips;if(intent&&CPI[intent]){text=CPI[intent][CP_LANG]||CPI[intent]['en-US'];chips=CPICHIPS[intent];}else{var a=cpRouter(disp);if(a.def&&CP_LANG!=='en-US'){text=CPDEFAULT[CP_LANG]||a.text;}else{text=a.text;}chips=a.chips;}if(text===CP_LASTA){var nudge={'en-US':'Let me put that another way \u2014 ','es-ES':'Dicho de otra forma \u2014 ','hi-IN':'\u0907\u0938\u0947 \u0926\u0942\u0938\u0930\u0947 \u0924\u0930\u0940\u0915\u0947 \u0938\u0947 \u2014 ','fr-FR':'Autrement dit \u2014 ','de-DE':'Anders gesagt \u2014 ','zh-CN':'\u6362\u4e2a\u8bf4\u6cd5 \u2014 '};text=(nudge[CP_LANG]||nudge['en-US'])+text;}CP_LASTA=text;cpPush('a',text,chips);cpSug((session&&session.roleKey)||'dana');if(spoke){cpSpeak(cpStrip(text));}else{try{window.speechSynthesis&&window.speechSynthesis.cancel();}catch(e){}}},600+Math.random()*500);}
+function cpRouter(q){var rk=(session&&session.roleKey)||'dana';q=q.toLowerCase();var GR=['g','Grounded \u00b7 v2025.2'],LIN=['l','Lineage available'],APP=['a','Approval required'],REV=['l','Reviewed by your advisor'];if(/^(hi|hello|hey|hiya|yo|hola|namaste|good (morning|afternoon|evening))\b/.test(q)||/(can you hear|are you there|you there|hear me|do you hear|is this on|mic check|testing|test 123|do you work)/.test(q))return{text:"Yes \u2014 I can hear you clearly. I'm Pulsera. Ask me about savings, a what-if scenario, a deadline, or tracing any number to its source \u2014 or tap a suggestion below.",chips:[GR]};if(/^(thanks|thank you|thx|cheers|appreciate|great|perfect|awesome|nice)\b/.test(q))return{text:"You're welcome! Anything else you'd like to explore?",chips:[GR]};if(/(who are you|what are you|your name|what can you do|how can you help|what do you do)/.test(q))return{text:"I'm Pulsera, MDxBlocks' AI avatar \u2014 powered by Gemini 2.5, grounded in your governed data with full lineage and human approval. I can find savings, model scenarios, explain plans, flag deadlines and trace any number to its source. What would you like?",chips:[GR]};
+  if(rk==='margaret'){
+    if(/(why|down|lower|less|reduc)/.test(q))return{text:"Your tax is projected to go down because your plan uses three legal strategies your advisor approved: a reasonable S-corp salary, gradual Roth conversions in lower-tax years, and timing your QBI deduction.",chips:[REV]};
+    if(/(next|do|action|should|step)/.test(q))return{text:"Your next step is to make your <b>Q3 estimated payment by Jun 16</b>. After that, nothing is due until your advisor revisits the plan in the fall.",chips:[REV]};
+    if(/(safe|trust|believe|accurate|reliable|sure|right|mistake|wrong|confiden|legit)/.test(q))return{text:"Yes — you can trust these numbers. Every figure was reviewed and approved by your advisor, and each one traces back to a specific tax rule and your own documents. Nothing here is a guess.",chips:[REV]};
+    if(/(explain|plan|summary|overview|understand|how.*work|what.*plan)/.test(q))return{text:"Your plan lowers your taxes with three approved strategies: a reasonable S-corp salary, gradual Roth conversions in lower-tax years, and timing your QBI deduction — together projected to save about <b>$150,447 over 10 years</b>.",chips:[REV]};
+    if(/(save|saving|much|benefit)/.test(q))return{text:"Your plan is projected to save about <b>$150,447 over 10 years</b> versus doing nothing \u2014 about a 19% reduction.",chips:[REV]};
+    return{text:"I can explain your plan, your savings, your effective tax rate, or what to do next \u2014 all in plain language. Try a suggestion below.",chips:[REV],def:true};
+  }
+  if(rk==='dana'){
+    if(/(what should i do|priorit|recommend|focus|next move|where.*start)/.test(q))return{text:"Your highest-leverage moves: review the <b>3 flagged opportunities (~$214k)</b>, send the <b>Delgado</b> plan that's ready, and file <b>Q3 estimates by Jun 16</b>. Want me to start with the opportunities?",chips:[GR]};
+  if(/(saving|opportun|book|radar|across|unrealiz)/.test(q))return{text:CPI.savings[CP_LANG]||CPI.savings['en-US'],chips:CPICHIPS.savings};
+  if(/(chen|explain|plain|summar|why|breakdown)/.test(q))return{text:CPI.explain[CP_LANG]||CPI.explain['en-US'],chips:CPICHIPS.explain};
+  if(/(lineage|source|trace|where.*(from|come)|provenance|citation|defend|audit)/.test(q))return{text:"Every number is traceable: <b>source line item \u2192 transform \u2192 versioned assumption (v2025.2) \u2192 deterministic calc \u2192 grounded citation</b>. Open <b>Lineage &amp; Explainability</b> to trace a specific figure end-to-end.",chips:[GR,LIN]};
+  if(/(what if|roth|convert|scenario|model)/.test(q))return{text:CPI.scenario[CP_LANG]||CPI.scenario['en-US'],chips:CPICHIPS.scenario};
+  if(/(due|deadline|estimate|week|calendar|file)/.test(q))return{text:CPI.due[CP_LANG]||CPI.due['en-US'],chips:CPICHIPS.due};
+  if(/(draft|prepare|create|build|generate|new plan)/.test(q))return{text:"I've prepared a draft plan — strategy mix, year-by-year projection, and the assumptions behind each move. It's ready for your review; <b>nothing goes to the client until you approve it</b>.",chips:[GR]};
+  }
+  if(rk==='sam'||/(drift|eval|golden|gate|governance|audit|lineage|source|trace|coverage|evidence|provenance|citation|where.*(from|come)|assumption|version)/.test(q)){
+    if(/(lineage|source|trace|provenance|where.*(from|come)|citation|audit|evidence)/.test(q))return{text:"Every projection is fully traced. For any output you can follow the chain: <b>source line item \u2192 Bronze/Silver/Gold transform \u2192 versioned assumption-set (v2025.2) \u2192 deterministic calc-svc call \u2192 grounded citation</b>. Lineage coverage is <b>100%</b> \u2014 open <b>Lineage &amp; Explainability</b> to trace a specific figure.",chips:[GR,LIN]};
+    if(/(coverage|complete|how much.*trace)/.test(q))return{text:"Lineage coverage is <b>100%</b> \u2014 every AI-assisted output is traced end-to-end to its source and a versioned assumption. No untraced figures in the last run.",chips:[GR,LIN]};
+    if(/(assumption|version)/.test(q))return{text:"The active rule set is <b>assumption-set v2025.2</b> (OBBBA update), effective 2025-01-01, approved by the Tax SME, superseding v2025.1. It\u2019s pending your governance approval before the next release.",chips:[GR]};
+    if(/drift/.test(q))return{text:"Mean projection drift this week is <b>0.40%</b>, comfortably under the <b>1.0% gate</b>. No release blocked.",chips:[GR]};
+    if(/(flag|fail|issue|problem|attention|exception|concern)/.test(q))return{text:"One scenario is flagged: <b>GS-06 (high-income SSTB cliff)</b> at 2.3% over tolerance — queued for review. Separately, <b>assumption-set v2025.2</b> is pending your approval. Everything else is green.",chips:[GR,LIN]};
+    if(/(eval|golden|run|pass|tolerance|gs-)/.test(q))return{text:"Last eval run (2h ago): golden-scenario pass rate <b>98.6%</b> \u2014 5 of 6 within tolerance. GS-06 (high-income SSTB cliff) is \u03942.3%, over tolerance and flagged.",chips:[GR,LIN]};
+    if(/(block|release|ship|deploy|gate)/.test(q))return{text:"Nothing blocks release: eval \u2713, drift within gate \u2713, lineage 100% \u2713. One item pending your approval \u2014 assumption-set v2025.2.",chips:[GR]};
+    return{text:"I can trace any figure\u2019s <b>lineage and source</b>, report <b>eval pass rates</b>, <b>drift vs the gate</b>, <b>lineage coverage</b>, <b>assumption versioning</b>, and <b>release-gate status</b>. Which would you like?",chips:[GR],def:true};
+  }
+  if(rk==='pcto'||/(latency|p95|p99|throughput|availab|kafka|lag|nfr|slo|uptime|scale|architecture|contract|adr|multi.?tenant|tenant|isolat|model|gemini|llm|hallucinat|invent|security|secure|complian|nist|iso|gdpr|hipaa|stack|drift)/.test(q)){
+    if(/(kafka|lag|stream|consumer)/.test(q))return{text:"Kafka consumer lag on <b>projection.requested</b> is <b>240ms</b>, within the 500ms budget. No backpressure.",chips:[GR]};
+    if(/(architecture|contract|adr|decouple|design)/.test(q))return{text:"The calc layer is decoupled behind a versioned contract (ADR-014): <b>planner-svc → calc-svc@1.4</b> over a typed interface, assumptions versioned (ADR-021), drift gate at 1.0% (ADR-027). Compliance math is isolated from planning logic.",chips:[GR]};
+    if(/(multi.?tenant|tenant|isolat)/.test(q))return{text:"Multi-tenant with per-firm isolation and white-label branding — each tenant gets its own assumption-sets, lineage scope and data partition. One platform, many firms.",chips:[GR]};
+    if(/(hallucinat|invent|made up|made-up|trust.*number|how.*accurate)/.test(q))return{text:"Numbers come from the <b>deterministic calc engine</b>, not the model. The LLM only explains and retrieves grounded citations; every figure traces to a versioned assumption. It structurally <b>cannot invent a tax number</b>.",chips:[GR,LIN]};
+    if(/(model|gemini|llm)/.test(q))return{text:"<b>Gemini 2.5 on Vertex AI</b> handles generation and explanation; a <b>deterministic calc-svc</b> handles the math. The model never computes the tax — that separation is the anti-hallucination design.",chips:[GR]};
+    if(/(security|secure|complian|nist|iso|gdpr|hipaa)/.test(q))return{text:"Aligned to <b>NIST AI RMF, ISO 42001, EU AI Act</b>; lineage 100%, human-approval gates on client-facing output, full audit logs. Compliance math is isolated behind the calc-svc contract.",chips:[GR,LIN]};
+    if(/(stack|built on|infrastructure)/.test(q))return{text:"Stack: <b>Vertex AI + Gemini 2.5 on Cloud Run</b>, deterministic calc-svc, Kafka event stream, versioned assumption store, and an eval harness with golden scenarios + drift gates.",chips:[GR]};
+    if(/drift/.test(q))return{text:"Drift is monitored weekly against a <b>1.0% gate</b>; over-threshold blocks release. Last week: 0.40%.",chips:[GR]};
+    return{text:"All NFRs green: projection <b>p95 1.8s</b> (SLO 2.5s), <b>p99 1.0s</b>, throughput <b>420 rps</b> (SLO 300), availability <b>99.95%</b>, eval 98.6%.",chips:[GR]};
+  }
+  if(rk==='pmd'||/(pipeline|revenue|partner|funnel|deal|business case|white.?label|build|adopt|gtm|go.to.market|make money|monetiz|opportunity|win rate|why now|timing|first delivery|case for)/.test(q)){
+    if(/(build|adopt|white.?label|scratch|vs build|instead of)/.test(q))return{text:"Building this from scratch is <b>12–18 months</b> rebuilding the governance layer — eval harness, lineage, drift gates, multi-tenant white-label. That work is <b>already done and de-risked</b> here. You white-label and deliver on day one; your margin is <b>services on a governed platform</b>, not R&D.",chips:[GR]};
+    if(/(make money|revenue mix|gtm|go.to.market|monetiz|stream)/.test(q))return{text:"Two streams: <b>delivery services</b> (~60%, your engineers) and <b>recurring white-label license</b> (~40%). GTM is channel-led — list on cloud marketplaces and bill against clients' existing cloud commits, so procurement friction is near-zero.",chips:[GR]};
+    if(/(time|when.*deliver|first delivery|how fast|ramp)/.test(q))return{text:"First delivery in <b>~8 weeks</b> using existing IP — no platform build, just configuration and domain packs.",chips:[GR]};
+    if(/(why now|timing|urgency)/.test(q))return{text:"Why now: regulated-AI demand is rising across BFSI, OBBBA (2025) made static engines stale (our edge), and the preferred-partner + CoE model is proven and repeatable.",chips:[GR]};
+    if(/(business case|case for|justif)/.test(q))return{text:"The case: <b>$4.2M</b> qualified pipeline, <b>$1.6M</b> Year-1 revenue, ~8-week first delivery, on a governed platform you don't have to build. Adopt-and-deliver beats build-from-scratch on time, risk and margin.",chips:[GR]};
+    return{text:"Qualified pipeline <b>$4.2M</b> across 7 target accounts; projected Year-1 revenue <b>$1.6M</b> (~60% delivery, ~40% recurring license); first delivery ~8 weeks using existing IP.",chips:[GR]};
+  }
+  if(rk==='pcfo'||/(margin|payback|cost|value|roi|tco|unit econ|profit|economic|cheap|expensive|budget|return)/.test(q)){
+    if(/(cost to serve|breakdown|where.*money|to run|tco|cheap|expensive)/.test(q))return{text:"Cost to serve: <b>delivery & advisory 46%, cloud (Vertex/Run) 28%, governance & eval 14%, support 12%</b>. Cloud Run scales to zero between sessions, so idle cost is minimal.",chips:[GR]};
+    if(/(unit econ|profit|per engagement|economic)/.test(q))return{text:"<b>62% gross margin</b> at target scale, <b>7-month payback</b>, <b>2.4×</b> value-to-cost. Profitable per engagement after ~7 months.",chips:[GR]};
+    if(/(value.*client|client.*value|deliver.*value|savings)/.test(q))return{text:"Each client plan delivers <b>~$150k</b> in modeled 10-year savings; across a book, the opportunity radar surfaces <b>~$214k</b> in unrealized savings.",chips:[GR]};
+    if(/(margin trend|trend)/.test(q))return{text:"Gross margin is trending <b>54% → 62%</b> over six quarters — above the 60% target.",chips:[GR]};
+    if(/(roi|return|multiple)/.test(q))return{text:"<b>2.4×</b> value-to-cost and a <b>4.1×</b> 3-year ROI multiple; 3-year value created <b>$10.1M</b>.",chips:[GR]};
+    return{text:"Gross margin <b>62%</b> (target 60%), payback <b>7 months</b>, 3-year value <b>$10.1M</b> at 2.4× value-to-cost.",chips:[GR]};
+  }
+  return{text:CPDEFAULT['en-US'],chips:[GR],def:true};
+}
+function cpMic(){if(!CP_OPEN)cpToggle();var SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){cpPush('a',"Voice input needs Chrome or Edge. Please type your question \u2014 I'll answer the same way.");return;}
+  if(cpRecOn){cpStopVoice();return;}
+  try{cpRec=new SR();}catch(e){return;}cpRec.lang=CP_LANG;cpRec.interimResults=false;cpRec.maxAlternatives=1;cpRec.continuous=false;cpRecOn=true;
+  var mic=document.getElementById('cpMicBtn');if(mic){mic.classList.add('rec');mic.setAttribute('aria-pressed','true');}
+  var inp=document.getElementById('cpInput');if(inp)inp.placeholder=(CPLISTEN[CP_LANG]||CPLISTEN['en-US']);
+  if(cpMicTimer)clearTimeout(cpMicTimer);cpMicTimer=setTimeout(function(){cpStopVoice();},8000);
+  cpRec.onresult=function(e){var tx=e.results[0][0].transcript;cpStopVoice();if(inp)inp.placeholder='Ask Pulsera\u2026';cpVoiceMode=true;cpAsk(tx);};
+  cpRec.onerror=function(){cpStopVoice();if(inp)inp.placeholder='Ask Pulsera\u2026';};
+  cpRec.onend=function(){cpStopVoice();};
+  try{cpRec.start();}catch(e){cpStopVoice();}}
+function cpStopVoice(){cpRecOn=false;cpVoiceMode=false;if(cpMicTimer){clearTimeout(cpMicTimer);cpMicTimer=null;}var mic=document.getElementById('cpMicBtn');if(mic){mic.classList.remove('rec');mic.setAttribute('aria-pressed','false');}try{cpRec&&cpRec.stop();}catch(e){}cpRec=null;}
+function cpSpeak(text){if(CP_MUTED||!window.speechSynthesis)return;try{window.speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(text);u.lang=CP_LANG;var vs=window.speechSynthesis.getVoices()||[];var pre=CP_LANG.split('-')[0];var v=vs.filter(function(x){return x.lang&&x.lang.toLowerCase().indexOf(pre)===0;})[0];if(v)u.voice=v;u.rate=1.02;u.pitch=1.05;window.speechSynthesis.speak(u);}catch(e){}}
+function cpMute(){CP_MUTED=!CP_MUTED;if(CP_MUTED){try{window.speechSynthesis&&window.speechSynthesis.cancel();}catch(e){}}var b=document.getElementById('cpSpkBtn');if(b){b.textContent=CP_MUTED?'\uD83D\uDD07':'\uD83D\uDD0A';b.setAttribute('aria-label',CP_MUTED?'Unmute Pulsera':'Mute Pulsera');b.setAttribute('aria-pressed',CP_MUTED?'true':'false');b.title=CP_MUTED?'Audio off \u00b7 tap to enable':'Audio on \u00b7 tap to mute';}}
+function cpDetectLang(){try{var L=(navigator.language||'en').toLowerCase();var map={es:'es-ES',hi:'hi-IN',fr:'fr-FR',de:'de-DE',zh:'zh-CN',pt:'pt-BR',it:'it-IT',ja:'ja-JP',ko:'ko-KR',ar:'ar-SA',ru:'ru-RU',nl:'nl-NL',tr:'tr-TR',vi:'vi-VN',fil:'fil-PH',tl:'fil-PH',ta:'ta-IN',te:'te-IN',en:'en-US'};var pre=L.split('-')[0];CP_LANG=map[pre]||'en-US';var sel=document.getElementById('cpLang');if(sel)sel.value=CP_LANG;}catch(e){CP_LANG='en-US';}}
+function cpSetLang(){var sel=document.getElementById('cpLang');if(sel)CP_LANG=sel.value;cpStopVoice();cpNew();}
+function cpExport(){var L=['Pulsera \u2014 conversation export','MDxBlocks \u00b7 CertaintyAI AI Tax Planner (synthetic demo)','Language: '+(CPLANGS[CP_LANG]||CP_LANG),'Exported: '+new Date().toLocaleString(),''];CP_HISTORY.forEach(function(m){L.push((m.who==='u'?'You: ':'Pulsera: ')+m.text);});var blob=new Blob([L.join('\n')],{type:'text/plain;charset=utf-8'});var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='pulsera-chat-'+Date.now()+'.txt';document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},100);}
+try{if(window.speechSynthesis){window.speechSynthesis.onvoiceschanged=function(){};window.speechSynthesis.getVoices();}}catch(e){}
+
+function applyRole(rk){const r=ROLES[rk];renderDashboard(rk);
+  (function(){var tech=(rk==='sam'||rk==='pcto');var lead=document.getElementById('lineLead'),why=document.getElementById('lineWhy'),gr=document.getElementById('lineGround');function kv(k){return '<div class="kv"><span class="k">'+k+'</span><span class="v">✓</span></div>';}function cite(t,top){return '<div class="cite"'+(top?' style="margin-top:6px"':'')+'>'+t+'</div>';}if(lead)lead.textContent=tech?'Pick a year, open its trace, and follow the figure through Bronze/Silver/Gold, the feature store, versioned assumptions, the decoupled calc-engine call, and the grounded citation.':'Pick a year and open its trace to follow any figure from its source workpaper, through every recorded step and the assumption version in effect, to the final calculation and the tax authority it cites — defensible to a client or examiner.';if(why)why.innerHTML='<h4 class="serif" style="margin-bottom:8px;font-size:16px">'+(tech?'Why lineage is first-class here':'Why lineage matters here')+'</h4><p class="note" style="margin:0 0 10px">'+(tech?'A projection is only useful if a professional can defend it. Lineage turns the model-said-so into a chain of evidence a CPA can sign.':'A projection is only useful if you can defend it. Lineage turns the model-said-so into a chain of evidence you can sign.')+'</p>'+(tech?(kv('Inputs traced to source line items')+kv('Each transform recorded')+kv('Assumption version pinned')+kv('Calc request/response logged')+kv('Grounded citation attached')):(kv('Inputs traced to source workpapers')+kv('Each step recorded')+kv('Assumption version pinned (v2025.2)')+kv('Every calculation recorded')+kv('Citation to tax authority attached')));if(gr)gr.innerHTML='<h4 class="serif" style="margin-bottom:8px;font-size:16px">'+(tech?'Grounding (RAG) snapshot':'Source citations')+'</h4><p class="note" style="margin:0 0 8px">'+(tech?'Recommendations are grounded in retrieved source chunks with tags and citations — not free-form generation.':'Every recommendation cites the tax authority it rests on — not free-form text.')+'</p>'+(tech?(cite('§199A QBI deduction · chunk qbi-0142 · sim 0.91')+cite('Reasonable-comp guidance · chunk rc-0078 · sim 0.88',1)+cite('Workpaper prior-yr 1120-S · chunk wp-2024-11 · sim 0.93',1)):(cite('§199A QBI deduction — IRS Form 8995 worksheet')+cite('Reasonable compensation — IRS reasonableness factors',1)+cite('Prior-year basis — 2024 Form 1120-S workpaper',1)));})();
+  (function(){var EC={dana:'\uD83D\uDCC5 Plan year 2025',sam:'\uD83D\uDEE1\uFE0F Assumption-set v2025.2',pcto:'\u2699\uFE0F Ontology Engine \u00b7 v2025.2'};var ec=document.getElementById('engineChip');if(ec){if(EC[rk]){ec.style.display='';ec.innerHTML='<span class=\"d\"></span>'+EC[rk];}else{ec.style.display='none';}}})();
+  document.querySelectorAll('.sidenav .tab').forEach(t=>{t.style.display=r.tabs.includes(t.dataset.v)?'':'none'});document.querySelectorAll('.techfoot').forEach(function(e){e.style.display=(rk==='sam'||rk==='pcto')?'':'none';});
+  const nm=((session&&session.name)||r.name).split(' ')[0];
+  document.getElementById('roleBanner').innerHTML='<span class="wsname">Welcome, '+nm+'</span><span style="color:var(--gold-deep)">●</span> '+r.banner;
+  switchView(r.def,rk);}
+function switchView(v,rk){rk=rk||(session?session.roleKey:'dana');const r=ROLES[rk];
+  if(!r.tabs.includes(v))v=r.def;
+  document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  document.getElementById(v).classList.add('active');const tb=document.querySelector(`.tab[data-v="${v}"]`);if(tb)tb.classList.add('active');window.scrollTo(0,0);}
+
+/* wiring */
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>switchView(t.dataset.v));
+document.querySelectorAll('.hbtn').forEach(b=>b.onclick=()=>{document.querySelectorAll('.hbtn').forEach(x=>x.classList.remove('active'));b.classList.add('active');projHorizon=+b.dataset.h;renderProjection()});
+document.getElementById('projScen').onchange=e=>{activePlan=e.target.value;syncPlanSelectors();renderProjection();renderScenarioCards()};
+document.getElementById('drawerX').onclick=closeDrawer;document.getElementById('drawerBg').onclick=closeDrawer;
+document.getElementById('openTrace').onclick=()=>openLineage(+document.getElementById('lineYear').value,document.getElementById('lineScen').value);
+['vcDep','vcSvc','vcMgd'].forEach(id=>document.getElementById(id).oninput=renderValueCase);
+document.getElementById('lvComp').oninput=e=>{liveComp=+e.target.value;activePlan='live';renderLevers();syncPlanSelectors();renderScenarioCards()};
+document.getElementById('lvRoth').oninput=e=>{liveRoth=+e.target.value;activePlan='live';renderLevers();syncPlanSelectors()};
+document.getElementById('lvDefer').oninput=e=>{liveDefer=+e.target.value;activePlan='live';renderLevers();syncPlanSelectors()};
+document.getElementById('acctBtn').onclick=()=>document.getElementById('acctMenu').classList.toggle('open');
+document.addEventListener('click',e=>{if(!document.getElementById('acctBtn').contains(e.target)&&!document.getElementById('acctMenu').contains(e.target))document.getElementById('acctMenu').classList.remove('open')});
+
+/* deep-link entry for marketplace embed: ?screen=signin|survey|planner (or #signin) */
+(function(){
+  const p=new URLSearchParams(location.search);
+  const s=(p.get('screen')||location.hash.replace('#','')||'').toLowerCase();
+  if(s==='signin')go('signin');
+  else if(s==='survey')go('survey');
+  else if(s==='copilot')go('signin');
+  else if(s==='planner'||s==='app')go('app','dana');
+})();
+</script>
+<style>
+.cpfab{position:fixed;right:22px;bottom:22px;z-index:60;display:none;align-items:center;gap:9px;background:var(--green);color:#fff;border:none;border-radius:30px;padding:13px 19px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 8px 26px rgba(0,0,0,.20)}
+.cpfab:hover{background:#356847}
+.cppanel{position:fixed;right:22px;bottom:22px;z-index:61;width:clamp(380px,32vw,520px);max-width:calc(100vw - 28px);height:clamp(560px,82vh,820px);max-height:calc(100vh - 40px);background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:0 22px 64px rgba(0,0,0,.30);display:none;flex-direction:column;overflow:hidden}
+.cppanel.open{display:flex}
+.cphead{padding:14px 16px;border-bottom:1px solid var(--line2);display:flex;align-items:center;gap:11px;background:var(--card2)}
+.cphead .av{width:32px;height:32px;border-radius:9px;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-family:var(--serif);flex:none}
+.cphead .t{flex:1;min-width:0}.cphead .t b{font-size:14px;display:block;line-height:1.2}.cphead .t span{font-size:10.5px;color:var(--muted)}
+.cphead .x{background:none;border:none;font-size:16px;color:var(--muted);cursor:pointer;padding:4px}
+.cpbody{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:11px}
+.cpmsg{max-width:88%;font-size:13.5px;line-height:1.55}
+.cpmsg.u{align-self:flex-end;background:var(--green);color:#fff;padding:9px 13px;border-radius:13px 13px 3px 13px}
+.cpmsg.a{align-self:flex-start;background:var(--bone);border:1px solid var(--line2);color:var(--ink);padding:11px 13px;border-radius:13px 13px 13px 3px}
+.cpmsg.a .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+.cpchip{font-size:10px;font-family:var(--mono);padding:3px 8px;border-radius:20px;display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+.cpchip.g{background:var(--green-soft);color:var(--green)}
+.cpchip.l{background:rgba(58,61,168,.09);color:#3A3DA8}
+.cpchip.a{background:var(--gold-soft);color:var(--gold-deep)}
+.cptyping{display:flex;gap:4px;padding:13px 14px;background:var(--bone);border:1px solid var(--line2);border-radius:13px;align-self:flex-start}
+.cptyping i{width:6px;height:6px;border-radius:50%;background:var(--muted);animation:cpb 1s infinite}
+.cptyping i:nth-child(2){animation-delay:.15s}.cptyping i:nth-child(3){animation-delay:.3s}
+@keyframes cpb{0%,60%,100%{opacity:.3;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}
+.cpsug{padding:11px 14px;border-top:1px solid var(--line2);display:flex;flex-wrap:wrap;gap:7px;background:var(--card2);max-height:118px;overflow-y:auto}
+.cpsug button{font-size:12px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:7px 11px;cursor:pointer;color:var(--ink2);text-align:left;font-family:inherit}
+.cpsug button:hover{border-color:var(--green);color:var(--green)}
+.cpinput{padding:11px 13px;border-top:1px solid var(--line2);display:flex;gap:8px}
+.cpinput input{flex:1;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:13px;font-family:inherit;background:var(--card)}
+.cpinput button{background:var(--green);color:#fff;border:none;border-radius:10px;padding:0 15px;cursor:pointer;font-weight:600;font-family:inherit}
+</style>
+<style>
+.pulsav{background-image:url('data:image/jpeg;base64,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');background-size:cover;background-position:center top}
+.cppav{width:34px;height:34px;border-radius:50%;flex:none}
+.cpfabav{width:24px;height:24px;border-radius:50%;display:inline-block;flex:none}
+.cpmodel{font-size:9.5px;font-family:var(--mono);background:rgba(58,61,168,.10);color:#3A3DA8;padding:2px 7px;border-radius:20px;font-weight:600;margin-left:6px}
+.cpmic{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:0 11px;cursor:pointer;font-size:15px;flex:none}
+.cpmic:hover{border-color:var(--green)}
+.cpdisc{padding:7px 14px 11px;font-size:10px;color:var(--muted);text-align:center;line-height:1.4}
+.cptools{display:flex;gap:6px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--line2);background:var(--card2);flex-wrap:wrap}
+.cpsel{font-size:11.5px;border:1px solid var(--line);border-radius:8px;padding:5px 7px;background:var(--card);font-family:inherit;color:var(--ink);cursor:pointer}
+.cptbtn{font-size:11px;border:1px solid var(--line);border-radius:8px;padding:5px 8px;background:var(--card);cursor:pointer;color:var(--ink2);font-family:inherit;white-space:nowrap}
+.cptbtn:hover{border-color:var(--green);color:var(--green)}
+.cptbtn.on{background:var(--green-soft);color:var(--green);border-color:var(--green)}
+.cpmic.rec{background:var(--sienna)!important;color:#fff;border-color:var(--sienna)!important;animation:cppulse 1s infinite}
+.cpgate{margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--gold-soft);border:1px solid var(--gold-deep);border-radius:9px;padding:8px 10px;font-size:11.5px;color:var(--gold-deep)}
+.cpgate .cpgi{flex:1;min-width:150px;font-weight:600}
+.cpgate button{border:0;border-radius:7px;padding:5px 11px;font-size:11.5px;font-weight:600;cursor:pointer;font-family:inherit}
+.cpgate .cpok{background:var(--green);color:#fff}
+.cpgate .cprev{background:var(--card);color:var(--gold-deep);border:1px solid var(--gold-deep)}
+.cpgate.done{display:block;background:var(--green-soft);border-color:var(--green);color:var(--green)}
+.cpgate.hold{display:block;background:var(--gold-soft);border-color:var(--gold-deep);color:var(--gold-deep)}
+@keyframes cppulse{0%,100%{opacity:1}50%{opacity:.5}}
+</style>
+<button class="cpfab" id="cpFab" onclick="cpToggle()" aria-label="Open Pulsera AI assistant" aria-haspopup="dialog" aria-expanded="false"><span class="pulsav cpfabav" aria-hidden="true"></span> Ask Pulsera</button>
+<div class="cppanel" id="cpPanel" role="dialog" aria-label="Pulsera AI assistant">
+  <div class="cphead"><div class="pulsav cppav" aria-hidden="true"></div><div class="t"><b>Pulsera <span class="cpmodel">Gemini 2.5</span></b><span id="cpSub">MDxBlocks AI avatar · powered by Gemini 2.5 · human-approved</span></div><button class="x" onclick="cpToggle()" aria-label="Close Pulsera">✕</button></div>
+  <div class="cptools">
+    <select id="cpLang" class="cpsel" onchange="cpSetLang()" aria-label="Response language"><option value="en-US">English</option><option value="es-ES">Español</option><option value="hi-IN">हिन्दी</option><option value="fr-FR">Français</option><option value="de-DE">Deutsch</option><option value="zh-CN">中文</option><option value="pt-BR">Português</option><option value="it-IT">Italiano</option><option value="ja-JP">日本語</option><option value="ko-KR">한국어</option><option value="ar-SA">العربية</option><option value="ru-RU">Русский</option><option value="nl-NL">Nederlands</option><option value="tr-TR">Türkçe</option><option value="vi-VN">Tiếng Việt</option><option value="fil-PH">Filipino</option><option value="ta-IN">தமிழ்</option><option value="te-IN">తెలుగు</option></select>
+    <button class="cptbtn" onclick="cpNew()" title="New chat" aria-label="Start new chat">＋ New</button>
+    <button class="cptbtn" onclick="cpExport()" title="Export chat" aria-label="Export chat">⤓ Export</button>
+  </div>
+  <div class="cpbody" id="cpBody" role="log" aria-live="polite" aria-atomic="false" aria-label="Conversation with Pulsera"></div>
+  <div class="cpsug" id="cpSug" aria-label="Suggested questions"></div>
+  <div class="cpinput"><button id="cpMicBtn" class="cpmic" title="Tap to talk" aria-label="Tap to talk" aria-pressed="false" onclick="cpMic()">🎙️</button><button id="cpSpkBtn" class="cpmic" title="Audio on · tap to mute" aria-label="Mute Pulsera" aria-pressed="false" onclick="cpMute()">🔊</button><input id="cpInput" aria-label="Ask Pulsera" placeholder="Ask Pulsera about a client, scenario, or number…" onkeydown="if(event.key==='Enter')cpAsk()"/><button onclick="cpAsk()" aria-label="Send message">Send</button></div>
+  <div class="cpdisc">AI-generated insights may contain errors · human-in-the-loop review required for critical decisions.</div>
+</div>
+</body>
+</html>

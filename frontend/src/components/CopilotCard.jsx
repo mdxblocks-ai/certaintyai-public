@@ -129,13 +129,25 @@ export default function CopilotCard({ copilot, domain }) {
           Defensible by design
         </span>
         {cta && cta.kind === 'link' && (
-          <Link
-            to={cta.href}
-            className="text-[12.5px] font-bold transition hover:translate-x-0.5"
-            style={{ color: cta.color }}
-          >
-            {cta.label} →
-          </Link>
+          copilot.demoUrl ? (
+            <a
+              href={copilot.demoUrl}
+              target="_blank"
+              rel="noopener"
+              className="text-[12.5px] font-bold transition hover:translate-x-0.5"
+              style={{ color: cta.color }}
+            >
+              Try it now →
+            </a>
+          ) : (
+            <Link
+              to={cta.href}
+              className="text-[12.5px] font-bold transition hover:translate-x-0.5"
+              style={{ color: cta.color }}
+            >
+              {cta.label} →
+            </Link>
+          )
         )}
         {cta && cta.kind === 'text' && (
           <span
